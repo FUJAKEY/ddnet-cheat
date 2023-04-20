@@ -60,44 +60,18 @@ vec2 CProjectile::GetPos(float Time)
 	switch(m_Type)
 	{
 	case WEAPON_GRENADE:
-		if(!m_TuneZone)
-		{
-			Curvature = GameServer()->Tuning()->m_GrenadeCurvature;
-			Speed = GameServer()->Tuning()->m_GrenadeSpeed;
-		}
-		else
-		{
-			Curvature = GameServer()->TuningList()[m_TuneZone].m_GrenadeCurvature;
-			Speed = GameServer()->TuningList()[m_TuneZone].m_GrenadeSpeed;
-		}
-
+		Curvature = GameServer()->Tuning(m_Owner, m_TuneZone)->m_GrenadeCurvature;
+		Speed = GameServer()->Tuning(m_Owner, m_TuneZone)->m_GrenadeSpeed;
 		break;
 
 	case WEAPON_SHOTGUN:
-		if(!m_TuneZone)
-		{
-			Curvature = GameServer()->Tuning()->m_ShotgunCurvature;
-			Speed = GameServer()->Tuning()->m_ShotgunSpeed;
-		}
-		else
-		{
-			Curvature = GameServer()->TuningList()[m_TuneZone].m_ShotgunCurvature;
-			Speed = GameServer()->TuningList()[m_TuneZone].m_ShotgunSpeed;
-		}
-
+		Curvature = GameServer()->Tuning(m_Owner, m_TuneZone)->m_ShotgunCurvature;
+		Speed = GameServer()->Tuning(m_Owner, m_TuneZone)->m_ShotgunSpeed;
 		break;
 
 	case WEAPON_GUN:
-		if(!m_TuneZone)
-		{
-			Curvature = GameServer()->Tuning()->m_GunCurvature;
-			Speed = GameServer()->Tuning()->m_GunSpeed;
-		}
-		else
-		{
-			Curvature = GameServer()->TuningList()[m_TuneZone].m_GunCurvature;
-			Speed = GameServer()->TuningList()[m_TuneZone].m_GunSpeed;
-		}
+		Curvature = GameServer()->Tuning(m_Owner, m_TuneZone)->m_GunCurvature;
+		Speed = GameServer()->Tuning(m_Owner, m_TuneZone)->m_GunSpeed;
 		break;
 	}
 

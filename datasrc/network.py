@@ -44,6 +44,8 @@ EntityClasses = ["PROJECTILE", "DOOR", "DRAGGER_WEAK", "DRAGGER_NORMAL", "DRAGGE
 
 RawHeader = '''
 #include <engine/shared/teehistorian_ex.h>
+#include <string>
+#include <vector>
 
 enum
 {
@@ -513,4 +515,6 @@ Messages = [
 		NetIntAny("m_ServerTimeBest"),
 		NetIntAny("m_PlayerTimeBest"),
 	]),
+
+	NetMessageEx("Sv_TuneLock", "tunelock@netmsg.ddnet.tw", []),
 ]
