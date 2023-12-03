@@ -2294,6 +2294,8 @@ if(CLIENT)
     map_view.h
     mapitems/envelope.cpp
     mapitems/envelope.h
+    mapitems/envelope_point.cpp
+    mapitems/envelope_point.h
     mapitems/image.cpp
     mapitems/image.h
     mapitems/layer.h

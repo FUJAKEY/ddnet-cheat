@@ -6,7 +6,7 @@
 
 using namespace std::chrono_literals;
 
-CEnvelope::CEnvelopePointAccess::CEnvelopePointAccess(std::vector<CEnvPoint_runtime> *pvPoints)
+CEnvelope::CEnvelopePointAccess::CEnvelopePointAccess(std::vector<CEnvelopePoint> *pvPoints)
 {
 	m_pvPoints = pvPoints;
 }
@@ -20,7 +20,7 @@ const CEnvPoint *CEnvelope::CEnvelopePointAccess::GetPoint(int Index) const
 {
 	if(Index < 0 || (size_t)Index >= m_pvPoints->size())
 		return nullptr;
-	return &m_pvPoints->at(Index);
+	return &m_pvPoints->at(Index).m_PointInfo;
 }
 
 const CEnvPointBezier *CEnvelope::CEnvelopePointAccess::GetBezier(int Index) const
@@ -57,12 +57,11 @@ void CEnvelope::Resort()
 	std::sort(m_vPoints.begin(), m_vPoints.end());
 }
 
-std::pair<float, float> CEnvelope::GetValueRange(int ChannelMask)
+std::pair<float, float> CEnvelope::ValueRange(int ChannelMask)
 {
 	float Top = -std::numeric_limits<float>::infinity();
 	float Bottom = std::numeric_limits<float>::infinity();
-	CEnvPoint_runtime *pPrevPoint = nullptr;
-	for(auto &Point : m_vPoints)
+	for(size_t i = 0; i < m_vPoints.size(); i++)
 	{
 		for(int c = 0; c < GetChannels(); c++)
 		{
@@ -70,65 +69,81 @@ std::pair<float, float> CEnvelope::GetValueRange(int ChannelMask)
 			{
 				{
 					// value handle
-					const float v = fx2f(Point.m_aValues[c]);
+					const float v = m_vPoints[i].Value(c);
 					Top = maximum(Top, v);
 					Bottom = minimum(Bottom, v);
 				}
 
-				if(Point.m_Curvetype == CURVETYPE_BEZIER)
+				if(m_vPoints[i].CurveType() == CURVETYPE_BEZIER)
 				{
-					// out-tangent handle
-					const float v = fx2f(Point.m_aValues[c] + Point.m_Bezier.m_aOutTangentDeltaY[c]);
-					Top = maximum(Top, v);
-					Bottom = minimum(Bottom, v);
+					const float ValueIn = m_vPoints[i].InTangentHandle(c).y;
+					Top = maximum(Top, ValueIn);
+					Bottom = minimum(Bottom, ValueIn);
 				}
 
-				if(pPrevPoint != nullptr && pPrevPoint->m_Curvetype == CURVETYPE_BEZIER)
+				if(i > 0 && m_vPoints[i - 1].CurveType() == CURVETYPE_BEZIER)
 				{
-					// in-tangent handle
-					const float v = fx2f(Point.m_aValues[c] + Point.m_Bezier.m_aInTangentDeltaY[c]);
-					Top = maximum(Top, v);
-					Bottom = minimum(Bottom, v);
+					const float ValueOut = m_vPoints[i].OutTangentHandle(c).y;
+					Top = maximum(Top, ValueOut);
+					Bottom = minimum(Bottom, ValueOut);
 				}
 			}
 		}
-		pPrevPoint = &Point;
 	}
 
 	return {Bottom, Top};
 }
 
-int CEnvelope::Eval(float Time, ColorRGBA &Color)
+void CEnvelope::Eval(float Time, float &Volume)
 {
-	CRenderTools::RenderEvalEnvelope(&m_PointsAccess, GetChannels(), std::chrono::nanoseconds((int64_t)((double)Time * (double)std::chrono::nanoseconds(1s).count())), Color);
-	return GetChannels();
+	ColorRGBA Tmp;
+	Eval(Time, Tmp);
+	Volume = Tmp.r;
 }
 
-void CEnvelope::AddPoint(int Time, int v0, int v1, int v2, int v3)
+void CEnvelope::Eval(float Time, CTransform &Transform)
 {
-	CEnvPoint_runtime p;
-	p.m_Time = Time;
-	p.m_aValues[0] = v0;
-	p.m_aValues[1] = v1;
-	p.m_aValues[2] = v2;
-	p.m_aValues[3] = v3;
-	p.m_Curvetype = CURVETYPE_LINEAR;
-	for(int c = 0; c < CEnvPoint::MAX_CHANNELS; c++)
-	{
-		p.m_Bezier.m_aInTangentDeltaX[c] = 0;
-		p.m_Bezier.m_aInTangentDeltaY[c] = 0;
-		p.m_Bezier.m_aOutTangentDeltaX[c] = 0;
-		p.m_Bezier.m_aOutTangentDeltaY[c] = 0;
-	}
-	m_vPoints.push_back(p);
+	ColorRGBA Tmp;
+	Eval(Time, Tmp);
+	Transform = {Tmp.r, Tmp.g, Tmp.b};
+}
+
+void CEnvelope::Eval(float Time, ColorRGBA &Color)
+{
+	CRenderTools::RenderEvalEnvelope(&m_PointsAccess, GetChannels(), std::chrono::nanoseconds((int64_t)((double)Time * (double)std::chrono::nanoseconds(1s).count())), Color);
+}
+
+void CEnvelope::AddPoint(float Time, float Volume)
+{
+	CEnvelopePoint p(Time, CURVETYPE_LINEAR, {Volume});
+	m_vPoints.emplace_back(p);
 	Resort();
+}
+
+void CEnvelope::AddPoint(float Time, CTransform Transform)
+{
+	CEnvelopePoint p(Time, CURVETYPE_LINEAR, {Transform.OffsetX, Transform.OffsetY, Transform.Rotation});
+	m_vPoints.emplace_back(p);
+	Resort();
+}
+
+void CEnvelope::AddPoint(float Time, ColorRGBA Color)
+{
+	CEnvelopePoint p(Time, CURVETYPE_LINEAR, {Color.r, Color.g, Color.b, Color.a});
+	m_vPoints.emplace_back(p);
+	Resort();
+}
+
+void CEnvelope::RemovePoint(int Index)
+{
+	m_vPoints.erase(m_vPoints.begin() + Index);
 }
 
 float CEnvelope::EndTime() const
 {
 	if(m_vPoints.empty())
 		return 0.0f;
-	return m_vPoints.back().m_Time / 1000.0f;
+	return m_vPoints.back().Time();
 }
 
 int CEnvelope::GetChannels() const

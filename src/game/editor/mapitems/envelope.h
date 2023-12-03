@@ -2,12 +2,13 @@
 #define GAME_EDITOR_MAPITEMS_ENVELOPE_H
 
 #include <game/client/render.h>
-#include <game/mapitems.h>
+
+#include "envelope_point.h"
 
 class CEnvelope
 {
 public:
-	std::vector<CEnvPoint_runtime> m_vPoints;
+	std::vector<CEnvelopePoint> m_vPoints;
 	char m_aName[32] = "";
 	bool m_Synchronized = false;
 
@@ -20,9 +21,17 @@ public:
 	explicit CEnvelope(EType Type);
 	explicit CEnvelope(int NumChannels);
 
-	std::pair<float, float> GetValueRange(int ChannelMask);
-	int Eval(float Time, ColorRGBA &Color);
-	void AddPoint(int Time, int v0, int v1 = 0, int v2 = 0, int v3 = 0);
+	// Get the range of the values in the envelope (including tangent handles)
+	std::pair<float, float> ValueRange(int ChannelMask);
+
+	void Eval(float Time, float &Volume);
+	void Eval(float Time, CTransform &CTransform);
+	void Eval(float Time, ColorRGBA &Color);
+
+	void AddPoint(float Time, float Volume);
+	void AddPoint(float Time, CTransform Transform);
+	void AddPoint(float Time, ColorRGBA Color);
+	void RemovePoint(int Index);
 	float EndTime() const;
 	int GetChannels() const;
 
@@ -33,10 +42,10 @@ private:
 
 	class CEnvelopePointAccess : public IEnvelopePointAccess
 	{
-		std::vector<CEnvPoint_runtime> *m_pvPoints;
+		std::vector<CEnvelopePoint> *m_pvPoints;
 
 	public:
-		CEnvelopePointAccess(std::vector<CEnvPoint_runtime> *pvPoints);
+		CEnvelopePointAccess(std::vector<CEnvelopePoint> *pvPoints);
 
 		int NumPoints() const override;
 		const CEnvPoint *GetPoint(int Index) const override;

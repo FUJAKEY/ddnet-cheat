@@ -346,7 +346,7 @@ bool CEditorMap::Save(const char *pFileName)
 	{
 		for(const auto &Point : pEnvelope->m_vPoints)
 		{
-			if(Point.m_Curvetype == CURVETYPE_BEZIER)
+			if(Point.CurveType() == CURVETYPE_BEZIER)
 			{
 				BezierUsed = true;
 				break;
@@ -364,18 +364,18 @@ bool CEditorMap::Save(const char *pFileName)
 
 	for(const auto &pEnvelope : m_vpEnvelopes)
 	{
-		const CEnvPoint_runtime *pPrevPoint = nullptr;
+		const CEnvelopePoint *pPrevPoint = nullptr;
 		for(const auto &Point : pEnvelope->m_vPoints)
 		{
 			mem_copy(&pPoints[PointCount], &Point, sizeof(CEnvPoint));
 			if(pPointsBezier != nullptr)
 			{
-				if(Point.m_Curvetype == CURVETYPE_BEZIER)
+				if(Point.CurveType() == CURVETYPE_BEZIER)
 				{
 					mem_copy(&pPointsBezier[PointCount].m_aOutTangentDeltaX, &Point.m_Bezier.m_aOutTangentDeltaX, sizeof(Point.m_Bezier.m_aOutTangentDeltaX));
 					mem_copy(&pPointsBezier[PointCount].m_aOutTangentDeltaY, &Point.m_Bezier.m_aOutTangentDeltaY, sizeof(Point.m_Bezier.m_aOutTangentDeltaY));
 				}
-				if(pPrevPoint != nullptr && pPrevPoint->m_Curvetype == CURVETYPE_BEZIER)
+				if(pPrevPoint != nullptr && pPrevPoint->CurveType() == CURVETYPE_BEZIER)
 				{
 					mem_copy(&pPointsBezier[PointCount].m_aInTangentDeltaX, &Point.m_Bezier.m_aInTangentDeltaX, sizeof(Point.m_Bezier.m_aInTangentDeltaX));
 					mem_copy(&pPointsBezier[PointCount].m_aInTangentDeltaY, &Point.m_Bezier.m_aInTangentDeltaY, sizeof(Point.m_Bezier.m_aInTangentDeltaY));
@@ -917,15 +917,19 @@ bool CEditorMap::Load(const char *pFileName, int StorageType, const std::functio
 		{
 			CMapItemEnvelope *pItem = (CMapItemEnvelope *)DataFile.GetItem(EnvStart + e);
 			std::shared_ptr<CEnvelope> pEnv = std::make_shared<CEnvelope>(pItem->m_Channels);
-			pEnv->m_vPoints.resize(pItem->m_NumPoints);
+			pEnv->m_vPoints.reserve(pItem->m_NumPoints);
 			for(int p = 0; p < pItem->m_NumPoints; p++)
 			{
+				CEnvPoint EnvPoint;
 				const CEnvPoint *pPoint = EnvelopePoints.GetPoint(pItem->m_StartPoint + p);
 				if(pPoint != nullptr)
-					mem_copy(&pEnv->m_vPoints[p], pPoint, sizeof(CEnvPoint));
+					mem_copy(&EnvPoint, pPoint, sizeof(CEnvPoint));
+				CEnvPointBezier Bezier;
 				const CEnvPointBezier *pPointBezier = EnvelopePoints.GetBezier(pItem->m_StartPoint + p);
 				if(pPointBezier != nullptr)
-					mem_copy(&pEnv->m_vPoints[p].m_Bezier, pPointBezier, sizeof(CEnvPointBezier));
+					mem_copy(&Bezier, pPointBezier, sizeof(CEnvPointBezier));
+
+				pEnv->m_vPoints.emplace_back(EnvPoint, Bezier);
 			}
 			if(pItem->m_aName[0] != -1) // compatibility with old maps
 				IntsToStr(pItem->m_aName, sizeof(pItem->m_aName) / sizeof(int), pEnv->m_aName);
