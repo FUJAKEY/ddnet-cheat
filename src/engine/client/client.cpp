@@ -2630,7 +2630,11 @@ void CClient::Update()
 
 	// update editor/gameclient
 	if(m_EditorActive)
+	{
 		m_pEditor->OnUpdate();
+		// Update global components of game client
+		GameClient()->OnUpdateGlobalComponents();
+	}
 	else
 		GameClient()->OnUpdate();
 
@@ -2917,6 +2921,7 @@ void CClient::Run()
 			else if(m_EditorActive)
 			{
 				m_EditorActive = false;
+				GameClient()->OnHideEditor();
 			}
 
 			Update();
@@ -2974,6 +2979,7 @@ void CClient::Run()
 				{
 					m_pEditor->OnRender();
 					DebugRender();
+					GameClient()->OnRenderGlobalComponents();
 				}
 				m_pGraphics->Swap();
 			}
@@ -3088,7 +3094,8 @@ bool CClient::InitNetworkClient(char *pError, size_t ErrorSize)
 	BindAddr.type = NETTYPE_ALL;
 	for(unsigned int i = 0; i < std::size(m_aNetClient); i++)
 	{
-		int &PortRef = i == CONN_MAIN ? g_Config.m_ClPort : i == CONN_DUMMY ? g_Config.m_ClDummyPort : g_Config.m_ClContactPort;
+		int &PortRef = i == CONN_MAIN ? g_Config.m_ClPort : i == CONN_DUMMY ? g_Config.m_ClDummyPort :
+                                                                                      g_Config.m_ClContactPort;
 		if(PortRef < 1024) // Reject users setting ports that we don't want to use
 		{
 			PortRef = 0;

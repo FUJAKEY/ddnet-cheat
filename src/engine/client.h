@@ -319,6 +319,7 @@ public:
 	virtual void OnMessage(int MsgID, CUnpacker *pUnpacker, int Conn, bool Dummy) = 0;
 	virtual void OnPredict() = 0;
 	virtual void OnActivateEditor() = 0;
+	virtual void OnHideEditor() = 0;
 	virtual void OnWindowResize() = 0;
 
 	virtual int OnSnapInput(int *pData, bool Dummy, bool Force) = 0;
@@ -339,6 +340,9 @@ public:
 	virtual bool IsDisplayingWarning() = 0;
 
 	virtual CNetObjHandler *GetNetObjHandler() = 0;
+
+	virtual void OnUpdateGlobalComponents() = 0;
+	virtual void OnRenderGlobalComponents() = 0;
 };
 
 void SnapshotRemoveExtraProjectileInfo(unsigned char *pData);
