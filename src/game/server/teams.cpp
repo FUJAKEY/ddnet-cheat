@@ -390,7 +390,7 @@ const char *CGameTeams::SetCharacterTeam(int ClientId, int Team)
 		return "Your character is not valid";
 	if(Team == TEAM_SUPER && !Character(ClientId)->IsSuper())
 		return "You can't join super team if you don't have super rights";
-	if(Team != TEAM_SUPER && Character(ClientId)->m_DDRaceState != DDRACE_NONE && m_aTeamState[CurrentTeam] < TEAMSTATE_FINISHED)
+	if(Team != TEAM_SUPER && Character(ClientId)->m_DDRaceState != DDRACE_NONE && (m_aTeamState[CurrentTeam] < TEAMSTATE_FINISHED || Team != 0))
 		return "You have started racing already";
 	// No cheating through noob filter with practice and then leaving team
 	if(m_aPractice[CurrentTeam])
