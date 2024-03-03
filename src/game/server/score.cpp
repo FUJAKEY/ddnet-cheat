@@ -277,7 +277,7 @@ void CScore::RandomUnfinishedMap(int ClientID, int Stars)
 	m_pPool->Execute(CScoreWorker::RandomUnfinishedMap, std::move(Tmp), "random unfinished map");
 }
 
-void CScore::SaveTeam(int ClientID, const char *pCode, const char *pServer)
+void CScore::SaveTeam(int ClientID, const char *pCode, const char *pServer, bool Silent)
 {
 	if(RateLimitPlayer(ClientID))
 		return;
@@ -289,13 +289,18 @@ void CScore::SaveTeam(int ClientID, const char *pCode, const char *pServer)
 	auto SaveResult = std::make_shared<CScoreSaveResult>(ClientID);
 	SaveResult->m_SaveID = RandomUuid();
 	int Result = SaveResult->m_SavedTeam.Save(GameServer(), Team);
-	if(CSaveTeam::HandleSaveError(Result, ClientID, GameServer()))
+	if(Silent)
+	{
+		if(Result)
+			return;
+	}
+	else if(CSaveTeam::HandleSaveError(Result, ClientID, GameServer()))
 		return;
 	pController->Teams().SetSaving(Team, SaveResult);
 
 	auto Tmp = std::make_unique<CSqlTeamSave>(SaveResult);
 	str_copy(Tmp->m_aCode, pCode, sizeof(Tmp->m_aCode));
-	str_copy(Tmp->m_aMap, g_Config.m_SvMap, sizeof(Tmp->m_aMap));
+	str_copy(Tmp->m_aMap, this->Server()->GetMapName(), sizeof(Tmp->m_aMap));
 	str_copy(Tmp->m_aServer, pServer, sizeof(Tmp->m_aServer));
 	str_copy(Tmp->m_aClientName, this->Server()->ClientName(ClientID), sizeof(Tmp->m_aClientName));
 	Tmp->m_aGeneratedCode[0] = '\0';
