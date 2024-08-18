@@ -698,7 +698,8 @@ void CClient::DisconnectWithReason(const char *pReason)
 	m_LastDummy = false;
 
 	// 0.7
-	m_TranslationContext.Reset();
+	for(auto &TranslationContext : m_aTranslationContext)
+		TranslationContext.Reset();
 	m_Sixup = false;
 }
 
@@ -1619,7 +1620,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket, int Conn, bool Dummy)
 			{
 				MapCRC = m_MapdownloadCrc;
 				Chunk = m_MapdownloadChunk;
-				Size = minimum(m_TranslationContext.m_MapDownloadChunkSize, m_TranslationContext.m_MapdownloadTotalsize - m_MapdownloadAmount);
+				Size = minimum(m_aTranslationContext[Conn].m_MapDownloadChunkSize, m_aTranslationContext[Conn].m_MapdownloadTotalsize - m_MapdownloadAmount);
 			}
 			else
 			{
@@ -1640,7 +1641,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket, int Conn, bool Dummy)
 			m_MapdownloadAmount += Size;
 
 			if(IsSixup())
-				Last = m_MapdownloadAmount == m_TranslationContext.m_MapdownloadTotalsize;
+				Last = m_MapdownloadAmount == m_aTranslationContext[Conn].m_MapdownloadTotalsize;
 
 			if(Last)
 			{
@@ -1656,7 +1657,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket, int Conn, bool Dummy)
 				// request new chunk
 				m_MapdownloadChunk++;
 
-				if(IsSixup() && (m_MapdownloadChunk % m_TranslationContext.m_MapDownloadChunksPerRequest == 0))
+				if(IsSixup() && (m_MapdownloadChunk % m_aTranslationContext[Conn].m_MapDownloadChunksPerRequest == 0))
 				{
 					CMsgPacker MsgP(protocol7::NETMSG_REQUEST_MAP_DATA, true, true);
 					SendMsg(CONN_MAIN, &MsgP, MSGFLAG_VITAL | MSGFLAG_FLUSH);
