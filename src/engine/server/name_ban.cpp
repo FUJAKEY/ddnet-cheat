@@ -123,5 +123,17 @@ void CNameBans::ConNameUnban(IConsole::IResult *pResult, void *pUser)
 
 void CNameBans::ConNameBans(IConsole::IResult *pResult, void *pUser)
 {
-	static_cast<CNameBans *>(pUser)->Dump();
+	CNameBans *pThis = static_cast<CNameBans *>(pUser);
+
+	// Check if the name bans list is empty
+	if(pThis->m_vNameBans.empty())
+	{
+		// Print message if the list is empty
+		pThis->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "name_ban", "The name bans list is empty.");
+	}
+	else
+	{
+		// If there are name bans, dump them
+		pThis->Dump();
+	}
 }
