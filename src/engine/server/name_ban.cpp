@@ -127,7 +127,7 @@ void CNameBans::ConNameBans(IConsole::IResult *pResult, void *pUser)
 
 	if(pThis->m_vNameBans.empty())
 	{
-		pThis->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "name_ban", "The name bans list is empty.");
+		log_info("name_ban", "The name bans list is empty.");
 	}
 	else
 	{
