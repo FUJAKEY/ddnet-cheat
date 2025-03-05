@@ -1,7 +1,7 @@
 #include "name_ban.h"
 
 #include <base/system.h>
-
+#include <base/logger.h>
 #include <engine/shared/config.h>
 
 CNameBan::CNameBan(const char *pName, const char *pReason, int Distance, bool IsSubstring) :
