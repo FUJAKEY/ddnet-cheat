@@ -1,7 +1,9 @@
 #include "name_ban.h"
 
 #include <base/system.h>
+
 #include <base/log.h>
+
 #include <engine/shared/config.h>
 
 CNameBan::CNameBan(const char *pName, const char *pReason, int Distance, bool IsSubstring) :
@@ -123,14 +125,15 @@ void CNameBans::ConNameUnban(IConsole::IResult *pResult, void *pUser)
 
 void CNameBans::ConNameBans(IConsole::IResult *pResult, void *pUser)
 {
-	CNameBans *pThis = static_cast<CNameBans *>(pUser);
+        CNameBans *pThis = static_cast<CNameBans *>(pUser);
 
-	if(pThis->m_vNameBans.empty())
-	{
-		log_info("name_ban", "The name bans list is empty.");
-	}
-	else
-	{
-		pThis->Dump();
-	}
+        if(pThis->m_vNameBans.empty())
+        {
+                log_info("name_ban", "The name bans list is empty.");
+        }
+        else
+        {
+                pThis->Dump();
+        }
 }
+
