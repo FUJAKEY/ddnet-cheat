@@ -817,6 +817,7 @@ void CCharacter::TickDeferred()
 		CWorldCore TempWorld;
 		m_ReckoningCore.Init(&TempWorld, Collision(), &Teams()->m_Core);
 		m_ReckoningCore.m_Id = m_pPlayer->GetCid();
+		m_ReckoningCore.m_Tuning = CTuningParams();
 		m_ReckoningCore.Tick(false);
 		m_ReckoningCore.Move();
 		m_ReckoningCore.Quantize();
