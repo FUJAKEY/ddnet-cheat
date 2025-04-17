@@ -1351,7 +1351,7 @@ void CEditor::DoToolbarLayers(CUIRect ToolBar)
 					{
 						pButtonName = "Tune";
 						pfnPopupFunc = PopupTune;
-						Rows = 1;
+						Rows = 2;
 					}
 					else if(pS == m_Map.m_pTeleLayer)
 					{
@@ -1998,7 +1998,7 @@ void CEditor::ApplyAlignments(const std::vector<SAlignmentInfo> &vAlignments, in
 	if(vAlignments.empty())
 		return;
 
-	// Find X and Y aligment
+	// Find X and Y alignment
 	const int *pAlignedX = nullptr;
 	const int *pAlignedY = nullptr;
 
@@ -2186,7 +2186,7 @@ void CEditor::DoQuad(int LayerIndex, const std::shared_ptr<CLayerQuads> &pLayer,
 			}
 		}
 
-		// Draw axis and aligments when moving
+		// Draw axis and alignments when moving
 		if(s_Operation == OP_MOVE_PIVOT || s_Operation == OP_MOVE_ALL)
 		{
 			EAxis Axis = GetDragAxis(s_LastOffset.x, s_LastOffset.y);
@@ -3140,12 +3140,12 @@ void CEditor::DoMapEditor(CUIRect View)
 				m_pTilesetPicker->m_Color = {255, 255, 255, 255};
 			}
 
-			m_pTilesetPicker->m_Game = pTileLayer->m_Game;
-			m_pTilesetPicker->m_Tele = pTileLayer->m_Tele;
-			m_pTilesetPicker->m_Speedup = pTileLayer->m_Speedup;
-			m_pTilesetPicker->m_Front = pTileLayer->m_Front;
-			m_pTilesetPicker->m_Switch = pTileLayer->m_Switch;
-			m_pTilesetPicker->m_Tune = pTileLayer->m_Tune;
+			m_pTilesetPicker->m_HasGame = pTileLayer->m_HasGame;
+			m_pTilesetPicker->m_HasTele = pTileLayer->m_HasTele;
+			m_pTilesetPicker->m_HasSpeedup = pTileLayer->m_HasSpeedup;
+			m_pTilesetPicker->m_HasFront = pTileLayer->m_HasFront;
+			m_pTilesetPicker->m_HasSwitch = pTileLayer->m_HasSwitch;
+			m_pTilesetPicker->m_HasTune = pTileLayer->m_HasTune;
 
 			m_pTilesetPicker->Render(true);
 
@@ -3343,7 +3343,7 @@ void CEditor::DoMapEditor(CUIRect View)
 									std::shared_ptr<CLayerTiles> pLayer = std::static_pointer_cast<CLayerTiles>(apEditLayers[k].second);
 									std::shared_ptr<CLayerTiles> pBrushLayer = std::static_pointer_cast<CLayerTiles>(m_pBrush->m_vpLayers[BrushIndex]);
 
-									if(pLayer->m_Tele <= pBrushLayer->m_Tele && pLayer->m_Speedup <= pBrushLayer->m_Speedup && pLayer->m_Front <= pBrushLayer->m_Front && pLayer->m_Game <= pBrushLayer->m_Game && pLayer->m_Switch <= pBrushLayer->m_Switch && pLayer->m_Tune <= pBrushLayer->m_Tune)
+									if((!pLayer->m_HasTele || pBrushLayer->m_HasTele) && (!pLayer->m_HasSpeedup || pBrushLayer->m_HasSpeedup) && (!pLayer->m_HasFront || pBrushLayer->m_HasFront) && (!pLayer->m_HasGame || pBrushLayer->m_HasGame) && (!pLayer->m_HasSwitch || pBrushLayer->m_HasSwitch) && (!pLayer->m_HasTune || pBrushLayer->m_HasTune))
 										pLayer->BrushDraw(pBrushLayer, vec2(wx, wy));
 								}
 								else
@@ -3675,7 +3675,8 @@ void CEditor::DoMapEditor(CUIRect View)
 		Graphics()->LinesEnd();
 	}
 
-	MapView()->ProofMode()->RenderScreenSizes();
+	if(!m_ShowPicker)
+		MapView()->ProofMode()->RenderScreenSizes();
 
 	if(!m_ShowPicker && m_ShowTileInfo != SHOW_TILE_OFF && m_ShowEnvelopePreview != SHOWENV_NONE && GetSelectedLayer(0) && GetSelectedLayer(0)->m_Type == LAYERTYPE_QUADS)
 	{
@@ -4240,6 +4241,13 @@ void CEditor::RenderLayers(CUIRect LayersBox)
 
 						if(m_vSelectedLayers.size() > 1)
 						{
+							// move right clicked layer to first index to render correct popup
+							if(m_vSelectedLayers[0] != i)
+							{
+								auto Position = std::find(m_vSelectedLayers.begin(), m_vSelectedLayers.end(), i);
+								std::swap(m_vSelectedLayers[0], *Position);
+							}
+
 							bool AllTile = true;
 							for(size_t j = 0; AllTile && j < m_vSelectedLayers.size(); j++)
 							{
@@ -4261,7 +4269,7 @@ void CEditor::RenderLayers(CUIRect LayersBox)
 							}
 						}
 
-						Ui()->DoPopupMenu(&s_LayerPopupContext, Ui()->MouseX(), Ui()->MouseY(), 120, 280, &s_LayerPopupContext, PopupLayer);
+						Ui()->DoPopupMenu(&s_LayerPopupContext, Ui()->MouseX(), Ui()->MouseY(), 150, 300, &s_LayerPopupContext, PopupLayer);
 					}
 
 					SetOperation(OP_NONE);
@@ -4717,6 +4725,11 @@ bool CEditor::ReplaceSound(const char *pFileName, int StorageType, bool CheckDup
 	}
 
 	std::shared_ptr<CEditorSound> pSound = m_Map.m_vpSounds[m_SelectedSound];
+
+	if(m_ToolbarPreviewSound == pSound->m_SoundId)
+	{
+		m_ToolbarPreviewSound = SoundId;
+	}
 
 	// unload sample
 	Sound()->UnloadSample(pSound->m_SoundId);
@@ -7927,7 +7940,7 @@ void CEditor::RenderMenubar(CUIRect MenuBar)
 	if(m_Map.m_Modified)
 	{
 		TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
 		Ui()->DoLabel(&ChangedIndicator, FONT_ICON_CIRCLE, 8.0f, TEXTALIGN_MC);
 		TextRender()->SetRenderFlags(0);
 		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
@@ -8253,7 +8266,7 @@ void CEditor::Render()
 		if(!m_pBrush->IsEmpty())
 		{
 			const bool HasTeleTiles = std::any_of(m_pBrush->m_vpLayers.begin(), m_pBrush->m_vpLayers.end(), [](auto pLayer) {
-				return pLayer->m_Type == LAYERTYPE_TILES && std::static_pointer_cast<CLayerTiles>(pLayer)->m_Tele;
+				return pLayer->m_Type == LAYERTYPE_TILES && std::static_pointer_cast<CLayerTiles>(pLayer)->m_HasTele;
 			});
 			if(HasTeleTiles)
 				str_copy(m_aTooltip, "Use shift+mouse wheel up/down to adjust the tele numbers. Use ctrl+f to change all tele numbers to the first unused number.");
@@ -8575,6 +8588,66 @@ void CEditor::RenderGameEntities(const std::shared_ptr<CLayerTiles> &pTiles)
 			IGraphics::CQuadItem Quad(Pos.x, Pos.y, Scale.x, Scale.y);
 			Graphics()->QuadsDrawTL(&Quad, 1);
 			Graphics()->QuadsEnd();
+		}
+	}
+}
+
+void CEditor::RenderSwitchEntities(const std::shared_ptr<CLayerTiles> &pTiles)
+{
+	const CGameClient *pGameClient = (CGameClient *)Kernel()->RequestInterface<IGameClient>();
+	const float TileSize = 32.f;
+
+	std::function<unsigned char(int, int, unsigned char &)> GetIndex;
+	if(pTiles->m_HasSwitch)
+	{
+		CLayerSwitch *pSwitchLayer = ((CLayerSwitch *)(pTiles.get()));
+		GetIndex = [pSwitchLayer](int y, int x, unsigned char &Number) -> unsigned char {
+			if(x < 0 || y < 0 || x >= pSwitchLayer->m_Width || y >= pSwitchLayer->m_Height)
+				return 0;
+			Number = pSwitchLayer->m_pSwitchTile[y * pSwitchLayer->m_Width + x].m_Number;
+			return pSwitchLayer->m_pSwitchTile[y * pSwitchLayer->m_Width + x].m_Type - ENTITY_OFFSET;
+		};
+	}
+	else
+	{
+		GetIndex = [pTiles](int y, int x, unsigned char &Number) -> unsigned char {
+			if(x < 0 || y < 0 || x >= pTiles->m_Width || y >= pTiles->m_Height)
+				return 0;
+			Number = 0;
+			return pTiles->m_pTiles[y * pTiles->m_Width + x].m_Index - ENTITY_OFFSET;
+		};
+	}
+
+	ivec2 aOffsets[] = {{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}};
+
+	const ColorRGBA OuterColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClLaserDoorOutlineColor));
+	const ColorRGBA InnerColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClLaserDoorInnerColor));
+	const float TicksHead = Client()->GlobalTime() * Client()->GameTickSpeed();
+
+	for(int y = 0; y < pTiles->m_Height; y++)
+	{
+		for(int x = 0; x < pTiles->m_Width; x++)
+		{
+			unsigned char Number = 0;
+			const unsigned char Index = GetIndex(y, x, Number);
+
+			if(Index == ENTITY_DOOR)
+			{
+				for(size_t i = 0; i < sizeof(aOffsets) / sizeof(ivec2); ++i)
+				{
+					unsigned char NumberDoorLength = 0;
+					unsigned char IndexDoorLength = GetIndex(y + aOffsets[i].y, x + aOffsets[i].x, NumberDoorLength);
+					if(IndexDoorLength >= ENTITY_LASER_SHORT && IndexDoorLength <= ENTITY_LASER_LONG)
+					{
+						float XOff = std::cos(i * pi / 4.0f);
+						float YOff = std::sin(i * pi / 4.0f);
+						int Length = (IndexDoorLength - ENTITY_LASER_SHORT + 1) * 3;
+						vec2 Pos(x + 0.5f, y + 0.5f);
+						vec2 To(x + XOff * Length + 0.5f, y + YOff * Length + 0.5f);
+						pGameClient->m_Items.RenderLaser(To * TileSize, Pos * TileSize, OuterColor, InnerColor, 1.0f, TicksHead, (int)LASERTYPE_DOOR);
+					}
+				}
+			}
 		}
 	}
 }
@@ -8945,19 +9018,7 @@ void CEditor::HandleWriterFinishJobs()
 		CServerInfo CurrentServerInfo;
 		Client()->GetServerInfo(&CurrentServerInfo);
 
-		NETADDR pAddr = Client()->ServerAddress();
-		char aAddrStr[NETADDR_MAXSTRSIZE];
-		net_addr_str(&Client()->ServerAddress(), aAddrStr, sizeof(aAddrStr), true);
-
-		// and if we're on a local address
-		bool IsLocalAddress = false;
-		if(pAddr.ip[0] == 127 || pAddr.ip[0] == 10 || (pAddr.ip[0] == 192 && pAddr.ip[1] == 168) || (pAddr.ip[0] == 172 && (pAddr.ip[1] >= 16 && pAddr.ip[1] <= 31)))
-			IsLocalAddress = true;
-
-		if(str_startswith(aAddrStr, "[fe80:") || str_startswith(aAddrStr, "[::1"))
-			IsLocalAddress = true;
-
-		if(IsLocalAddress)
+		if(net_addr_is_local(&Client()->ServerAddress()))
 		{
 			char aMapName[128];
 			IStorage::StripPathAndExtension(pJob->GetRealFileName(), aMapName, sizeof(aMapName));
@@ -9312,11 +9373,12 @@ void CEditor::RedoLastAction()
 
 void CEditor::AdjustBrushSpecialTiles(bool UseNextFree, int Adjust)
 {
-	// Adjust m_Number field of tune, switch and tele tiles by `Adjust` if `UseNextFree` is false
+	// Adjust m_Angle of speedup or m_Number field of tune, switch and tele tiles by `Adjust` if `UseNextFree` is false
+	// If `Adjust` is 0 and `UseNextFree` is false, then update numbers of brush tiles to global values
 	// If true, then use the next free number instead
 
-	auto &&AdjustNumber = [Adjust](unsigned char &Number) {
-		Number = ((Number + Adjust) - 1 + 255) % 255 + 1;
+	auto &&AdjustNumber = [Adjust](auto &Number, short Limit = 255) {
+		Number = ((Number + Adjust) - 1 + Limit) % Limit + 1;
 	};
 
 	for(auto &pLayer : m_pBrush->m_vpLayers)
@@ -9326,8 +9388,7 @@ void CEditor::AdjustBrushSpecialTiles(bool UseNextFree, int Adjust)
 
 		std::shared_ptr<CLayerTiles> pLayerTiles = std::static_pointer_cast<CLayerTiles>(pLayer);
 
-		// Only handle tele, switch and tune layers
-		if(pLayerTiles->m_Tele)
+		if(pLayerTiles->m_HasTele)
 		{
 			int NextFreeTeleNumber = FindNextFreeTeleNumber();
 			int NextFreeCPNumber = FindNextFreeTeleNumber(true);
@@ -9361,7 +9422,7 @@ void CEditor::AdjustBrushSpecialTiles(bool UseNextFree, int Adjust)
 				}
 			}
 		}
-		else if(pLayerTiles->m_Tune)
+		else if(pLayerTiles->m_HasTune)
 		{
 			if(!UseNextFree)
 			{
@@ -9379,7 +9440,7 @@ void CEditor::AdjustBrushSpecialTiles(bool UseNextFree, int Adjust)
 				}
 			}
 		}
-		else if(pLayerTiles->m_Switch)
+		else if(pLayerTiles->m_HasSwitch)
 		{
 			int NextFreeNumber = FindNextFreeSwitchNumber();
 
@@ -9396,6 +9457,32 @@ void CEditor::AdjustBrushSpecialTiles(bool UseNextFree, int Adjust)
 						pSwitchLayer->m_pSwitchTile[i].m_Number = NextFreeNumber;
 					else
 						AdjustNumber(pSwitchLayer->m_pSwitchTile[i].m_Number);
+				}
+			}
+		}
+		else if(pLayerTiles->m_HasSpeedup)
+		{
+			if(!UseNextFree)
+			{
+				std::shared_ptr<CLayerSpeedup> pSpeedupLayer = std::static_pointer_cast<CLayerSpeedup>(pLayer);
+				for(int y = 0; y < pSpeedupLayer->m_Height; y++)
+				{
+					for(int x = 0; x < pSpeedupLayer->m_Width; x++)
+					{
+						int i = y * pSpeedupLayer->m_Width + x;
+						if(!IsValidSpeedupTile(pSpeedupLayer->m_pTiles[i].m_Index))
+							continue;
+
+						if(Adjust != 0)
+						{
+							AdjustNumber(pSpeedupLayer->m_pSpeedupTile[i].m_Angle, 359);
+						}
+						else
+						{
+							pSpeedupLayer->m_pSpeedupTile[i].m_Angle = m_SpeedupAngle;
+							pSpeedupLayer->m_SpeedupAngle = m_SpeedupAngle;
+						}
+					}
 				}
 			}
 		}
@@ -9423,6 +9510,20 @@ int CEditor::FindNextFreeTeleNumber(bool Checkpoint)
 	for(int i = 1; i <= 255; i++)
 	{
 		if(!m_Map.m_pTeleLayer->ContainsElementWithId(i, Checkpoint))
+		{
+			Number = i;
+			break;
+		}
+	}
+	return Number;
+}
+
+int CEditor::FindNextFreeTuneNumber()
+{
+	int Number = -1;
+	for(int i = 1; i <= 255; i++)
+	{
+		if(!m_Map.m_pTuneLayer->ContainsElementWithId(i))
 		{
 			Number = i;
 			break;

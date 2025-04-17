@@ -22,6 +22,19 @@
 
 using namespace std::chrono_literals;
 
+bool CSkins::CSkinListEntry::operator<(const CSkins::CSkinListEntry &Other) const
+{
+	if(m_Favorite && !Other.m_Favorite)
+	{
+		return true;
+	}
+	if(!m_Favorite && Other.m_Favorite)
+	{
+		return false;
+	}
+	return str_comp_nocase(m_pSkin->GetName(), Other.m_pSkin->GetName()) < 0;
+}
+
 CSkins::CSkins() :
 	m_PlaceholderSkin("dummy")
 {
@@ -90,7 +103,7 @@ int CSkins::SkinScan(const char *pName, int IsDir, int DirType, void *pUser)
 	return 0;
 }
 
-static void CheckMetrics(CSkin::SSkinMetricVariable &Metrics, const uint8_t *pImg, int ImgWidth, int ImgX, int ImgY, int CheckWidth, int CheckHeight)
+static void CheckMetrics(CSkin::CSkinMetricVariable &Metrics, const uint8_t *pImg, int ImgWidth, int ImgX, int ImgY, int CheckWidth, int CheckHeight)
 {
 	int MaxY = -1;
 	int MinY = CheckHeight + 1;
@@ -223,10 +236,10 @@ const CSkin *CSkins::LoadSkin(const char *pName, CImageInfo &Info)
 	ConvertToGrayscale(Info);
 
 	int aFreq[256] = {0};
-	int OrgWeight = 0;
-	int NewWeight = 192;
+	uint8_t OrgWeight = 1;
+	uint8_t NewWeight = 192;
 
-	// find most common frequency
+	// find most common non-zero frequency
 	for(size_t y = 0; y < BodyHeight; y++)
 	{
 		for(size_t x = 0; x < BodyWidth; x++)
@@ -248,29 +261,19 @@ const CSkin *CSkins::LoadSkin(const char *pName, CImageInfo &Info)
 	}
 
 	// reorder
-	int InvOrgWeight = 255 - OrgWeight;
-	int InvNewWeight = 255 - NewWeight;
 	for(size_t y = 0; y < BodyHeight; y++)
 	{
 		for(size_t x = 0; x < BodyWidth; x++)
 		{
 			const size_t Offset = y * Pitch + x * PixelStep;
-			int v = Info.m_pData[Offset];
-			if(v <= OrgWeight && OrgWeight == 0)
+			uint8_t v = Info.m_pData[Offset];
+			if(v <= OrgWeight)
 			{
-				v = 0;
-			}
-			else if(v <= OrgWeight)
-			{
-				v = (int)(((v / (float)OrgWeight) * NewWeight));
-			}
-			else if(InvOrgWeight == 0)
-			{
-				v = NewWeight;
+				v = (uint8_t)((v / (float)OrgWeight) * NewWeight);
 			}
 			else
 			{
-				v = (int)(((v - OrgWeight) / (float)InvOrgWeight) * InvNewWeight + NewWeight);
+				v = (uint8_t)(((v - OrgWeight) / (float)(255 - OrgWeight)) * (255 - NewWeight) + NewWeight);
 			}
 			Info.m_pData[Offset] = v;
 			Info.m_pData[Offset + 1] = v;
@@ -301,6 +304,13 @@ const CSkin *CSkins::LoadSkin(const char *pName, CImageInfo &Info)
 	m_LastRefreshTime = time_get_nanoseconds();
 
 	return SkinInsertIt.first->second.get();
+}
+
+void CSkins::OnConsoleInit()
+{
+	ConfigManager()->RegisterCallback(CSkins::ConfigSaveCallback, this);
+	Console()->Register("add_favorite_skin", "s[skin_name]", CFGFLAG_CLIENT, ConAddFavoriteSkin, this, "Add a skin as a favorite");
+	Console()->Register("remove_favorite_skin", "s[skin_name]", CFGFLAG_CLIENT, ConRemFavoriteSkin, this, "Remove a skin from the favorites");
 }
 
 void CSkins::OnInit()
@@ -371,6 +381,38 @@ void CSkins::Refresh(TSkinLoadedCallback &&SkinLoadedCallback)
 	Storage()->ListDirectory(IStorage::TYPE_ALL, "skins", SkinScan, &SkinScanUser);
 
 	m_LastRefreshTime = time_get_nanoseconds();
+}
+
+const std::vector<CSkins::CSkinListEntry> &CSkins::SkinList()
+{
+	if(m_SkinListLastRefreshTime.has_value() && m_SkinListLastRefreshTime.value() == m_LastRefreshTime)
+	{
+		return m_vSkinList;
+	}
+
+	m_vSkinList.clear();
+	for(const auto &[_, pSkin] : m_Skins)
+	{
+		if(g_Config.m_ClSkinFilterString[0] != '\0' && !str_utf8_find_nocase(pSkin->GetName(), g_Config.m_ClSkinFilterString))
+		{
+			continue;
+		}
+
+		if(IsSpecialSkin(pSkin->GetName()))
+		{
+			continue;
+		}
+
+		m_vSkinList.emplace_back(pSkin.get(), IsFavorite(pSkin->GetName()));
+	}
+
+	std::sort(m_vSkinList.begin(), m_vSkinList.end());
+	return m_vSkinList;
+}
+
+void CSkins::ForceRefreshSkinList()
+{
+	m_SkinListLastRefreshTime = std::nullopt;
 }
 
 const CSkin *CSkins::Find(const char *pName)
@@ -444,6 +486,37 @@ const CSkin *CSkins::FindImpl(const char *pName)
 	auto &&pLoadingSkin = std::make_unique<CLoadingSkin>(std::move(LoadingSkin));
 	m_LoadingSkins.insert({pLoadingSkin->Name(), std::move(pLoadingSkin)});
 	return nullptr;
+}
+
+void CSkins::AddFavorite(const char *pName)
+{
+	if(!CSkin::IsValidName(pName))
+	{
+		log_error("skins", "Favorite skin name '%s' is not valid", pName);
+		log_error("skins", "%s", CSkin::m_aSkinNameRestrictions);
+		return;
+	}
+
+	const auto &[_, Inserted] = m_Favorites.emplace(pName);
+	if(Inserted)
+	{
+		m_SkinListLastRefreshTime = std::nullopt;
+	}
+}
+
+void CSkins::RemoveFavorite(const char *pName)
+{
+	const auto FavoriteIt = m_Favorites.find(pName);
+	if(FavoriteIt != m_Favorites.end())
+	{
+		m_Favorites.erase(FavoriteIt);
+		m_SkinListLastRefreshTime = std::nullopt;
+	}
+}
+
+bool CSkins::IsFavorite(const char *pName) const
+{
+	return m_Favorites.find(pName) != m_Favorites.end();
 }
 
 void CSkins::RandomizeSkin(int Dummy)
@@ -642,4 +715,32 @@ bool CSkins::CLoadingSkin::operator<(const char *pOther) const
 bool CSkins::CLoadingSkin::operator==(const char *pOther) const
 {
 	return !str_comp(m_aName, pOther);
+}
+
+void CSkins::ConAddFavoriteSkin(IConsole::IResult *pResult, void *pUserData)
+{
+	auto *pSelf = static_cast<CSkins *>(pUserData);
+	pSelf->AddFavorite(pResult->GetString(0));
+}
+
+void CSkins::ConRemFavoriteSkin(IConsole::IResult *pResult, void *pUserData)
+{
+	auto *pSelf = static_cast<CSkins *>(pUserData);
+	pSelf->RemoveFavorite(pResult->GetString(0));
+}
+
+void CSkins::ConfigSaveCallback(IConfigManager *pConfigManager, void *pUserData)
+{
+	auto *pSelf = static_cast<CSkins *>(pUserData);
+	pSelf->OnConfigSave(pConfigManager);
+}
+
+void CSkins::OnConfigSave(IConfigManager *pConfigManager)
+{
+	for(const auto &Favorite : m_Favorites)
+	{
+		char aBuffer[32 + MAX_SKIN_LENGTH];
+		str_format(aBuffer, sizeof(aBuffer), "add_favorite_skin \"%s\"", Favorite.c_str());
+		pConfigManager->WriteLine(aBuffer);
+	}
 }
