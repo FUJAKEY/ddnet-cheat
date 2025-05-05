@@ -690,11 +690,11 @@ void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 		{{&LabelRect, "Label"},
 			{&X, "X"},
 			{&Y, "Y"},
-			{&W, "W"},
-			{&H, "H"}}};
+			{&W, "Width"},
+			{&H, "Height"}}};
 	for(unsigned HeaderIndex = (unsigned)ESortType::LABEL; HeaderIndex < (unsigned)ESortType::NUM_SORTS; HeaderIndex++)
 	{
-		if(DoButton_GridHeader(&m_aSortHeaderIds[HeaderIndex], HeaderDatas[HeaderIndex].second.c_str(),
+		if(DoButton_GridHeader(&m_aSortHeaderIds[HeaderIndex], "",
 			   (unsigned)m_SortType == HeaderIndex, HeaderDatas[HeaderIndex].first))
 		{
 			if(m_SortType != (ESortType)HeaderIndex)
@@ -703,6 +703,7 @@ void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 				m_SortType = (ESortType)HeaderIndex;
 			}
 		}
+		Ui()->DoLabel(HeaderDatas[HeaderIndex].first, HeaderDatas[HeaderIndex].second.c_str(), FONTSIZE, TEXTALIGN_ML);
 	}
 	// Can't sort buttons basing on command, that's meaning less and too slow.
 	Ui()->DoLabel(&CommandRect, "Command", FONTSIZE, TEXTALIGN_ML);
