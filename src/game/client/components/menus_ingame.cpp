@@ -281,10 +281,10 @@ void CMenus::RenderGame(CUIRect MainView)
 			Console()->ExecuteLine("toggle_local_console");
 		}
 		// Only when these are all false, the preview page is rendered. Once the page is not rendered, update is needed upon next rendering.
-		if(!GameClient()->m_TouchControls.IsEditingActive() || !m_PreviewButton || m_CurrentMenu != EMenuType::MENU_BUTTONS || GameClient()->m_TouchControls.IsButtonEditing())
+		if(!GameClient()->m_TouchControls.IsEditingActive() || m_CurrentMenu != EMenuType::MENU_BUTTONS || GameClient()->m_TouchControls.IsButtonEditing())
 			m_NeedUpdatePreview = true;
 		// Quit preview all buttons automatically.
-		if(!GameClient()->m_TouchControls.IsEditingActive() || m_CurrentMenu != EMenuType::MENU_SETTINGS || m_CurrentSetting != ESettingType::BUTTON_CONFIG)
+		if(!GameClient()->m_TouchControls.IsEditingActive() || m_CurrentMenu != EMenuType::MENU_PREVIEW)
 			GameClient()->m_TouchControls.SetPreviewAllButtons(false);
 		if(GameClient()->m_TouchControls.IsEditingActive())
 		{
@@ -309,7 +309,7 @@ void CMenus::RenderGame(CUIRect MainView)
 			CUIRect SelectingTab;
 			MainView.HSplitTop(10.0f, nullptr, &MainView);
 			MainView.HMargin((MainView.h - 275.0f) / 2.0f, &MainView);
-			MainView.VMargin((MainView.w - 505.0f) / 2.0f, &MainView);
+			MainView.VMargin((MainView.w - BUTTON_EDITOR_WIDTH) / 2.0f, &MainView);
 			MainView.y -= 70.0f;
 			MainView.HSplitTop(25.0f, &SelectingTab, &MainView);
 
@@ -320,105 +320,11 @@ void CMenus::RenderGame(CUIRect MainView)
 			{
 			case EMenuType::MENU_FILE: RenderTouchControlsEditor(MainView); break;
 			case EMenuType::MENU_BUTTONS: RenderTouchButtonEditor(MainView); break;
-			case EMenuType::MENU_SETTINGS: RenderButtonSettings(MainView); break;
+			case EMenuType::MENU_SETTINGS: RenderConfigSettings(MainView); break;
+			case EMenuType::MENU_PREVIEW: RenderPreviewSettings(MainView); break;
 			default: dbg_assert(false, "Unknown selected tab value.");
 			}
 		}
-	}
-}
-
-void CMenus::RenderTouchControlsEditor(CUIRect MainView)
-{
-	CUIRect Label, Button, Row;
-	// 2 MAINMARGIN, 4 ROWSIZE, 3ROWGAP, 10.0f extra size so it doesn't look creepy.
-	MainView.h = 2 * 10.0f + 4 * 25.0f + 3 * 5.0f + 10.0f;
-	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
-	MainView.Margin(10.0f, &MainView);
-
-	MainView.HSplitTop(25.0f, &Row, &MainView);
-	MainView.HSplitTop(5.0f, nullptr, &MainView);
-	Row.VSplitLeft(Row.h, nullptr, &Row);
-	Row.VSplitRight(Row.h, &Row, &Button);
-	Row.VMargin(5.0f, &Label);
-	Ui()->DoLabel(&Label, Localize("Edit touch controls"), 20.0f, TEXTALIGN_MC);
-
-	static CButtonContainer s_OpenHelpButton;
-	if(DoButton_FontIcon(&s_OpenHelpButton, FONT_ICON_QUESTION, 0, &Button, BUTTONFLAG_LEFT))
-	{
-		Client()->ViewLink(Localize("https://wiki.ddnet.org/wiki/Touch_controls"));
-	}
-
-	MainView.HSplitTop(25.0f, &Row, &MainView);
-	MainView.HSplitTop(5.0f, nullptr, &MainView);
-
-	Row.VSplitLeft(240.0f, &Button, &Row);
-	static CButtonContainer s_SaveConfigurationButton;
-	if(DoButton_Menu(&s_SaveConfigurationButton, Localize("Save changes"), GameClient()->m_TouchControls.HasEditingChanges() ? 0 : 1, &Button))
-	{
-		if(GameClient()->m_TouchControls.SaveConfigurationToFile())
-		{
-			GameClient()->m_TouchControls.SetEditingChanges(false);
-		}
-		else
-		{
-			SWarning Warning(Localize("Error saving touch controls"), Localize("Could not save touch controls to file. See local console for details."));
-			Warning.m_AutoHide = false;
-			Client()->AddWarning(Warning);
-		}
-	}
-
-	Row.VSplitLeft(5.0f, nullptr, &Row);
-	Row.VSplitLeft(240.0f, &Button, &Row);
-	if(GameClient()->m_TouchControls.HasEditingChanges())
-	{
-		TextRender()->TextColor(ColorRGBA(1.0f, 0.0f, 0.0f, 1.0f));
-		Ui()->DoLabel(&Button, Localize("Unsaved changes"), 14.0f, TEXTALIGN_MC);
-		TextRender()->TextColor(TextRender()->DefaultTextColor());
-	}
-
-	MainView.HSplitTop(25.0f, &Row, &MainView);
-	MainView.HSplitTop(5.0f, nullptr, &MainView);
-
-	Row.VSplitLeft(240.0f, &Button, &Row);
-	static CButtonContainer s_DiscardChangesButton;
-	if(DoButton_Menu(&s_DiscardChangesButton, Localize("Discard changes"), GameClient()->m_TouchControls.HasEditingChanges() ? 0 : 1, &Button))
-	{
-		PopupConfirm(Localize("Discard changes"),
-			Localize("Are you sure that you want to discard the current changes to the touch controls?"),
-			Localize("Yes"), Localize("No"),
-			&CMenus::PopupConfirmDiscardTouchControlsChanges);
-	}
-
-	Row.VSplitLeft(5.0f, nullptr, &Row);
-	Row.VSplitLeft(240.0f, &Button, &Row);
-	static CButtonContainer s_ResetButton;
-	if(DoButton_Menu(&s_ResetButton, Localize("Reset to defaults"), 0, &Button))
-	{
-		PopupConfirm(Localize("Reset to defaults"),
-			Localize("Are you sure that you want to reset the touch controls to default?"),
-			Localize("Yes"), Localize("No"),
-			&CMenus::PopupConfirmResetTouchControls);
-	}
-
-	MainView.HSplitTop(25.0f, &Row, &MainView);
-	MainView.HSplitTop(10.0f, nullptr, &MainView);
-
-	Row.VSplitLeft(240.0f, &Button, &Row);
-	static CButtonContainer s_ClipboardImportButton;
-	if(DoButton_Menu(&s_ClipboardImportButton, Localize("Import from clipboard"), 0, &Button))
-	{
-		PopupConfirm(Localize("Import from clipboard"),
-			Localize("Are you sure that you want to import the touch controls from the clipboard? This will overwrite your current touch controls."),
-			Localize("Yes"), Localize("No"),
-			&CMenus::PopupConfirmImportTouchControlsClipboard);
-	}
-
-	Row.VSplitLeft(5.0f, nullptr, &Row);
-	Row.VSplitLeft(240.0f, &Button, &Row);
-	static CButtonContainer s_ClipboardExportButton;
-	if(DoButton_Menu(&s_ClipboardExportButton, Localize("Export to clipboard"), 0, &Button))
-	{
-		GameClient()->m_TouchControls.SaveConfigurationToClipboard();
 	}
 }
 

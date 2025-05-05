@@ -1850,9 +1850,7 @@ void CTouchControls::EditButtons(const std::vector<IInput::CTouchFingerState> &v
 				}
 				m_IssueParam[(int)EIssueType::CACHE_SETTINGS].m_TargetButton = m_pSelectedButton;
 				m_IssueParam[(int)EIssueType::CACHE_SETTINGS].m_Finished = false;
-				m_pTmpButton = std::make_unique<CTouchButton>(this);
-				m_IssueParam[(int)EIssueType::SAVE_SETTINGS].m_TargetButton = m_pTmpButton.get();
-				m_IssueParam[(int)EIssueType::SAVE_SETTINGS].m_Finished = false;
+				RemakeTmpButton();
 				CopySettings(m_pTmpButton.get(), m_pSelectedButton);
 				// Don't insert the long pressed button. It is selected button now.
 				continue;
@@ -1903,6 +1901,7 @@ void CTouchControls::EditButtons(const std::vector<IInput::CTouchFingerState> &v
 			// No need for caching settings issue. So the issue is set to finished.
 			m_IssueParam[(int)EIssueType::CACHE_SETTINGS].m_Finished = true;
 			m_IssueParam[(int)EIssueType::SAVE_SETTINGS].m_Finished = true;
+			m_IssueParam[(int)EIssueType::CACHE_POSITION].m_Finished = true;
 		}
 	}
 
@@ -2001,8 +2000,8 @@ void CTouchControls::EditButtons(const std::vector<IInput::CTouchFingerState> &v
 			m_AccumulatedDelta = {0.0f, 0.0f};
 			m_ShownRect = FindPositionXY(vVisibleButtonRects, m_pTmpButton->m_UnitRect);
 			m_pTmpButton->m_UnitRect = (*m_ShownRect);
-			m_IssueParam[(int)EIssueType::CACHE_SETTINGS].m_TargetButton = m_pTmpButton.get();
-			m_IssueParam[(int)EIssueType::CACHE_SETTINGS].m_Finished = false;
+			m_IssueParam[(int)EIssueType::CACHE_POSITION].m_TargetButton = m_pTmpButton.get();
+			m_IssueParam[(int)EIssueType::CACHE_POSITION].m_Finished = false;
 			m_pTmpButton->UpdateScreenFromUnitRect();
 		}
 		if(m_ShownRect->m_X == -1)

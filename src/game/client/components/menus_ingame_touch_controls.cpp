@@ -1,6 +1,5 @@
 #include "menus.h"
 
-#include <algorithm>
 #include <base/color.h>
 #include <base/math.h>
 #include <base/system.h>
@@ -20,6 +19,9 @@
 #include <game/client/ui_scrollregion.h>
 #include <game/localization.h>
 
+#include <algorithm>
+#include <string>
+
 static const char *BEHAVIORS[] = {"Bind", "Bind Toggle", "Predefined"};
 static const char *PREDEFINEDS[] = {"Extra Menu", "Joystick Hook", "Joystick Fire", "Joystick Aim", "Joystick Action", "Use Action", "Swap Action", "Spectate", "Emoticon", "Ingame Menu"};
 static const char *LABELTYPES[] = {"Plain", "Localized", "Icon"};
@@ -28,28 +30,22 @@ static const constexpr float SUBMARGIN = 5.0f;
 static const constexpr float ROWSIZE = 25.0f;
 static const constexpr float ROWGAP = 5.0f;
 static const constexpr float FONTSIZE = 15.0f;
-static const constexpr float EXTRASPACE = 10.0f; // Only for pages that is short.
 
 void CMenus::RenderTouchButtonEditor(CUIRect MainView)
 {
 	if(!GameClient()->m_TouchControls.IsButtonEditing())
 	{
-		if(m_PreviewButton)
-			RenderPreviewButton(MainView);
-		else
-			RenderTouchButtonEditorWhileNothingSelected(MainView);
+		RenderTouchButtonEditorWhileNothingSelected(MainView);
 		return;
 	}
-	m_PreviewButton = false;
 	// Used to decide if need to update the tmpbutton.
 	bool Changed = false;
 	CUIRect Left, A, B, C, EditBox, Block;
-	MainView.h = 4 * MAINMARGIN + 10 * ROWSIZE + 6 * ROWGAP;
+	MainView.h = 2 * MAINMARGIN + 9 * ROWSIZE + 8 * ROWGAP;
 	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
 	MainView.VMargin(MAINMARGIN, &MainView);
 	MainView.HSplitTop(MAINMARGIN, nullptr, &MainView);
 	MainView.HSplitTop(ROWSIZE, &EditBox, &MainView);
-	MainView.HSplitTop(MAINMARGIN, nullptr, &MainView);
 
 	if(m_BindTogglePreviewExtension && m_EditBehaviorType == (int)EBehaviorType::BIND_TOGGLE && m_EditElement == 2)
 	{
@@ -57,8 +53,8 @@ void CMenus::RenderTouchButtonEditor(CUIRect MainView)
 	}
 	else
 	{
-		MainView.HSplitTop(5 * ROWSIZE + 4 * ROWGAP, &Block, &Left);
-		Left.HSplitTop(ROWSIZE, nullptr, &Left);
+		MainView.HSplitTop(5 * ROWSIZE + 5 * ROWGAP, &Block, &Left);
+		Left.HSplitTop(ROWGAP, nullptr, &Left);
 		Left.HSplitBottom(MAINMARGIN, &Left, nullptr);
 	}
 
@@ -66,7 +62,7 @@ void CMenus::RenderTouchButtonEditor(CUIRect MainView)
 	EditBox.VSplitLeft(EditBox.w / 3.0f, &C, &EditBox);
 	EditBox.VSplitMid(&A, &B);
 
-	if(DoButton_MenuTab(m_aEditElementIds.data(), "Layout", m_EditElement == 0, &C, IGraphics::CORNER_L, nullptr, nullptr, nullptr, nullptr, 5.0f))
+	if(DoButton_MenuTab(m_aEditElementIds.data(), "Layout", m_EditElement == 0, &C, IGraphics::CORNER_TL, nullptr, nullptr, nullptr, nullptr, 5.0f))
 	{
 		m_EditElement = 0;
 	}
@@ -74,13 +70,14 @@ void CMenus::RenderTouchButtonEditor(CUIRect MainView)
 	{
 		m_EditElement = 1;
 	}
-	if(DoButton_MenuTab(&m_aEditElementIds[2], "Behavior", m_EditElement == 2, &B, IGraphics::CORNER_R, nullptr, nullptr, nullptr, nullptr, 5.0f))
+	if(DoButton_MenuTab(&m_aEditElementIds[2], "Behavior", m_EditElement == 2, &B, IGraphics::CORNER_TR, nullptr, nullptr, nullptr, nullptr, 5.0f))
 	{
 		m_EditElement = 2;
 	}
 
 	// Edit blocks.
-	Block.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), IGraphics::CORNER_ALL, 5.0f);
+	Block.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), IGraphics::CORNER_B, 5.0f);
+	Block.HSplitTop(ROWGAP, nullptr, &Block);
 	switch(m_EditElement)
 	{
 	case 0: Changed = RenderLayoutSettingBlock(Block) || Changed; break;
@@ -125,7 +122,7 @@ void CMenus::RenderTouchButtonEditor(CUIRect MainView)
 	if(UnsavedChanges())
 	{
 		TextRender()->TextColor(ColorRGBA(1.0f, 0.0f, 0.0f, 1.0f));
-		Ui()->DoLabel(&A, "Unsaved Changes", 14.0f, TEXTALIGN_MC);
+		Ui()->DoLabel(&A, "Unsaved changes", 14.0f, TEXTALIGN_MC);
 		TextRender()->TextColor(TextRender()->DefaultTextColor());
 	}
 
@@ -648,13 +645,10 @@ bool CMenus::RenderVisibilitySettingBlock(CUIRect Block)
 
 void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 {
-	CUIRect A, B, C, EditBox;
-	MainView.h = 3 * MAINMARGIN + 5 * ROWSIZE + ROWGAP + EXTRASPACE;
+	CUIRect A, B, C, EditBox, LabelRect, CommandRect, X, Y, W, H;
+	MainView.h = 3 * MAINMARGIN + 3 * ROWSIZE + ROWGAP + 260.0f;
 	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
 	MainView.Margin(MAINMARGIN, &MainView);
-	MainView.HSplitTop(ROWSIZE, &A, &MainView);
-	Ui()->DoLabel(&A, "No button selected.", 20.0f, TEXTALIGN_MC);
-	MainView.HSplitTop(ROWSIZE, nullptr, &MainView);
 	MainView.HSplitTop(ROWSIZE, &C, &MainView);
 	Ui()->DoLabel(&C, "Long press on a touch button to select it.", 15.0f, TEXTALIGN_MC);
 	MainView.HSplitTop(MAINMARGIN, nullptr, &MainView);
@@ -665,203 +659,239 @@ void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 		PopupCancel_NewButton();
 	EditBox.VSplitLeft(SUBMARGIN, nullptr, &B);
 	static CButtonContainer s_SelecteButton;
-	if(DoButton_Menu(&s_SelecteButton, "Select button", 0, &B))
+	if(DoButton_Menu(&s_SelecteButton, "Select button by touch", 0, &B))
 		SetActive(false);
-	MainView.HSplitTop(ROWGAP, nullptr, &MainView);
-	MainView.HSplitTop(ROWSIZE, &EditBox, &MainView);
-	static CButtonContainer s_PreviewButton;
-	if(DoButton_Menu(&s_PreviewButton, "Preview buttons", 0, &EditBox))
-	{
-		m_PreviewButton = true;
-	}
-}
 
-void CMenus::RenderPreviewButton(CUIRect MainView)
-{
-	CUIRect EditBox, A, B, C;
-	// The total height of one button to be previewed.
-	const float BlockSize = 4 * (ROWSIZE + ROWGAP) + 2 * SUBMARGIN;
-	// First two are for elements, last one for the scroll region.
-	MainView.h = 3 * MAINMARGIN + 2 * ROWSIZE + 2 * BlockSize;
-	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
-	MainView.VMargin(MAINMARGIN, &MainView);
-	MainView.HSplitTop(MAINMARGIN, nullptr, &MainView);
-	MainView.HSplitTop(ROWSIZE, &EditBox, &MainView);
-	EditBox.VSplitMid(&A, &EditBox);
-	static CButtonContainer s_VisibleButtons;
-	if(DoButton_MenuTab(&s_VisibleButtons, "Visible Buttons", m_CurrentPreview == 1, &A, IGraphics::CORNER_L))
-		m_CurrentPreview = 1;
-	static CButtonContainer s_InvisibleButtons;
-	if(DoButton_MenuTab(&s_InvisibleButtons, "Invisible Buttons", m_CurrentPreview == 0, &EditBox, IGraphics::CORNER_R))
-		m_CurrentPreview = 0;
-	MainView.HSplitBottom(MAINMARGIN, &MainView, nullptr);
-	MainView.HSplitBottom(ROWSIZE, &MainView, &EditBox);
-	MainView.HSplitBottom(MAINMARGIN, &MainView, nullptr);
-	EditBox.VSplitLeft((EditBox.w - SUBMARGIN) / 2.0f, &A, &EditBox);
-	static CButtonContainer s_ExitPreviewButton;
-	if(DoButton_Menu(&s_ExitPreviewButton, "Exit preview", 0, &A))
-		m_PreviewButton = false;
-	EditBox.VSplitLeft(SUBMARGIN, nullptr, &B);
-	static CButtonContainer s_ChangePreviewDetailButton;
-	if(DoButton_Menu(&s_ChangePreviewDetailButton, (m_PreviewDetail == 1) ? "Preview label" : "Preview command", 0, &B))
+	MainView.HMargin(ROWGAP, &MainView);
+	// Makes the header labels looks better.
+	MainView.HSplitTop(FONTSIZE / CUi::ms_FontmodHeight, &EditBox, &MainView);
+	static CListBox s_PreviewListBox;
+	EditBox.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), IGraphics::CORNER_T, 5.0f);
+	EditBox.VSplitRight(s_PreviewListBox.ScrollbarWidthMax(), &EditBox, nullptr);
+	EditBox.VSplitLeft(ROWSIZE, nullptr, &EditBox);
+
+	float PosWidth = EditBox.w * 4.0f / 9.0f; // Total pos width.
+	const float ButtonWidth = (EditBox.w - PosWidth - SUBMARGIN) / 2.0f;
+	PosWidth = (PosWidth - SUBMARGIN * 4.0f) / 4.0f; // Divided pos width.
+	EditBox.VSplitLeft(ButtonWidth, &LabelRect, &EditBox);
+	EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
+	EditBox.VSplitLeft(ButtonWidth, &CommandRect, &EditBox);
+	EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
+	EditBox.VSplitLeft(ButtonWidth, &C, &EditBox);
+	C.VSplitLeft(PosWidth, &X, &C);
+	C.VSplitLeft(SUBMARGIN, nullptr, &C);
+	C.VSplitLeft(PosWidth, &Y, &C);
+	C.VSplitLeft(SUBMARGIN, nullptr, &C);
+	C.VSplitLeft(PosWidth, &W, &C);
+	C.VSplitLeft(SUBMARGIN, nullptr, &C);
+	C.VSplitLeft(PosWidth, &H, &C);
+	C.VSplitLeft(SUBMARGIN, nullptr, &C);
+	const std::array<std::pair<CUIRect *, std::string>, (unsigned)ESortType::NUM_SORTS> HeaderDatas = {
+		{{&LabelRect, "Label"},
+			{&X, "X"},
+			{&Y, "Y"},
+			{&W, "W"},
+			{&H, "H"}}};
+	for(unsigned HeaderIndex = (unsigned)ESortType::LABEL; HeaderIndex < (unsigned)ESortType::NUM_SORTS; HeaderIndex++)
 	{
-		m_PreviewDetail++;
-		m_PreviewDetail &= 1;
+		if(DoButton_GridHeader(&m_aSortHeaderIds[HeaderIndex], HeaderDatas[HeaderIndex].second.c_str(),
+			   (unsigned)m_SortType == HeaderIndex, HeaderDatas[HeaderIndex].first))
+		{
+			if(m_SortType != (ESortType)HeaderIndex)
+			{
+				m_NeedSort = true;
+				m_SortType = (ESortType)HeaderIndex;
+			}
+		}
 	}
+	// Can't sort buttons basing on command, that's meaning less and too slow.
+	Ui()->DoLabel(&CommandRect, "Command", FONTSIZE, TEXTALIGN_ML);
 
 	if(m_NeedUpdatePreview)
 	{
 		m_NeedUpdatePreview = false;
-		m_VisibleButtons = GameClient()->m_TouchControls.VisibleButtons();
-		m_InvisibleButtons = GameClient()->m_TouchControls.InvisibleButtons();
+		m_vVisibleButtons = GameClient()->m_TouchControls.VisibleButtons();
+		m_vInvisibleButtons = GameClient()->m_TouchControls.InvisibleButtons();
+		m_NeedSort = true;
 	}
-	if(m_vSelectPreviewButtons.size() < m_InvisibleButtons.size() + m_VisibleButtons.size())
-		m_vSelectPreviewButtons.resize(m_InvisibleButtons.size() + m_VisibleButtons.size());
-	MainView.HMargin(SUBMARGIN, &MainView);
-	static CScrollRegion s_PreviewButtonScrollRegion;
-	CScrollRegionParams ScrollParam;
-	ScrollParam.m_ScrollUnit = 90.0f;
-	vec2 ScrollOffset(0.0f, 0.0f);
-	s_PreviewButtonScrollRegion.Begin(&MainView, &ScrollOffset, &ScrollParam);
-	MainView.y += ScrollOffset.y;
-	for(auto &Button : (m_CurrentPreview == 0) ? m_InvisibleButtons : m_VisibleButtons)
+
+	if(m_NeedSort)
 	{
-		MainView.HSplitTop(BlockSize, &EditBox, &MainView);
-		MainView.HSplitTop(SUBMARGIN, nullptr, &MainView);
-		if(s_PreviewButtonScrollRegion.AddRect(EditBox))
+		m_NeedSort = false;
+		std::sort(m_vVisibleButtons.begin(), m_vVisibleButtons.end(), m_SortFunctions[(unsigned)m_SortType]);
+		std::sort(m_vInvisibleButtons.begin(), m_vInvisibleButtons.end(), m_SortFunctions[(unsigned)m_SortType]);
+		m_vSortedButtons.clear();
+		m_vSortedButtons.reserve(m_vVisibleButtons.size() + m_vInvisibleButtons.size());
+		std::for_each(m_vVisibleButtons.begin(), m_vVisibleButtons.end(), [&](auto *Button) {
+			m_vSortedButtons.emplace_back(Button);
+		});
+		std::for_each(m_vInvisibleButtons.begin(), m_vInvisibleButtons.end(), [&](auto *Button) {
+			m_vSortedButtons.emplace_back(Button);
+		});
+	}
+
+	s_PreviewListBox.SetActive(true);
+	s_PreviewListBox.DoStart(ROWSIZE, m_vSortedButtons.size(), 1, 4, -1, &MainView, true, IGraphics::CORNER_B);
+	for(unsigned ButtonIndex = 0; ButtonIndex < m_vSortedButtons.size(); ButtonIndex++)
+	{
+		CTouchControls::CTouchButton *Button = m_vSortedButtons[ButtonIndex];
+		const CListboxItem ListItem = s_PreviewListBox.DoNextItem(&m_vSortedButtons[ButtonIndex], m_SelectedPreviewButton == ButtonIndex);
+		if(ListItem.m_Visible)
 		{
-			EditBox.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), IGraphics::CORNER_ALL, 5.0f);
-			EditBox.Margin(SUBMARGIN, &EditBox);
-			EditBox.HSplitTop(ROWSIZE, &A, &EditBox);
-			EditBox.HSplitTop(ROWGAP, nullptr, &EditBox);
-			A.VSplitMid(&A, &B);
-			A.VSplitMid(&A, &C);
-			Ui()->DoLabel(&A, "X", FONTSIZE, TEXTALIGN_ML);
-			Ui()->DoLabel(&C, std::to_string(Button->m_UnitRect.m_X).c_str(), FONTSIZE, TEXTALIGN_ML);
-			B.VSplitMid(&B, &C);
-			Ui()->DoLabel(&B, "Y", FONTSIZE, TEXTALIGN_ML);
-			Ui()->DoLabel(&C, std::to_string(Button->m_UnitRect.m_Y).c_str(), FONTSIZE, TEXTALIGN_ML);
-			EditBox.HSplitTop(ROWSIZE, &A, &EditBox);
-			EditBox.HSplitTop(ROWGAP, nullptr, &EditBox);
-			A.VSplitMid(&A, &B);
-			A.VSplitMid(&A, &C);
-			Ui()->DoLabel(&A, "Width", FONTSIZE, TEXTALIGN_ML);
-			Ui()->DoLabel(&C, std::to_string(Button->m_UnitRect.m_W).c_str(), FONTSIZE, TEXTALIGN_ML);
-			B.VSplitMid(&B, &C);
-			Ui()->DoLabel(&B, "Height", FONTSIZE, TEXTALIGN_ML);
-			Ui()->DoLabel(&C, std::to_string(Button->m_UnitRect.m_H).c_str(), FONTSIZE, TEXTALIGN_ML);
-			EditBox.HSplitTop(ROWSIZE, &A, &EditBox);
-			EditBox.HSplitTop(ROWGAP, nullptr, &EditBox);
-			if(Button->m_pBehavior->GetPredefinedType() != nullptr)
+			EditBox = ListItem.m_Rect;
+			EditBox.VSplitLeft(ROWSIZE, &A, &EditBox);
+			TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
+			TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING);
+			Ui()->DoLabel(&A, ButtonIndex >= m_vVisibleButtons.size() ? FontIcons::FONT_ICON_EYE_SLASH : FontIcons::FONT_ICON_EYE, FONTSIZE, TEXTALIGN_ML);
+			TextRender()->SetRenderFlags(0);
+			TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+			EditBox.VSplitLeft(LabelRect.w, &A, &EditBox);
+			std::string Label = Button->m_pBehavior->GetLabel().m_pLabel;
+			const auto LabelType = Button->m_pBehavior->GetLabel().m_Type;
+			if(LabelType == CTouchControls::CButtonLabel::EType::PLAIN)
 			{
-				A.VSplitMid(&A, &B);
-				Ui()->DoLabel(&A, "Predefined type:", FONTSIZE, TEXTALIGN_ML);
-				int PredefinedType = CalculatePredefinedType(Button->m_pBehavior->GetPredefinedType());
-				if(PredefinedType >= (int)EPredefinedType::NUM_PREDEFINEDS)
-					dbg_assert(false, "Detected out of bound predefined type in preview page.");
-				Ui()->DoLabel(&B, PREDEFINEDS[PredefinedType], FONTSIZE, TEXTALIGN_ML);
+				LimitStringLength(Label, 24);
+				Ui()->DoLabel(&A, Label.c_str(), FONTSIZE, TEXTALIGN_ML);
 			}
-			else
+			else if(LabelType == CTouchControls::CButtonLabel::EType::LOCALIZED)
 			{
-				A.VSplitLeft(A.w / 4.0f, &A, &B);
-				Ui()->DoLabel(&A, (m_PreviewDetail == 0) ? "Label:" : "Command:", FONTSIZE, TEXTALIGN_ML);
-				if(m_PreviewDetail == 0)
-				{
-					std::string Label = Button->m_pBehavior->GetLabel().m_pLabel;
-					LimitStringLength(Label, 24);
-					if(Button->m_pBehavior->GetLabel().m_Type == CTouchControls::CButtonLabel::EType::ICON)
-					{
-						TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-						TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING);
-						Ui()->DoLabel(&B, Label.c_str(), FONTSIZE, TEXTALIGN_ML);
-						TextRender()->SetRenderFlags(0);
-						TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
-					}
-					else
-					{
-						Ui()->DoLabel(&B, Label.c_str(), FONTSIZE, TEXTALIGN_ML);
-					}
-				}
-				else
-				{
-					std::string Command;
-					int BehaviorType = CalculateBehaviorType(Button->m_pBehavior->GetBehaviorType());
-					switch(BehaviorType)
-					{
-					case(int)EBehaviorType::BIND: Command = static_cast<CTouchControls::CBindTouchButtonBehavior *>(Button->m_pBehavior.get())->GetCommand(); break;
-					case(int)EBehaviorType::BIND_TOGGLE: Command = static_cast<CTouchControls::CBindToggleTouchButtonBehavior *>(Button->m_pBehavior.get())->GetCommand()[0].m_Command; break;
-					default: dbg_assert(false, "Detected out of bound behavior type in preview page. Type: %d", BehaviorType);
-					}
-					LimitStringLength(Command, 36);
-					Ui()->DoLabel(&B, Command.c_str(), FONTSIZE, TEXTALIGN_ML);
-				}
+				Label = Localize(Label.c_str());
+				LimitStringLength(Label, 24);
+				Ui()->DoLabel(&A, Label.c_str(), FONTSIZE, TEXTALIGN_ML);
 			}
-			EditBox.HSplitTop(ROWSIZE, &A, &EditBox);
-			A.VSplitLeft((A.w - SUBMARGIN) / 2.0f, &B, &A);
-			Ui()->DoLabel(&B, "Select this", FONTSIZE, TEXTALIGN_MR);
-			A.VSplitLeft(SUBMARGIN, nullptr, &A);
-			const int UniqueId = &Button - ((m_CurrentPreview == 0) ? m_VisibleButtons.data() : m_InvisibleButtons.data());
-			A.VSplitLeft(ROWSIZE, &B, &A);
-			if(DoButton_FontIcon(&(m_vSelectPreviewButtons[UniqueId]), "\xEF\x81\xA2", 0, &B, BUTTONFLAG_LEFT))
+			else if(LabelType == CTouchControls::CButtonLabel::EType::ICON)
 			{
-				GameClient()->m_TouchControls.SetSelectedButton(Button);
-				CacheAllSettingsFromTarget(Button);
-				SetUnsavedChanges(false);
-				UpdateTmpButton();
-				m_PreviewButton = false;
+				LimitStringLength(Label, 12);
+				TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
+				TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING);
+				Ui()->DoLabel(&A, Label.c_str(), FONTSIZE, TEXTALIGN_ML);
+				TextRender()->SetRenderFlags(0);
+				TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 			}
+			EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
+			EditBox.VSplitLeft(CommandRect.w, &A, &EditBox);
+			std::string Command = GetCommand(Button);
+			LimitStringLength(Command, 24);
+			Ui()->DoLabel(&A, Command.c_str(), FONTSIZE, TEXTALIGN_ML);
+			EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
+			EditBox.VSplitLeft(X.w, &A, &EditBox);
+			Ui()->DoLabel(&A, std::to_string(Button->m_UnitRect.m_X).c_str(), FONTSIZE, TEXTALIGN_ML);
+			EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
+			EditBox.VSplitLeft(Y.w, &A, &EditBox);
+			Ui()->DoLabel(&A, std::to_string(Button->m_UnitRect.m_Y).c_str(), FONTSIZE, TEXTALIGN_ML);
+			EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
+			EditBox.VSplitLeft(W.w, &A, &EditBox);
+			Ui()->DoLabel(&A, std::to_string(Button->m_UnitRect.m_W).c_str(), FONTSIZE, TEXTALIGN_ML);
+			EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
+			EditBox.VSplitLeft(H.w, &A, &EditBox);
+			Ui()->DoLabel(&A, std::to_string(Button->m_UnitRect.m_H).c_str(), FONTSIZE, TEXTALIGN_ML);
 		}
 	}
-	s_PreviewButtonScrollRegion.End();
+
+	m_SelectedPreviewButton = s_PreviewListBox.DoEnd();
+	if(s_PreviewListBox.WasItemActivated())
+	{
+		GameClient()->m_TouchControls.SetSelectedButton(m_vSortedButtons[m_SelectedPreviewButton]);
+		CacheAllSettingsFromTarget(m_vSortedButtons[m_SelectedPreviewButton]);
+		SetUnsavedChanges(false);
+		UpdateTmpButton();
+	}
 }
 
 void CMenus::RenderSelectingTab(CUIRect SelectingTab)
 {
 	CUIRect A;
-	SelectingTab.VSplitLeft(SelectingTab.w / 3.0f, &A, &SelectingTab);
+	SelectingTab.VSplitLeft(SelectingTab.w / 4.0f, &A, &SelectingTab);
 	static CButtonContainer s_FileTab;
 	if(DoButton_MenuTab(&s_FileTab, "File", m_CurrentMenu == EMenuType::MENU_FILE, &A, IGraphics::CORNER_TL))
 		m_CurrentMenu = EMenuType::MENU_FILE;
-	SelectingTab.VSplitMid(&A, &SelectingTab);
+	SelectingTab.VSplitLeft(SelectingTab.w / 3.0f, &A, &SelectingTab);
 	static CButtonContainer s_ButtonTab;
 	if(DoButton_MenuTab(&s_ButtonTab, "Buttons", m_CurrentMenu == EMenuType::MENU_BUTTONS, &A, IGraphics::CORNER_NONE))
 		m_CurrentMenu = EMenuType::MENU_BUTTONS;
+	SelectingTab.VSplitLeft(SelectingTab.w / 2.0f, &A, &SelectingTab);
 	static CButtonContainer s_SettingsMenuTab;
-	if(DoButton_MenuTab(&s_SettingsMenuTab, "Settings", m_CurrentMenu == EMenuType::MENU_SETTINGS, &SelectingTab, IGraphics::CORNER_TR))
+	if(DoButton_MenuTab(&s_SettingsMenuTab, "Settings", m_CurrentMenu == EMenuType::MENU_SETTINGS, &A, IGraphics::CORNER_NONE))
 		m_CurrentMenu = EMenuType::MENU_SETTINGS;
+	SelectingTab.VSplitLeft(SelectingTab.w / 1.0f, &A, &SelectingTab);
+	static CButtonContainer s_PreviewTab;
+	if(DoButton_MenuTab(&s_PreviewTab, "Preview", m_CurrentMenu == EMenuType::MENU_PREVIEW, &A, IGraphics::CORNER_TR))
+		m_CurrentMenu = EMenuType::MENU_PREVIEW;
 }
 
-void CMenus::RenderButtonSettings(CUIRect MainView)
+void CMenus::RenderConfigSettings(CUIRect MainView)
 {
-	CUIRect EditBox, A;
+	CUIRect EditBox, Row, Label, Button;
+	MainView.h = 2 * MAINMARGIN + 4 * ROWSIZE + 3 * ROWGAP;
 	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
+	MainView.VMargin(MAINMARGIN, &MainView);
 	MainView.HSplitTop(MAINMARGIN, nullptr, &MainView);
 	MainView.HSplitTop(ROWSIZE, &EditBox, &MainView);
-	EditBox.VMargin(MAINMARGIN, &EditBox);
-	EditBox.VSplitMid(&A, &EditBox);
-	static CButtonContainer s_PreviewVisibilityTab;
-	if(DoButton_MenuTab(&s_PreviewVisibilityTab, m_apSettings[(int)ESettingType::PREVIEW_VISIBILITY], m_CurrentSetting == ESettingType::PREVIEW_VISIBILITY, &A, IGraphics::CORNER_L, nullptr, nullptr, nullptr, nullptr, 5.0f))
-		m_CurrentSetting = ESettingType::PREVIEW_VISIBILITY;
-	static CButtonContainer s_ConfigTab;
-	if(DoButton_MenuTab(&s_ConfigTab, m_apSettings[(int)ESettingType::BUTTON_CONFIG], m_CurrentSetting == ESettingType::BUTTON_CONFIG, &EditBox, IGraphics::CORNER_R, nullptr, nullptr, nullptr, nullptr, 5.0f))
-		m_CurrentSetting = ESettingType::BUTTON_CONFIG;
+	static CButtonContainer s_ActiveColorPicker;
+	ColorHSLA ColorTest = DoLine_ColorPicker(&s_ActiveColorPicker, ROWSIZE, 15.0f, 5.0f, &EditBox, "Active Color", &m_ColorActive, GameClient()->m_TouchControls.DefaultBackgroundColorActive(), false, nullptr, true);
+	GameClient()->m_TouchControls.SetBackgroundColorActive(color_cast<ColorRGBA>(ColorHSLA(m_ColorActive, true)));
+	if(color_cast<ColorRGBA>(ColorTest) != GameClient()->m_TouchControls.BackgroundColorActive())
+		GameClient()->m_TouchControls.SetEditingChanges(true);
 
-	switch(m_CurrentSetting)
+	MainView.HSplitTop(ROWGAP, nullptr, &MainView);
+	MainView.HSplitTop(ROWSIZE, &EditBox, &MainView);
+	static CButtonContainer s_InactiveColorPicker;
+	ColorTest = DoLine_ColorPicker(&s_InactiveColorPicker, ROWSIZE, 15.0f, 5.0f, &EditBox, "Inactive Color", &m_ColorInactive, GameClient()->m_TouchControls.DefaultBackgroundColorInactive(), false, nullptr, true);
+	GameClient()->m_TouchControls.SetBackgroundColorInactive(color_cast<ColorRGBA>(ColorHSLA(m_ColorInactive, true)));
+	if(color_cast<ColorRGBA>(ColorTest) != GameClient()->m_TouchControls.BackgroundColorInactive())
+		GameClient()->m_TouchControls.SetEditingChanges(true);
+
+	MainView.HSplitTop(ROWGAP, nullptr, &MainView);
+	MainView.HSplitTop(ROWSIZE, &Row, &MainView);
+	Row.VSplitMid(&Label, &Button);
+	Ui()->DoLabel(&Label, Localize("Direct touch input while ingame"), FONTSIZE, TEXTALIGN_ML);
+
+	const char *apIngameTouchModes[(int)CTouchControls::EDirectTouchIngameMode::NUM_STATES] = {Localize("Disabled", "Direct touch input"), Localize("Active action", "Direct touch input"), Localize("Aim", "Direct touch input"), Localize("Fire", "Direct touch input"), Localize("Hook", "Direct touch input")};
+	const CTouchControls::EDirectTouchIngameMode OldDirectTouchIngame = GameClient()->m_TouchControls.DirectTouchIngame();
+	static CUi::SDropDownState s_DirectTouchIngameDropDownState;
+	static CScrollRegion s_DirectTouchIngameDropDownScrollRegion;
+	s_DirectTouchIngameDropDownState.m_SelectionPopupContext.m_pScrollRegion = &s_DirectTouchIngameDropDownScrollRegion;
+	const CTouchControls::EDirectTouchIngameMode NewDirectTouchIngame = (CTouchControls::EDirectTouchIngameMode)Ui()->DoDropDown(&Button, (int)OldDirectTouchIngame, apIngameTouchModes, std::size(apIngameTouchModes), s_DirectTouchIngameDropDownState);
+	if(OldDirectTouchIngame != NewDirectTouchIngame)
 	{
-	case ESettingType::PREVIEW_VISIBILITY: RenderVirtualVisibilityEditor(MainView); break;
-	case ESettingType::BUTTON_CONFIG: RenderConfigSettings(MainView); break;
-	default: dbg_assert(false, "Unknown Setting Detected in button editor.");
+		GameClient()->m_TouchControls.SetDirectTouchIngame(NewDirectTouchIngame);
+	}
+
+	MainView.HSplitTop(ROWGAP, nullptr, &MainView);
+	MainView.HSplitTop(ROWSIZE, &Row, &MainView);
+	Row.VSplitMid(&Label, &Button);
+	Ui()->DoLabel(&Label, Localize("Direct touch input while spectating"), FONTSIZE, TEXTALIGN_ML);
+
+	const char *apSpectateTouchModes[(int)CTouchControls::EDirectTouchSpectateMode::NUM_STATES] = {Localize("Disabled", "Direct touch input"), Localize("Aim", "Direct touch input")};
+	const CTouchControls::EDirectTouchSpectateMode OldDirectTouchSpectate = GameClient()->m_TouchControls.DirectTouchSpectate();
+	static CUi::SDropDownState s_DirectTouchSpectateDropDownState;
+	static CScrollRegion s_DirectTouchSpectateDropDownScrollRegion;
+	s_DirectTouchSpectateDropDownState.m_SelectionPopupContext.m_pScrollRegion = &s_DirectTouchSpectateDropDownScrollRegion;
+	const CTouchControls::EDirectTouchSpectateMode NewDirectTouchSpectate = (CTouchControls::EDirectTouchSpectateMode)Ui()->DoDropDown(&Button, (int)OldDirectTouchSpectate, apSpectateTouchModes, std::size(apSpectateTouchModes), s_DirectTouchSpectateDropDownState);
+	if(OldDirectTouchSpectate != NewDirectTouchSpectate)
+	{
+		GameClient()->m_TouchControls.SetDirectTouchSpectate(NewDirectTouchSpectate);
 	}
 }
 
-void CMenus::RenderVirtualVisibilityEditor(CUIRect MainView)
+void CMenus::RenderPreviewSettings(CUIRect MainView)
 {
 	CUIRect EditBox;
-	MainView.HMargin(MAINMARGIN, &MainView);
-	MainView.HSplitBottom(ROWSIZE, &MainView, &EditBox);
-	EditBox.VMargin(MAINMARGIN, &EditBox);
-	Ui()->DoLabel(&EditBox, "Preview button visibility while the editor is active.", 15.0f, TEXTALIGN_MC);
+	MainView.h += 100.0f;
+	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
 	MainView.VMargin(MAINMARGIN, &MainView);
+	MainView.HMargin(MAINMARGIN, &MainView);
+	MainView.HSplitTop(ROWSIZE, &EditBox, &MainView);
+	Ui()->DoLabel(&EditBox, "Preview button visibility while the editor is active.", FONTSIZE, TEXTALIGN_MC);
+	MainView.HSplitBottom(ROWSIZE, &MainView, &EditBox);
+	MainView.HSplitBottom(ROWGAP, &MainView, nullptr);
+	EditBox.VSplitLeft(MAINMARGIN, nullptr, &EditBox);
+	static CButtonContainer s_PreviewAllCheckBox;
+	bool Preview = GameClient()->m_TouchControls.PreviewAllButtons();
+	if(DoButton_CheckBox(&s_PreviewAllCheckBox, "Show all buttons", Preview ? 1 : 0, &EditBox))
+	{
+		GameClient()->m_TouchControls.SetPreviewAllButtons(!Preview);
+	}
 	MainView.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), IGraphics::CORNER_ALL, 10.0f);
 	MainView.VMargin(MAINMARGIN, &MainView);
 	MainView.HMargin(SUBMARGIN, &MainView);
@@ -885,69 +915,94 @@ void CMenus::RenderVirtualVisibilityEditor(CUIRect MainView)
 	s_VirtualVisibilityScrollRegion.End();
 }
 
-void CMenus::RenderConfigSettings(CUIRect MainView)
+void CMenus::RenderTouchControlsEditor(CUIRect MainView)
 {
-	CUIRect EditBox, Row, Label, Button;
+	CUIRect Label, Button, Row;
+	MainView.h = 2 * MAINMARGIN + 4 * ROWSIZE + 3 * ROWGAP;
+	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
 	MainView.Margin(MAINMARGIN, &MainView);
-	MainView.HSplitTop(MAINMARGIN, nullptr, &MainView);
-	MainView.HSplitTop(ROWSIZE, &EditBox, &MainView);
-	static CButtonContainer s_ActiveColorPicker;
-	ColorHSLA ColorTest = DoLine_ColorPicker(&s_ActiveColorPicker, ROWSIZE, 15.0f, 5.0f, &EditBox, "Active Color", &m_ColorActive, GameClient()->m_TouchControls.DefaultBackgroundColorActive(), false, nullptr, true);
-	GameClient()->m_TouchControls.SetBackgroundColorActive(color_cast<ColorRGBA>(ColorHSLA(m_ColorActive, true)));
-	if(color_cast<ColorRGBA>(ColorTest) != GameClient()->m_TouchControls.BackgroundColorActive())
-		GameClient()->m_TouchControls.SetEditingChanges(true);
 
-	MainView.HSplitTop(MAINMARGIN, nullptr, &MainView);
-	MainView.HSplitTop(ROWSIZE, &EditBox, &MainView);
-	static CButtonContainer s_InactiveColorPicker;
-	ColorTest = DoLine_ColorPicker(&s_InactiveColorPicker, ROWSIZE, 15.0f, 5.0f, &EditBox, "Inactive Color", &m_ColorInactive, GameClient()->m_TouchControls.DefaultBackgroundColorInactive(), false, nullptr, true);
-	GameClient()->m_TouchControls.SetBackgroundColorInactive(color_cast<ColorRGBA>(ColorHSLA(m_ColorInactive, true)));
-	if(color_cast<ColorRGBA>(ColorTest) != GameClient()->m_TouchControls.BackgroundColorInactive())
-		GameClient()->m_TouchControls.SetEditingChanges(true);
-
-	MainView.HSplitTop(MAINMARGIN, nullptr, &MainView);
 	MainView.HSplitTop(ROWSIZE, &Row, &MainView);
-	Row.VSplitLeft(300.0f, &Label, &Row);
-	Ui()->DoLabel(&Label, Localize("Direct touch input while ingame"), FONTSIZE, TEXTALIGN_ML);
+	MainView.HSplitTop(ROWGAP, nullptr, &MainView);
+	Row.VSplitLeft(Row.h, nullptr, &Row);
+	Row.VSplitRight(Row.h, &Row, &Button);
+	Row.VMargin(5.0f, &Label);
+	Ui()->DoLabel(&Label, Localize("Edit touch controls"), 20.0f, TEXTALIGN_MC);
 
-	Row.VSplitLeft(5.0f, nullptr, &Row);
-	Row.VSplitRight(150.0f, &Row, &Button);
-	const char *apIngameTouchModes[(int)CTouchControls::EDirectTouchIngameMode::NUM_STATES] = {Localize("Disabled", "Direct touch input"), Localize("Active action", "Direct touch input"), Localize("Aim", "Direct touch input"), Localize("Fire", "Direct touch input"), Localize("Hook", "Direct touch input")};
-	const CTouchControls::EDirectTouchIngameMode OldDirectTouchIngame = GameClient()->m_TouchControls.DirectTouchIngame();
-	static CUi::SDropDownState s_DirectTouchIngameDropDownState;
-	static CScrollRegion s_DirectTouchIngameDropDownScrollRegion;
-	s_DirectTouchIngameDropDownState.m_SelectionPopupContext.m_pScrollRegion = &s_DirectTouchIngameDropDownScrollRegion;
-	const CTouchControls::EDirectTouchIngameMode NewDirectTouchIngame = (CTouchControls::EDirectTouchIngameMode)Ui()->DoDropDown(&Button, (int)OldDirectTouchIngame, apIngameTouchModes, std::size(apIngameTouchModes), s_DirectTouchIngameDropDownState);
-	if(OldDirectTouchIngame != NewDirectTouchIngame)
+	static CButtonContainer s_OpenHelpButton;
+	if(DoButton_FontIcon(&s_OpenHelpButton, FontIcons::FONT_ICON_QUESTION, 0, &Button, BUTTONFLAG_LEFT))
 	{
-		GameClient()->m_TouchControls.SetDirectTouchIngame(NewDirectTouchIngame);
+		Client()->ViewLink(Localize("https://wiki.ddnet.org/wiki/Touch_controls"));
 	}
 
-	MainView.HSplitTop(MAINMARGIN, nullptr, &MainView);
 	MainView.HSplitTop(ROWSIZE, &Row, &MainView);
-	Row.VSplitLeft(300.0f, &Label, &Row);
-	Ui()->DoLabel(&Label, Localize("Direct touch input while spectating"), FONTSIZE, TEXTALIGN_ML);
+	MainView.HSplitTop(ROWGAP, nullptr, &MainView);
 
-	Row.VSplitLeft(5.0f, nullptr, &Row);
-	Row.VSplitRight(150.0f, &Row, &Button);
-	const char *apSpectateTouchModes[(int)CTouchControls::EDirectTouchSpectateMode::NUM_STATES] = {Localize("Disabled", "Direct touch input"), Localize("Aim", "Direct touch input")};
-	const CTouchControls::EDirectTouchSpectateMode OldDirectTouchSpectate = GameClient()->m_TouchControls.DirectTouchSpectate();
-	static CUi::SDropDownState s_DirectTouchSpectateDropDownState;
-	static CScrollRegion s_DirectTouchSpectateDropDownScrollRegion;
-	s_DirectTouchSpectateDropDownState.m_SelectionPopupContext.m_pScrollRegion = &s_DirectTouchSpectateDropDownScrollRegion;
-	const CTouchControls::EDirectTouchSpectateMode NewDirectTouchSpectate = (CTouchControls::EDirectTouchSpectateMode)Ui()->DoDropDown(&Button, (int)OldDirectTouchSpectate, apSpectateTouchModes, std::size(apSpectateTouchModes), s_DirectTouchSpectateDropDownState);
-	if(OldDirectTouchSpectate != NewDirectTouchSpectate)
+	Row.VSplitLeft((Row.w - SUBMARGIN) / 2.0f, &Button, &Row);
+	static CButtonContainer s_SaveConfigurationButton;
+	if(DoButton_Menu(&s_SaveConfigurationButton, Localize("Save changes"), GameClient()->m_TouchControls.HasEditingChanges() ? 0 : 1, &Button))
 	{
-		GameClient()->m_TouchControls.SetDirectTouchSpectate(NewDirectTouchSpectate);
+		if(GameClient()->m_TouchControls.SaveConfigurationToFile())
+		{
+			GameClient()->m_TouchControls.SetEditingChanges(false);
+		}
+		else
+		{
+			SWarning Warning(Localize("Error saving touch controls"), Localize("Could not save touch controls to file. See local console for details."));
+			Warning.m_AutoHide = false;
+			Client()->AddWarning(Warning);
+		}
 	}
 
-	MainView.HSplitTop(MAINMARGIN, nullptr, &MainView);
-	MainView.HSplitTop(ROWSIZE, &EditBox, &MainView);
-	static CButtonContainer s_PreviewAllCheckBox;
-	bool Preview = GameClient()->m_TouchControls.PreviewAllButtons();
-	if(DoButton_CheckBox(&s_PreviewAllCheckBox, "Show all buttons", Preview ? 1 : 0, &EditBox))
+	Row.VSplitLeft(SUBMARGIN, nullptr, &Button);
+	if(GameClient()->m_TouchControls.HasEditingChanges())
 	{
-		GameClient()->m_TouchControls.SetPreviewAllButtons(!Preview);
+		TextRender()->TextColor(ColorRGBA(1.0f, 0.0f, 0.0f, 1.0f));
+		Ui()->DoLabel(&Button, Localize("Unsaved changes"), 14.0f, TEXTALIGN_MC);
+		TextRender()->TextColor(TextRender()->DefaultTextColor());
+	}
+
+	MainView.HSplitTop(ROWSIZE, &Row, &MainView);
+	MainView.HSplitTop(ROWGAP, nullptr, &MainView);
+
+	Row.VSplitLeft((Row.w - SUBMARGIN) / 2.0f, &Button, &Row);
+	static CButtonContainer s_DiscardChangesButton;
+	if(DoButton_Menu(&s_DiscardChangesButton, Localize("Discard changes"), GameClient()->m_TouchControls.HasEditingChanges() ? 0 : 1, &Button))
+	{
+		PopupConfirm(Localize("Discard changes"),
+			Localize("Are you sure that you want to discard the current changes to the touch controls?"),
+			Localize("Yes"), Localize("No"),
+			&CMenus::PopupConfirmDiscardTouchControlsChanges);
+	}
+
+	Row.VSplitLeft(SUBMARGIN, nullptr, &Button);
+	static CButtonContainer s_ResetButton;
+	if(DoButton_Menu(&s_ResetButton, Localize("Reset to defaults"), 0, &Button))
+	{
+		PopupConfirm(Localize("Reset to defaults"),
+			Localize("Are you sure that you want to reset the touch controls to default?"),
+			Localize("Yes"), Localize("No"),
+			&CMenus::PopupConfirmResetTouchControls);
+	}
+
+	MainView.HSplitTop(ROWSIZE, &Row, &MainView);
+	MainView.HSplitTop(MAINMARGIN, nullptr, &MainView);
+
+	Row.VSplitLeft((Row.w - SUBMARGIN) / 2.0f, &Button, &Row);
+	static CButtonContainer s_ClipboardImportButton;
+	if(DoButton_Menu(&s_ClipboardImportButton, Localize("Import from clipboard"), 0, &Button))
+	{
+		PopupConfirm(Localize("Import from clipboard"),
+			Localize("Are you sure that you want to import the touch controls from the clipboard? This will overwrite your current touch controls."),
+			Localize("Yes"), Localize("No"),
+			&CMenus::PopupConfirmImportTouchControlsClipboard);
+	}
+
+	Row.VSplitLeft(SUBMARGIN, nullptr, &Button);
+	static CButtonContainer s_ClipboardExportButton;
+	if(DoButton_Menu(&s_ClipboardExportButton, Localize("Export to clipboard"), 0, &Button))
+	{
+		GameClient()->m_TouchControls.SaveConfigurationToClipboard();
 	}
 }
 
@@ -971,7 +1026,7 @@ void CMenus::ChangeSelectedButtonWhileHavingUnsavedChanges()
 {
 	// Both old and new button pointer can be nullptr.
 	// Saving settings to the old selected button(nullptr = create), then switch to new selected button(new = haven't created).
-	PopupConfirm("Unsaved changes", "Save all changes before switching selected button?", "Save", "Discard", &CMenus::PopupConfirm_ChangeSelectedButton, POPUP_NONE, &CMenus::PopupCancel_ChangeSelectedButton);
+	PopupConfirm("Unsaved Changes", "Save all changes before switching selected button?", "Save", "Discard", &CMenus::PopupConfirm_ChangeSelectedButton, POPUP_NONE, &CMenus::PopupCancel_ChangeSelectedButton);
 }
 
 void CMenus::PopupConfirm_ChangeSelectedButton()
@@ -1085,6 +1140,7 @@ void CMenus::PopupConfirm_DeleteButton()
 {
 	GameClient()->m_TouchControls.DeleteButton();
 	ResetCachedSettings();
+	GameClient()->m_TouchControls.SetEditingChanges(true);
 }
 
 bool CMenus::UnsavedChanges()
@@ -1427,6 +1483,7 @@ void CMenus::ResolveIssues()
 			{
 			case(int)CTouchControls::EIssueType::CACHE_SETTINGS: CacheAllSettingsFromTarget(Issues[Current].m_TargetButton); break;
 			case(int)CTouchControls::EIssueType::SAVE_SETTINGS: SaveCachedSettingsToTarget(Issues[Current].m_TargetButton); break;
+			case(int)CTouchControls::EIssueType::CACHE_POSITION: SetPosInputs(Issues[Current].m_TargetButton->m_UnitRect); break;
 			default: dbg_assert(false, "Unknown Issue.");
 			}
 		}
@@ -1476,6 +1533,35 @@ void CMenus::InitLineInputs()
 			Input = std::make_unique<CLineInputBuffered<1024>>();
 	});
 }
+
+std::string CMenus::GetCommand(CTouchControls::CTouchButton *Button)
+{
+	std::string BehaviorType = Button->m_pBehavior->GetBehaviorType();
+	if(BehaviorType == CTouchControls::CBindTouchButtonBehavior::BEHAVIOR_TYPE)
+	{
+		return static_cast<CTouchControls::CBindTouchButtonBehavior *>(Button->m_pBehavior.get())->GetCommand();
+	}
+	else if(BehaviorType == CTouchControls::CBindToggleTouchButtonBehavior::BEHAVIOR_TYPE)
+	{
+		const auto *Behavior = static_cast<CTouchControls::CBindToggleTouchButtonBehavior *>(Button->m_pBehavior.get());
+		return Behavior->GetCommand()[Behavior->GetActiveCommandIndex()].m_Command;
+	}
+	else if(BehaviorType == CTouchControls::CPredefinedTouchButtonBehavior::BEHAVIOR_TYPE)
+	{
+		std::string PredefinedType = Button->m_pBehavior->GetPredefinedType();
+		std::string Command = PREDEFINEDS[CalculatePredefinedType(PredefinedType.c_str())];
+		if(PredefinedType == CTouchControls::CExtraMenuTouchButtonBehavior::BEHAVIOR_ID)
+		{
+			Command += " " + std::to_string(static_cast<CTouchControls::CExtraMenuTouchButtonBehavior *>(Button->m_pBehavior.get())->GetNumber());
+		}
+		return Command;
+	}
+	else
+	{
+		dbg_assert(false, "Detected unknown behavior type in CMenus::GetCommand()");
+	}
+}
+
 /*
 	Note: FindPositionXY is used for finding a position of the current moving rect not overlapping with other visible rects.
 		  It's a bit slow, time = o(n^2 * logn), maybe need optimization in the future.

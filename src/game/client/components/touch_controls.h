@@ -501,6 +501,7 @@ public:
 		void SetLabel(CButtonLabel Label);
 		std::vector<CCommand> GetCommand() const { return m_vCommands; }
 		void SetCommand(std::vector<CCommand> &&Commands) { m_vCommands = Commands; }
+		size_t GetActiveCommandIndex() const { return m_ActiveCommandIndex; }
 		void OnActivate() override;
 		void WriteToConfiguration(CJsonWriter *pWriter) override;
 		const char *GetBehaviorType() const override { return BEHAVIOR_TYPE; }
@@ -622,6 +623,7 @@ private:
 	std::unique_ptr<CBindToggleTouchButtonBehavior> ParseBindToggleBehavior(const json_value *pBehaviorObject);
 	void WriteConfiguration(CJsonWriter *pWriter);
 
+	// Does stuff.
 	class CQuadtreeNode
 	{
 	public:
@@ -755,6 +757,7 @@ public:
 		CACHE_SETTINGS = 0,
 		// Save Cached settings to m_TargetButton.
 		SAVE_SETTINGS,
+		CACHE_POSITION,
 		NUM_ISSUES
 	};
 
