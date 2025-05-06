@@ -948,10 +948,12 @@ private:
 	bool m_CloseMenu = false; // Decide if closing menu after the popup confirm.
 	bool m_NeedUpdatePreview = true; // Update previews only upon entering this page, because the update is kinda slow.
 	bool m_NeedSort = true;
+	bool m_NeedFilter = false;
 	bool m_BindTogglePreviewExtension = false;
 	std::vector<CTouchControls::CTouchButton *> m_vVisibleButtons;
 	std::vector<CTouchControls::CTouchButton *> m_vInvisibleButtons;
 	std::vector<CTouchControls::CTouchButton *> m_vSortedButtons;
+	CLineInputBuffered<1024> m_SearchInput;
 	unsigned m_SelectedPreviewButton = -1;
 	std::string m_ParsedString;
 

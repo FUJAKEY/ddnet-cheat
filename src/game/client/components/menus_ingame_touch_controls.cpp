@@ -646,7 +646,7 @@ bool CMenus::RenderVisibilitySettingBlock(CUIRect Block)
 void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 {
 	CUIRect A, B, C, EditBox, LabelRect, CommandRect, X, Y, W, H;
-	MainView.h = 3 * MAINMARGIN + 3 * ROWSIZE + ROWGAP + 260.0f;
+	MainView.h = 3 * MAINMARGIN + 4 * ROWSIZE + 2 * ROWGAP + 250.0f;
 	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
 	MainView.Margin(MAINMARGIN, &MainView);
 	MainView.HSplitTop(ROWSIZE, &C, &MainView);
@@ -662,7 +662,24 @@ void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 	if(DoButton_Menu(&s_SelecteButton, "Select button by touch", 0, &B))
 		SetActive(false);
 
-	MainView.HMargin(ROWGAP, &MainView);
+	MainView.HSplitBottom(ROWSIZE, &MainView, &EditBox);
+	MainView.HSplitBottom(ROWGAP, &MainView, nullptr);
+	EditBox.VSplitLeft(ROWSIZE, &A, &EditBox);
+	TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
+	TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING);
+	Ui()->DoLabel(&A, FontIcons::FONT_ICON_MAGNIFYING_GLASS, FONTSIZE, TEXTALIGN_ML);
+	TextRender()->SetRenderFlags(0);
+	TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+	EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
+	EditBox.VSplitLeft(EditBox.w / 3.0f, &A, &EditBox);
+	char aBufSearch[64];
+	str_format(aBufSearch, sizeof(aBufSearch), "%s:", Localize("Search"));
+	Ui()->DoLabel(&A, aBufSearch, FONTSIZE, TEXTALIGN_ML);
+
+	if(Ui()->DoClearableEditBox(&m_FilterInput, &EditBox, FONTSIZE))
+		m_NeedFilter = true;
+
+	MainView.HSplitTop(ROWGAP, nullptr, &MainView);
 	// Makes the header labels looks better.
 	MainView.HSplitTop(FONTSIZE / CUi::ms_FontmodHeight, &EditBox, &MainView);
 	static CListBox s_PreviewListBox;
@@ -714,88 +731,165 @@ void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 		m_vVisibleButtons = GameClient()->m_TouchControls.VisibleButtons();
 		m_vInvisibleButtons = GameClient()->m_TouchControls.InvisibleButtons();
 		m_NeedSort = true;
+		m_NeedFilter = true;
 	}
 
-	if(m_NeedSort)
-	{
-		m_NeedSort = false;
-		std::sort(m_vVisibleButtons.begin(), m_vVisibleButtons.end(), m_SortFunctions[(unsigned)m_SortType]);
-		std::sort(m_vInvisibleButtons.begin(), m_vInvisibleButtons.end(), m_SortFunctions[(unsigned)m_SortType]);
-		m_vSortedButtons.clear();
-		m_vSortedButtons.reserve(m_vVisibleButtons.size() + m_vInvisibleButtons.size());
-		std::for_each(m_vVisibleButtons.begin(), m_vVisibleButtons.end(), [&](auto *Button) {
-			m_vSortedButtons.emplace_back(Button);
-		});
-		std::for_each(m_vInvisibleButtons.begin(), m_vInvisibleButtons.end(), [&](auto *Button) {
-			m_vSortedButtons.emplace_back(Button);
-		});
-	}
+	auto vVisibleButtons = m_vVisibleButtons;
+	auto vInvisibleButtons = m_vInvisibleButtons;
 
-	s_PreviewListBox.SetActive(true);
-	s_PreviewListBox.DoStart(ROWSIZE, m_vSortedButtons.size(), 1, 4, -1, &MainView, true, IGraphics::CORNER_B);
-	for(unsigned ButtonIndex = 0; ButtonIndex < m_vSortedButtons.size(); ButtonIndex++)
+	if(m_NeedFilter || m_NeedSort)
 	{
-		CTouchControls::CTouchButton *Button = m_vSortedButtons[ButtonIndex];
-		const CListboxItem ListItem = s_PreviewListBox.DoNextItem(&m_vSortedButtons[ButtonIndex], m_SelectedPreviewButton == ButtonIndex);
-		if(ListItem.m_Visible)
+		if(m_NeedFilter)
 		{
-			EditBox = ListItem.m_Rect;
-			EditBox.VSplitLeft(ROWSIZE, &A, &EditBox);
-			TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-			TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING);
-			Ui()->DoLabel(&A, ButtonIndex >= m_vVisibleButtons.size() ? FontIcons::FONT_ICON_EYE_SLASH : FontIcons::FONT_ICON_EYE, FONTSIZE, TEXTALIGN_ML);
-			TextRender()->SetRenderFlags(0);
-			TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
-			EditBox.VSplitLeft(LabelRect.w, &A, &EditBox);
-			std::string Label = Button->m_pBehavior->GetLabel().m_pLabel;
-			const auto LabelType = Button->m_pBehavior->GetLabel().m_Type;
-			if(LabelType == CTouchControls::CButtonLabel::EType::PLAIN)
+			std::string FilterString = m_FilterInput.GetString();
+			// The two will get the filter done. Both label and command will be considered.
 			{
-				LimitStringLength(Label, 24);
-				Ui()->DoLabel(&A, Label.c_str(), FONTSIZE, TEXTALIGN_ML);
+				const auto DeleteIt = std::remove_if(vVisibleButtons.begin(), vVisibleButtons.end(), [&](CTouchControls::CTouchButton *Button) {
+					std::string Label = Button->m_pBehavior->GetLabel().m_pLabel;
+					if(std::search(Label.begin(), Label.end(), FilterString.begin(), FilterString.end(), [](char &Char1, char &Char2) {
+						   if(Char1 >= 'A' && Char1 <= 'Z')
+							   Char1 += 'a' - 'A';
+						   if(Char2 >= 'A' && Char2 <= 'Z')
+							   Char2 += 'a' - 'A';
+						   return Char1 == Char2;
+					   }) != Label.end())
+						return false;
+					std::string Command = GetCommand(Button);
+					if(std::search(Command.begin(), Command.end(), FilterString.begin(), FilterString.end(), [](char &Char1, char &Char2) {
+						   if(Char1 >= 'A' && Char1 <= 'Z')
+							   Char1 += 'a' - 'A';
+						   if(Char2 >= 'A' && Char2 <= 'Z')
+							   Char2 += 'a' - 'A';
+						   return Char1 == Char2;
+					   }) != Command.end())
+						return false;
+					return true;
+				});
+				vVisibleButtons.erase(DeleteIt, vVisibleButtons.end());
 			}
-			else if(LabelType == CTouchControls::CButtonLabel::EType::LOCALIZED)
 			{
-				Label = Localize(Label.c_str());
-				LimitStringLength(Label, 24);
-				Ui()->DoLabel(&A, Label.c_str(), FONTSIZE, TEXTALIGN_ML);
+				const auto DeleteIt = std::remove_if(vInvisibleButtons.begin(), vInvisibleButtons.end(), [&](CTouchControls::CTouchButton *Button) {
+					std::string Label = Button->m_pBehavior->GetLabel().m_pLabel;
+					if(std::search(Label.begin(), Label.end(), FilterString.begin(), FilterString.end(), [](char Char1, char Char2) {
+						   if(Char1 >= 'A' && Char1 <= 'Z')
+							   Char1 += 'a' - 'A';
+						   if(Char2 >= 'A' && Char2 <= 'Z')
+							   Char2 += 'a' - 'A';
+						   return Char1 == Char2;
+					   }) != Label.end())
+						return false;
+					std::string Command = GetCommand(Button);
+					if(std::search(Command.begin(), Command.end(), FilterString.begin(), FilterString.end(), [](char Char1, char Char2) {
+						   if(Char1 >= 'A' && Char1 <= 'Z')
+							   Char1 += 'a' - 'A';
+						   if(Char2 >= 'A' && Char2 <= 'Z')
+							   Char2 += 'a' - 'A';
+						   return Char1 == Char2;
+					   }) != Command.end())
+						return false;
+					return true;
+				});
+				vInvisibleButtons.erase(DeleteIt, vInvisibleButtons.end());
 			}
-			else if(LabelType == CTouchControls::CButtonLabel::EType::ICON)
+		}
+		if(m_NeedSort)
+		{
+			m_NeedSort = false;
+			std::sort(vVisibleButtons.begin(), vVisibleButtons.end(), m_SortFunctions[(unsigned)m_SortType]);
+			std::sort(vInvisibleButtons.begin(), vInvisibleButtons.end(), m_SortFunctions[(unsigned)m_SortType]);
+		}
+		m_vSortedButtons.clear();
+		m_vSortedButtons.reserve(vVisibleButtons.size() + vInvisibleButtons.size());
+		std::for_each(vVisibleButtons.begin(), vVisibleButtons.end(), [&](auto *Button) {
+			m_vSortedButtons.emplace_back(Button);
+		});
+		std::for_each(vInvisibleButtons.begin(), vInvisibleButtons.end(), [&](auto *Button) {
+			m_vSortedButtons.emplace_back(Button);
+		});
+	}
+
+	if(m_vSortedButtons.size() != 0)
+	{
+		s_PreviewListBox.SetActive(true);
+		s_PreviewListBox.DoStart(ROWSIZE, m_vSortedButtons.size(), 1, 4, -1, &MainView, true, IGraphics::CORNER_B);
+		for(unsigned ButtonIndex = 0; ButtonIndex < m_vSortedButtons.size(); ButtonIndex++)
+		{
+			CTouchControls::CTouchButton *Button = m_vSortedButtons[ButtonIndex];
+			const CListboxItem ListItem = s_PreviewListBox.DoNextItem(&m_vSortedButtons[ButtonIndex], m_SelectedPreviewButton == ButtonIndex);
+			if(ListItem.m_Visible)
 			{
-				LimitStringLength(Label, 12);
+				EditBox = ListItem.m_Rect;
+				EditBox.VSplitLeft(ROWSIZE, &A, &EditBox);
 				TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
 				TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING);
-				Ui()->DoLabel(&A, Label.c_str(), FONTSIZE, TEXTALIGN_ML);
+				Ui()->DoLabel(&A, ButtonIndex >= vVisibleButtons.size() ? FontIcons::FONT_ICON_EYE_SLASH : FontIcons::FONT_ICON_EYE, FONTSIZE, TEXTALIGN_ML);
 				TextRender()->SetRenderFlags(0);
 				TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+				EditBox.VSplitLeft(LabelRect.w, &A, &EditBox);
+				std::string Label = Button->m_pBehavior->GetLabel().m_pLabel;
+				const auto LabelType = Button->m_pBehavior->GetLabel().m_Type;
+				if(LabelType == CTouchControls::CButtonLabel::EType::PLAIN)
+				{
+					LimitStringLength(Label, 24);
+					Ui()->DoLabel(&A, Label.c_str(), FONTSIZE, TEXTALIGN_ML);
+				}
+				else if(LabelType == CTouchControls::CButtonLabel::EType::LOCALIZED)
+				{
+					Label = Localize(Label.c_str());
+					LimitStringLength(Label, 24);
+					Ui()->DoLabel(&A, Label.c_str(), FONTSIZE, TEXTALIGN_ML);
+				}
+				else if(LabelType == CTouchControls::CButtonLabel::EType::ICON)
+				{
+					LimitStringLength(Label, 12);
+					TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
+					TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING);
+					Ui()->DoLabel(&A, Label.c_str(), FONTSIZE, TEXTALIGN_ML);
+					TextRender()->SetRenderFlags(0);
+					TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+				}
+				EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
+				EditBox.VSplitLeft(CommandRect.w, &A, &EditBox);
+				std::string Command = GetCommand(Button);
+				LimitStringLength(Command, 24);
+				Ui()->DoLabel(&A, Command.c_str(), FONTSIZE, TEXTALIGN_ML);
+				EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
+				EditBox.VSplitLeft(X.w, &A, &EditBox);
+				Ui()->DoLabel(&A, std::to_string(Button->m_UnitRect.m_X).c_str(), FONTSIZE, TEXTALIGN_ML);
+				EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
+				EditBox.VSplitLeft(Y.w, &A, &EditBox);
+				Ui()->DoLabel(&A, std::to_string(Button->m_UnitRect.m_Y).c_str(), FONTSIZE, TEXTALIGN_ML);
+				EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
+				EditBox.VSplitLeft(W.w, &A, &EditBox);
+				Ui()->DoLabel(&A, std::to_string(Button->m_UnitRect.m_W).c_str(), FONTSIZE, TEXTALIGN_ML);
+				EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
+				EditBox.VSplitLeft(H.w, &A, &EditBox);
+				Ui()->DoLabel(&A, std::to_string(Button->m_UnitRect.m_H).c_str(), FONTSIZE, TEXTALIGN_ML);
 			}
-			EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
-			EditBox.VSplitLeft(CommandRect.w, &A, &EditBox);
-			std::string Command = GetCommand(Button);
-			LimitStringLength(Command, 24);
-			Ui()->DoLabel(&A, Command.c_str(), FONTSIZE, TEXTALIGN_ML);
-			EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
-			EditBox.VSplitLeft(X.w, &A, &EditBox);
-			Ui()->DoLabel(&A, std::to_string(Button->m_UnitRect.m_X).c_str(), FONTSIZE, TEXTALIGN_ML);
-			EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
-			EditBox.VSplitLeft(Y.w, &A, &EditBox);
-			Ui()->DoLabel(&A, std::to_string(Button->m_UnitRect.m_Y).c_str(), FONTSIZE, TEXTALIGN_ML);
-			EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
-			EditBox.VSplitLeft(W.w, &A, &EditBox);
-			Ui()->DoLabel(&A, std::to_string(Button->m_UnitRect.m_W).c_str(), FONTSIZE, TEXTALIGN_ML);
-			EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
-			EditBox.VSplitLeft(H.w, &A, &EditBox);
-			Ui()->DoLabel(&A, std::to_string(Button->m_UnitRect.m_H).c_str(), FONTSIZE, TEXTALIGN_ML);
+		}
+
+		m_SelectedPreviewButton = s_PreviewListBox.DoEnd();
+		if(s_PreviewListBox.WasItemActivated())
+		{
+			GameClient()->m_TouchControls.SetSelectedButton(m_vSortedButtons[m_SelectedPreviewButton]);
+			CacheAllSettingsFromTarget(m_vSortedButtons[m_SelectedPreviewButton]);
+			SetUnsavedChanges(false);
+			UpdateTmpButton();
 		}
 	}
-
-	m_SelectedPreviewButton = s_PreviewListBox.DoEnd();
-	if(s_PreviewListBox.WasItemActivated())
+	else
 	{
-		GameClient()->m_TouchControls.SetSelectedButton(m_vSortedButtons[m_SelectedPreviewButton]);
-		CacheAllSettingsFromTarget(m_vSortedButtons[m_SelectedPreviewButton]);
-		SetUnsavedChanges(false);
-		UpdateTmpButton();
+		// Copied from menus_browser.cpp
+		MainView.HMargin((MainView.h - (16.0f + 18.0f + 8.0f)) / 2.0f, &A);
+		A.HSplitTop(16.0f, &A, &B);
+		B.HSplitTop(8.0f, nullptr, &B);
+		B.VMargin((B.w - 200.0f) / 2.0f, &B);
+		Ui()->DoLabel(&A, "No buttons match your filter criteria", 16.0f, TEXTALIGN_MC);
+		static CButtonContainer s_ResetButton;
+		if(DoButton_Menu(&s_ResetButton, Localize("Reset filter"), 0, &B))
+		{
+			m_FilterInput.Clear();
+		}
 	}
 }
 
