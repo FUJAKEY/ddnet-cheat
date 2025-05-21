@@ -1,7 +1,7 @@
 #include "touch_controls.h"
-#include "base/color.h"
 
 #include <algorithm>
+#include <base/color.h>
 #include <base/log.h>
 #include <base/system.h>
 

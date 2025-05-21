@@ -802,7 +802,7 @@ void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 		});
 	}
 
-	if(m_vpSortedButtons.size() != 0)
+	if(!m_vpSortedButtons.empty())
 	{
 		s_PreviewListBox.SetActive(true);
 		s_PreviewListBox.DoStart(ROWSIZE, m_vpSortedButtons.size(), 1, 4, -1, &MainView, true, IGraphics::CORNER_B);
