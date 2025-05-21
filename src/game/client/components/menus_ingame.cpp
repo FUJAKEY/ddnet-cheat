@@ -239,9 +239,9 @@ void CMenus::RenderGame(CUIRect MainView)
 		{
 			if(GameClient()->m_TouchControls.IsEditingActive() && UnsavedChanges())
 			{
-				m_OldSelectedButton = GameClient()->m_TouchControls.SelectedButton();
-				m_NewSelectedButton = nullptr;
-				PopupConfirm("Unsaved Changes", "Save all changes before turning off the editor?", "Save", "Cancel", &CMenus::PopupConfirm_TurnOffEditor);
+				m_pOldSelectedButton = GameClient()->m_TouchControls.SelectedButton();
+				m_pNewSelectedButton = nullptr;
+				PopupConfirm(Localize("Unsaved Changes"), "Save all changes before turning off the editor?", Localize("Save"), "Cancel", &CMenus::PopupConfirm_TurnOffEditor);
 			}
 			else
 			{
@@ -249,7 +249,7 @@ void CMenus::RenderGame(CUIRect MainView)
 				if(GameClient()->m_TouchControls.IsEditingActive())
 				{
 					GameClient()->m_TouchControls.ResetVirtualVisibilities();
-					m_EditElement = 0;
+					m_EditElement = EElementType::LAYOUT;
 				}
 				else
 				{
@@ -300,20 +300,17 @@ void CMenus::RenderGame(CUIRect MainView)
 			}
 			if(m_FirstEnter)
 			{
-				m_aCachedVisibilities[(int)CTouchControls::EButtonVisibility::DEMO_PLAYER] = 0;
+				m_aCachedVisibilities[(int)CTouchControls::EButtonVisibility::DEMO_PLAYER] = (int)EVisibilityType::EXCLUDE;
 				m_ColorActive = color_cast<ColorHSLA>(GameClient()->m_TouchControls.BackgroundColorActive()).Pack(true);
 				m_ColorInactive = color_cast<ColorHSLA>(GameClient()->m_TouchControls.BackgroundColorInactive()).Pack(true);
 				m_FirstEnter = false;
 			}
 			// Their width is all 505.0f, height is adjustable, you can directly change its h value, so no need for changing where tab is.
 			CUIRect SelectingTab;
-			MainView.HSplitTop(10.0f, nullptr, &MainView);
-			MainView.HMargin((MainView.h - 275.0f) / 2.0f, &MainView);
+			MainView.HSplitTop(40.0f, nullptr, &MainView);
 			MainView.VMargin((MainView.w - BUTTON_EDITOR_WIDTH) / 2.0f, &MainView);
-			MainView.y -= 70.0f;
 			MainView.HSplitTop(25.0f, &SelectingTab, &MainView);
 
-			// Select tab.
 			RenderSelectingTab(SelectingTab);
 
 			switch(m_CurrentMenu)
@@ -322,7 +319,7 @@ void CMenus::RenderGame(CUIRect MainView)
 			case EMenuType::MENU_BUTTONS: RenderTouchButtonEditor(MainView); break;
 			case EMenuType::MENU_SETTINGS: RenderConfigSettings(MainView); break;
 			case EMenuType::MENU_PREVIEW: RenderPreviewSettings(MainView); break;
-			default: dbg_assert(false, "Unknown selected tab value.");
+			default: dbg_assert(false, "Unknown selected tab value = %d.", (int)m_CurrentMenu);
 			}
 		}
 	}

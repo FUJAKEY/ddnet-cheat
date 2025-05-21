@@ -901,16 +901,34 @@ private:
 	};
 	ESortType m_SortType = ESortType::LABEL;
 
+	enum class EElementType
+	{
+		LAYOUT = 0,
+		VISIBILITY,
+		BEHAVIOR,
+		NUM_ELEMENTS
+	};
+	EElementType m_EditElement = EElementType::LAYOUT;
+
+	enum class EVisibilityType
+	{
+		EXCLUDE = 0,
+		INCLUDE,
+		IGNORE,
+		NUM_VISIBILITIES
+	};
+	std::array<int, (size_t)CTouchControls::EButtonVisibility::NUM_VISIBILITIES> m_aCachedVisibilities; // 0:-, 1:+, 2:Ignored.
+
 	std::array<std::function<bool(CTouchControls::CTouchButton *, CTouchControls::CTouchButton *)>, (unsigned)ESortType::NUM_SORTS> m_SortFunctions = {
-		[](CTouchControls::CTouchButton *ButtonA, CTouchControls::CTouchButton *ButtonB) { return str_comp(ButtonA->m_pBehavior->GetLabel().m_pLabel, ButtonB->m_pBehavior->GetLabel().m_pLabel) < 0; },
-		[](CTouchControls::CTouchButton *ButtonA, CTouchControls::CTouchButton *ButtonB) { return ButtonA->m_UnitRect.m_X < ButtonB->m_UnitRect.m_X; },
-		[](CTouchControls::CTouchButton *ButtonA, CTouchControls::CTouchButton *ButtonB) { return ButtonA->m_UnitRect.m_Y < ButtonB->m_UnitRect.m_Y; },
-		[](CTouchControls::CTouchButton *ButtonA, CTouchControls::CTouchButton *ButtonB) { return ButtonA->m_UnitRect.m_W < ButtonB->m_UnitRect.m_W; },
-		[](CTouchControls::CTouchButton *ButtonA, CTouchControls::CTouchButton *ButtonB) { return ButtonA->m_UnitRect.m_H < ButtonB->m_UnitRect.m_H; }};
+		[](CTouchControls::CTouchButton *pLhs, CTouchControls::CTouchButton *pRhs) { return str_comp(pLhs->m_pBehavior->GetLabel().m_pLabel, pRhs->m_pBehavior->GetLabel().m_pLabel) < 0; },
+		[](CTouchControls::CTouchButton *pLhs, CTouchControls::CTouchButton *pRhs) { return pLhs->m_UnitRect.m_X < pRhs->m_UnitRect.m_X; },
+		[](CTouchControls::CTouchButton *pLhs, CTouchControls::CTouchButton *pRhs) { return pLhs->m_UnitRect.m_Y < pRhs->m_UnitRect.m_Y; },
+		[](CTouchControls::CTouchButton *pLhs, CTouchControls::CTouchButton *pRhs) { return pLhs->m_UnitRect.m_W < pRhs->m_UnitRect.m_W; },
+		[](CTouchControls::CTouchButton *pLhs, CTouchControls::CTouchButton *pRhs) { return pLhs->m_UnitRect.m_H < pRhs->m_UnitRect.m_H; }};
 
 	// Mainly for passing values in popups.
-	CTouchControls::CTouchButton *m_OldSelectedButton = nullptr;
-	CTouchControls::CTouchButton *m_NewSelectedButton = nullptr;
+	CTouchControls::CTouchButton *m_pOldSelectedButton = nullptr;
+	CTouchControls::CTouchButton *m_pNewSelectedButton = nullptr;
 
 	// Storing everything you are editing.
 	CLineInputNumber m_InputX;
@@ -921,41 +939,56 @@ private:
 
 	int m_EditBehaviorType = (int)EBehaviorType::BIND;
 	int m_PredefinedBehaviorType = (int)EPredefinedType::EXTRA_MENU;
-	int m_EditCommandNumber = 0;
-	int m_EditElement = 0; // 0 for shape&size, 1 for visibility, 2 for behavior.
-	int m_CachedNumber = 0;
-	std::vector<std::unique_ptr<CLineInputBuffered<1024>>> m_vInputCommands;
-	std::vector<std::unique_ptr<CLineInputBuffered<1024>>> m_vInputLabels;
-	std::vector<CTouchControls::CBindToggleTouchButtonBehavior::CCommand> m_vCachedCommands;
-	std::array<int, (size_t)CTouchControls::EButtonVisibility::NUM_VISIBILITIES> m_aCachedVisibilities; // 0:-, 1:+, 2:Ignored.
+	int m_CachedExtraMenuNumber = 0;
+
+	class CBehaviorElements
+	{
+	public:
+		std::unique_ptr<CLineInputBuffered<1024>> m_InputCommand;
+		std::unique_ptr<CLineInputBuffered<1024>> m_InputLabel;
+		CTouchControls::CBindToggleTouchButtonBehavior::CCommand m_CachedCommands;
+		CButtonContainer m_BindToggleAddButtons;
+		CButtonContainer m_BindToggleDeleteButtons;
+		CButtonContainer m_aLabelTypeRadios[3];
+		CGameClient *m_pGameClient;
+
+		CBehaviorElements() = delete;
+		CBehaviorElements(CGameClient *GameClient) noexcept;
+		CBehaviorElements(CBehaviorElements &&Other) noexcept;
+		~CBehaviorElements();
+		CBehaviorElements &operator=(CBehaviorElements &&Other) noexcept;
+
+		CBehaviorElements &operator=(const CBehaviorElements &) = delete;
+		CBehaviorElements(const CBehaviorElements &Other) = delete;
+
+		std::string ParseLabel(const char *pLabel);
+		void UpdateInputs();
+		void UpdateLabel() { m_CachedCommands.m_Label = ParseLabel(m_InputLabel->GetString()); }
+		void UpdateCommand() { m_CachedCommands.m_Command = m_InputCommand->GetString(); }
+		void Reset();
+	};
+	std::vector<CBehaviorElements> m_vBehaviorElements;
 
 	unsigned m_ColorActive = 0;
 	unsigned m_ColorInactive = 0;
 
 	// Used for creating ui elements.
-	std::array<CButtonContainer, (unsigned)CTouchControls::EButtonVisibility::NUM_VISIBILITIES> m_aButtonVisibilityIds = {};
 	std::array<CButtonContainer, (unsigned)CTouchControls::EButtonVisibility::NUM_VISIBILITIES> m_aVisibilityIds = {};
 	std::array<CButtonContainer, (unsigned)ESortType::NUM_SORTS> m_aSortHeaderIds = {};
 	std::array<CButtonContainer, 3> m_aEditElementIds = {};
-	std::array<CButtonContainer, 3> m_aSelectingTabIds = {};
-	std::array<CButtonContainer, 2> m_aSettingTabIds = {};
-	std::vector<CButtonContainer> m_vBindToggleAddButtons;
-	std::vector<CButtonContainer> m_vBindToggleDeleteButtons;
-	std::vector<std::array<CButtonContainer, 3>> m_vLabelTypeRadios;
 
 	// Functional variables.
 	bool m_FirstEnter = true; // Execute something when first opening the editor.
 	bool m_CloseMenu = false; // Decide if closing menu after the popup confirm.
-	bool m_NeedUpdatePreview = true; // Update previews only upon entering this page, because the update is kinda slow.
-	bool m_NeedSort = true;
-	bool m_NeedFilter = false;
+	bool m_NeedUpdatePreview = true; // Whether to reload the button being previewed.
+	bool m_NeedSort = true; // Whether to sort all previewed buttons.
+	bool m_NeedFilter = false; // Whether to exclude some buttons from preview.
 	bool m_BindTogglePreviewExtension = false;
-	std::vector<CTouchControls::CTouchButton *> m_vVisibleButtons;
-	std::vector<CTouchControls::CTouchButton *> m_vInvisibleButtons;
-	std::vector<CTouchControls::CTouchButton *> m_vSortedButtons;
+	std::vector<CTouchControls::CTouchButton *> m_vpVisibleButtons;
+	std::vector<CTouchControls::CTouchButton *> m_vpInvisibleButtons;
+	std::vector<CTouchControls::CTouchButton *> m_vpSortedButtons;
 	CLineInputBuffered<1024> m_SearchInput;
-	unsigned m_SelectedPreviewButton = -1;
-	std::string m_ParsedString;
+	unsigned m_SelectedPreviewButtonIndex = -1;
 
 	void RenderTouchButtonEditor(CUIRect MainView);
 	bool RenderLayoutSettingBlock(CUIRect Block);
@@ -1001,15 +1034,10 @@ private:
 	void SaveCachedSettingsToTarget(CTouchControls::CTouchButton *TargetButton);
 	void SetPosInputs(CTouchControls::CUnitRect MyRect);
 	void InputPosFunction(CLineInputNumber *Input);
-	void UpdateTmpButton();
+	void UpdateSampleButton();
 	void ResetButtonPointers();
-	void DoRedLabel(const char *pLabel, CUIRect &Block, const int &Size);
-	void ParseLabel(const char *pLabel);
 	void ResolveIssues();
-	int CalculateBehaviorType(const char *Type);
-	int CalculatePredefinedType(const char *Type);
-	void LimitStringLength(std::string &Target, unsigned MaxLength);
-	void InitLineInputs();
-	std::string GetCommand(CTouchControls::CTouchButton *Button);
+	int CalculatePredefinedType(const char *pType);
+	std::string DetermineTouchButtonCommandLabel(CTouchControls::CTouchButton *pButton);
 };
 #endif

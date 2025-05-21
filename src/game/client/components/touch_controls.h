@@ -16,7 +16,6 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -81,23 +80,7 @@ public:
 		int m_Y;
 		int m_W;
 		int m_H;
-		bool operator<(const CUnitRect &Other) const
-		{
-			if(m_X + m_W / 2 != Other.m_X + Other.m_W / 2)
-				return m_X + m_W / 2 < Other.m_X + Other.m_W / 2;
-			return m_Y + m_H / 2 < Other.m_Y + Other.m_H / 2;
-		}
-		// This means distance;
-		double operator/(const CUnitRect &Other) const
-		{
-			double Dx = Other.m_X + Other.m_W / 2.0f - m_X - m_W / 2.0f;
-			Dx /= BUTTON_SIZE_SCALE;
-			Dx *= Dx;
-			double Dy = Other.m_Y + Other.m_H / 2.0f - m_Y - m_H / 2.0f;
-			Dy /= BUTTON_SIZE_SCALE;
-			Dy *= Dy;
-			return std::sqrt(Dx + Dy);
-		}
+		double Distance(const CUnitRect &Other) const;
 		bool IsOverlap(const CUnitRect &Other) const
 		{
 			return (m_X < Other.m_X + Other.m_W) && (m_X + m_W > Other.m_X) && (m_Y < Other.m_Y + Other.m_H) && (m_Y + m_H > Other.m_Y);
@@ -121,8 +104,6 @@ public:
 		NUM_VISIBILITIES
 	};
 	static const constexpr int MAXNUMBER = (int)EButtonVisibility::EXTRA_MENU_5 - (int)EButtonVisibility::EXTRA_MENU_1 + 1;
-	const std::array<const char *, (size_t)CTouchControls::EButtonVisibility::NUM_VISIBILITIES> m_VisibilityStrings = {"Ingame", "Zoom Allowed", "Vote Active", "Dummy Allowed", "Dummy Connected", "Rcon Authed",
-		"Demo Player", "Extra Menu 1", "Extra Menu 2", "Extra Menu 3", "Extra Menu 4", "Extra Menu 5"};
 
 	enum class EButtonShape
 	{
@@ -162,9 +143,7 @@ public:
 private:
 	static constexpr const char *const DIRECT_TOUCH_INGAME_MODE_NAMES[(int)EDirectTouchIngameMode::NUM_STATES] = {"disabled", "action", "aim", "fire", "hook"};
 	static constexpr const char *const DIRECT_TOUCH_SPECTATE_MODE_NAMES[(int)EDirectTouchSpectateMode::NUM_STATES] = {"disabled", "aim"};
-
 	static constexpr const char *const SHAPE_NAMES[(int)EButtonShape::NUM_SHAPES] = {"rect", "circle"};
-	std::array<const char *, (int)EButtonShape::NUM_SHAPES> m_Shapes = {"Rectangle", "Circle"};
 
 	class CButtonVisibility
 	{
@@ -311,7 +290,6 @@ public:
 
 		CButtonLabel GetLabel() const override;
 		int GetNumber() const { return m_Number; }
-		void SetNumber(int &&Number) { m_Number = Number; }
 		void OnDeactivate() override;
 		void WriteToConfiguration(CJsonWriter *pWriter) override;
 
@@ -452,9 +430,7 @@ public:
 			m_Command(pCommand) {}
 
 		CButtonLabel GetLabel() const override;
-		void SetLabel(CButtonLabel Label);
 		std::string GetCommand() const { return m_Command; }
-		void SetCommand(std::string &&Command);
 		void OnActivate() override;
 		void OnDeactivate() override;
 		void OnUpdate() override;
@@ -498,9 +474,7 @@ public:
 			m_vCommands(std::move(vCommands)) {}
 
 		CButtonLabel GetLabel() const override;
-		void SetLabel(CButtonLabel Label);
 		std::vector<CCommand> GetCommand() const { return m_vCommands; }
-		void SetCommand(std::vector<CCommand> &&Commands) { m_vCommands = Commands; }
 		size_t GetActiveCommandIndex() const { return m_ActiveCommandIndex; }
 		void OnActivate() override;
 		void WriteToConfiguration(CJsonWriter *pWriter) override;
@@ -533,8 +507,7 @@ private:
 	 */
 	ColorRGBA m_BackgroundColorInactive = ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f);
 
-	// Default Inactive Color.
-	const ColorRGBA m_DefaultBackgroundColorInactive = ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f);
+	static const ColorRGBA DEFAULT_BACKGROUND_COLOR_ACTIVE;
 
 	/**
 	 * Background color of active touch buttons.
@@ -543,8 +516,7 @@ private:
 	 */
 	ColorRGBA m_BackgroundColorActive = ColorRGBA(0.2f, 0.2f, 0.2f, 0.25f);
 
-	// Default Active Color.
-	const ColorRGBA m_DefaultBackgroundColorActive = ColorRGBA(0.2f, 0.2f, 0.2f, 0.25f);
+	static const ColorRGBA DEFAULT_BACKGROUND_COLOR_INACTIVE;
 
 	/**
 	 * All touch buttons.
@@ -650,7 +622,7 @@ private:
 		void Insert(CQuadtreeNode &Node, const CUnitRect &Rect, size_t Depth);
 		bool Find(const CUnitRect &MyRect, CQuadtreeNode &Node);
 	};
-	CUnitRect FindPositionXY(const std::set<CUnitRect> &vVisibleButtonRects, CUnitRect MyRect);
+	CUnitRect FindPositionXY(const std::vector<CUnitRect> &vVisibleButtonRects, CUnitRect MyRect);
 
 	// This is how editor render buttons.
 	void RenderButtonsWhileInEditor();
@@ -671,7 +643,7 @@ private:
 	std::optional<CUnitRect> m_ShownRect;
 	CTouchButton *m_pSelectedButton = nullptr;
 	// This is for render, when directly slide to move buttons on screen.
-	std::unique_ptr<CTouchButton> m_pTmpButton = nullptr;
+	std::unique_ptr<CTouchButton> m_pSampleButton = nullptr;
 	bool m_PreviewAllButtons = false;
 
 public:
@@ -695,23 +667,21 @@ public:
 	CTouchButton *SelectedButton() const { return m_pSelectedButton; }
 	void SetSelectedButton(CTouchButton *TargetButton) { m_pSelectedButton = TargetButton; }
 	bool NoRealButtonSelected() const { return m_pSelectedButton == nullptr; }
-	void RemakeTmpButton() { m_pTmpButton = std::make_unique<CTouchButton>(this); }
-	CTouchButton *TmpButton() const { return m_pTmpButton.get(); }
-	bool IsButtonEditing() const { return m_pSelectedButton != nullptr || m_pTmpButton != nullptr; }
-	ColorRGBA DefaultBackgroundColorInactive() const { return m_DefaultBackgroundColorInactive; }
-	ColorRGBA DefaultBackgroundColorActive() const { return m_DefaultBackgroundColorActive; }
+	void RemakeSampleButton() { m_pSampleButton = std::make_unique<CTouchButton>(this); }
+	CTouchButton *SampleButton() const { return m_pSampleButton.get(); }
+	bool IsButtonEditing() const { return m_pSelectedButton != nullptr || m_pSampleButton != nullptr; }
+	static ColorRGBA DefaultBackgroundColorInactive() { return DEFAULT_BACKGROUND_COLOR_INACTIVE; }
+	static ColorRGBA DefaultBackgroundColorActive() { return DEFAULT_BACKGROUND_COLOR_ACTIVE; }
 	ColorRGBA BackgroundColorInactive() const { return m_BackgroundColorInactive; }
 	ColorRGBA BackgroundColorActive() const { return m_BackgroundColorActive; }
 	void SetBackgroundColorInactive(ColorRGBA Color) { m_BackgroundColorInactive = Color; }
 	void SetBackgroundColorActive(ColorRGBA Color) { m_BackgroundColorActive = Color; }
-	std::array<const char *, (size_t)EButtonVisibility::NUM_VISIBILITIES> VisibilityStrings() const { return m_VisibilityStrings; }
-	std::array<const char *, (int)EButtonShape::NUM_SHAPES> Shapes() const { return m_Shapes; }
 	std::vector<CTouchButton *> VisibleButtons();
 	std::vector<CTouchButton *> InvisibleButtons();
 	bool PreviewAllButtons() const { return m_PreviewAllButtons; }
 	void SetPreviewAllButtons(bool Preview) { m_PreviewAllButtons = Preview; }
 
-	// The extra menu behavior will use m_CachedNumber in CMenus.
+	// The extra menu behavior will use m_CachedExtraMenuNumber in CMenus.
 	const CBehaviorFactoryEditor m_BehaviorFactoriesEditor[10] = {
 		{CExtraMenuTouchButtonBehavior::BEHAVIOR_ID, [&]() { return std::make_unique<CExtraMenuTouchButtonBehavior>(0); }},
 		{CJoystickHookTouchButtonBehavior::BEHAVIOR_ID, []() { return std::make_unique<CJoystickHookTouchButtonBehavior>(); }},
@@ -742,8 +712,8 @@ public:
 	{
 	public:
 		EPopupType m_PopupType = EPopupType::NUM_POPUPS;
-		CTouchButton *m_OldSelectedButton = nullptr;
-		CTouchButton *m_NewSelectedButton = nullptr;
+		CTouchButton *m_pOldSelectedButton = nullptr;
+		CTouchButton *m_pNewSelectedButton = nullptr;
 		bool m_KeepMenuOpen = false;
 	};
 
@@ -753,11 +723,9 @@ public:
 	// This is usually for update cached settings in button editor.
 	enum class EIssueType
 	{
-		// Update Cached settings from m_TargetButton.
-		CACHE_SETTINGS = 0,
-		// Save Cached settings to m_TargetButton.
-		SAVE_SETTINGS,
-		CACHE_POSITION,
+		CACHE_SETTINGS = 0, // Update Cached settings from m_pTargetButton.
+		SAVE_SETTINGS, // Save Cached settings to m_pTargetButton.
+		CACHE_POSITION, // Update position from m_pTargetButton.
 		NUM_ISSUES
 	};
 
@@ -766,7 +734,7 @@ public:
 	public:
 		// Whether the issue is finished.
 		bool m_Finished = true;
-		CTouchButton *m_TargetButton = nullptr;
+		CTouchButton *m_pTargetButton = nullptr;
 	};
 
 	bool IsIssueNotFinished();
