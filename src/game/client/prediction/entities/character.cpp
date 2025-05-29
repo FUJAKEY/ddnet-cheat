@@ -84,8 +84,7 @@ void CCharacter::HandleJetpack()
 	{
 		if(m_Core.m_Jetpack)
 		{
-			int TuneZone = GetOverriddenTuneZone();
-			float Strength = TuneZone ? GetTuning(TuneZone)->m_JetpackStrength : m_LastJetpackStrength;
+			float Strength = GetTuning(GetOverriddenTuneZone())->m_JetpackStrength;
 			TakeDamage(Direction * -1.0f * (Strength / 100.0f / 6.11f), 0, GetCid(), m_Core.m_ActiveWeapon);
 		}
 	}
@@ -644,7 +643,7 @@ void CCharacter::HandleSkippableTiles(int Index)
 		int Force, Type, MaxSpeed = 0;
 		Collision()->GetSpeedup(Index, &Direction, &Force, &MaxSpeed, &Type);
 
-		if(Type == TILE_SPEED_BOOST_OLD) // old buggy shitty spaghetti behavior
+		if(Type == TILE_SPEED_BOOST_OLD)
 		{
 			float TeeAngle, SpeederAngle, DiffAngle, SpeedLeft, TeeSpeed;
 			if(Force == 255 && MaxSpeed)
@@ -749,6 +748,10 @@ void CCharacter::HandleTiles(int Index)
 		m_LastRefillJumps = false;
 		return;
 	}
+
+	int TeleCheckpoint = Collision()->IsTeleCheckpoint(MapIndex);
+	if(TeleCheckpoint)
+		m_TeleCheckpoint = TeleCheckpoint;
 
 	// handle switch tiles
 	if(Collision()->GetSwitchType(MapIndex) == TILE_SWITCHOPEN && Team() != TEAM_SUPER && Collision()->GetSwitchNumber(MapIndex) > 0)
@@ -966,6 +969,103 @@ void CCharacter::HandleTiles(int Index)
 	{
 		m_LastRefillJumps = false;
 	}
+
+	int TeleNumber = Collision()->IsTeleport(MapIndex);
+	if(!g_Config.m_SvOldTeleportHook && !g_Config.m_SvOldTeleportWeapons && TeleNumber && !Collision()->TeleOuts(TeleNumber - 1).empty())
+	{
+		if(m_Core.m_Super || m_Core.m_Invincible)
+			return;
+		if(Collision()->TeleOuts(TeleNumber - 1).size() == 1)
+		{
+			m_Core.m_Pos = Collision()->TeleOuts(TeleNumber - 1)[0];
+			if(!g_Config.m_SvTeleportHoldHook)
+			{
+				ResetHook();
+			}
+			if(g_Config.m_SvTeleportLoseWeapons)
+				ResetPickups();
+		}
+		return;
+	}
+	int EvilTeleNumber = Collision()->IsEvilTeleport(MapIndex);
+	if(EvilTeleNumber && !Collision()->TeleOuts(EvilTeleNumber - 1).empty())
+	{
+		if(m_Core.m_Super || m_Core.m_Invincible)
+			return;
+		if(Collision()->TeleOuts(EvilTeleNumber - 1).size() == 1)
+		{
+			m_Core.m_Pos = Collision()->TeleOuts(EvilTeleNumber - 1)[0];
+			if(!g_Config.m_SvOldTeleportHook && !g_Config.m_SvOldTeleportWeapons)
+			{
+				m_Core.m_Vel = vec2(0, 0);
+
+				if(!g_Config.m_SvTeleportHoldHook)
+				{
+					ResetHook();
+					GameWorld()->ReleaseHooked(GetCid());
+				}
+				if(g_Config.m_SvTeleportLoseWeapons)
+				{
+					ResetPickups();
+				}
+			}
+		}
+		return;
+	}
+	if(Collision()->IsCheckEvilTeleport(MapIndex))
+	{
+		if(m_Core.m_Super || m_Core.m_Invincible)
+			return;
+		// first check if there is a TeleCheckOut for the current recorded checkpoint, if not check previous checkpoints
+		for(int k = m_TeleCheckpoint - 1; k >= 0; k--)
+		{
+			if(Collision()->TeleCheckOuts(k).size() == 1)
+			{
+				m_Core.m_Pos = Collision()->TeleCheckOuts(k)[0];
+				m_Core.m_Vel = vec2(0, 0);
+
+				if(!g_Config.m_SvTeleportHoldHook)
+				{
+					ResetHook();
+					GameWorld()->ReleaseHooked(GetCid());
+				}
+
+				return;
+			}
+			if(!Collision()->TeleCheckOuts(k).empty())
+			{
+				return;
+			}
+		}
+		// if no checkpointout have been found (or if there no recorded checkpoint), teleport to start
+		return;
+	}
+	if(Collision()->IsCheckTeleport(MapIndex))
+	{
+		if(m_Core.m_Super || m_Core.m_Invincible)
+			return;
+		// first check if there is a TeleCheckOut for the current recorded checkpoint, if not check previous checkpoints
+		for(int k = m_TeleCheckpoint - 1; k >= 0; k--)
+		{
+			if(Collision()->TeleCheckOuts(k).size() == 1)
+			{
+				m_Core.m_Pos = Collision()->TeleCheckOuts(k)[0];
+
+				if(!g_Config.m_SvTeleportHoldHook)
+				{
+					ResetHook();
+				}
+
+				return;
+			}
+			if(!Collision()->TeleCheckOuts(k).empty())
+			{
+				return;
+			}
+		}
+		// if no checkpointout have been found (or if there no recorded checkpoint), teleport to start
+		return;
+	}
 }
 
 void CCharacter::HandleTuneLayer()
@@ -1148,6 +1248,16 @@ void CCharacter::GiveAllWeapons()
 	}
 }
 
+void CCharacter::ResetPickups()
+{
+	for(int i = WEAPON_SHOTGUN; i < NUM_WEAPONS - 1; i++)
+	{
+		m_Core.m_aWeapons[i].m_Got = false;
+		if(m_Core.m_ActiveWeapon == i)
+			m_Core.m_ActiveWeapon = WEAPON_GUN;
+	}
+}
+
 void CCharacter::ResetVelocity()
 {
 	m_Core.m_Vel = vec2(0, 0);
@@ -1198,7 +1308,6 @@ CCharacter::CCharacter(CGameWorld *pGameWorld, int Id, CNetObj_Character *pChar,
 	m_ReloadTimer = 0;
 	m_NumObjectsHit = 0;
 	m_LastRefillJumps = false;
-	m_LastJetpackStrength = 400.0f;
 	m_CanMoveInFreeze = false;
 	m_TeleCheckpoint = 0;
 	m_StrongWeakId = 0;
@@ -1316,10 +1425,9 @@ void CCharacter::Read(CNetObj_Character *pChar, CNetObj_DDNetCharacter *pExtende
 		if(pChar->m_Weapon != WEAPON_NINJA)
 			m_Core.m_aWeapons[pChar->m_Weapon].m_Got = true;
 
-		// jetpack
-		if(GameWorld()->m_WorldConfig.m_PredictWeapons && Tuning()->m_JetpackStrength > 0)
+		// without ddnetcharacter we don't know if we have jetpack, so try to predict jetpack if strength isn't 0, on vanilla it's always 0
+		if(GameWorld()->m_WorldConfig.m_PredictWeapons && Tuning()->m_JetpackStrength != 0)
 		{
-			m_LastJetpackStrength = Tuning()->m_JetpackStrength;
 			m_Core.m_Jetpack = true;
 			m_Core.m_aWeapons[WEAPON_GUN].m_Got = true;
 			m_Core.m_aWeapons[WEAPON_GUN].m_Ammo = -1;

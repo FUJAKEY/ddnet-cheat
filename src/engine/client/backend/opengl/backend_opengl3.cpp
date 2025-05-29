@@ -19,7 +19,7 @@
 
 #include <engine/client/backend/glsl_shader_compiler.h>
 
-#ifdef CONF_WEBASM
+#if defined(CONF_PLATFORM_EMSCRIPTEN)
 // WebGL2 defines the type of a buffer at the first bind to a buffer target
 // this is different to GLES 3 (https://www.khronos.org/registry/webgl/specs/latest/2.0/#5.1)
 static constexpr GLenum BUFFER_INIT_INDEX_TARGET = GL_ELEMENT_ARRAY_BUFFER;
@@ -65,9 +65,12 @@ void CCommandProcessorFragment_OpenGL3_3::InitPrimExProgram(CGLSLPrimitiveExProg
 	pProgram->m_LocCenter = pProgram->GetUniformLoc("gCenter");
 	pProgram->m_LocVertciesColor = pProgram->GetUniformLoc("gVerticesColor");
 
-	pProgram->SetUniform(pProgram->m_LocRotation, 0.0f);
-	float aCenter[2] = {0.f, 0.f};
-	pProgram->SetUniformVec2(pProgram->m_LocCenter, 1, aCenter);
+	if(!Rotationless)
+	{
+		pProgram->SetUniform(pProgram->m_LocRotation, 0.0f);
+		float aCenter[2] = {0.f, 0.f};
+		pProgram->SetUniformVec2(pProgram->m_LocCenter, 1, aCenter);
+	}
 }
 
 bool CCommandProcessorFragment_OpenGL3_3::Cmd_Init(const SCommand_Init *pCommand)

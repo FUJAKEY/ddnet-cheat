@@ -58,7 +58,7 @@ endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(TARGET_OS "windows")
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(TARGET_OS "linux")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(TARGET_OS "mac")
@@ -66,6 +66,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
   set(TARGET_OS "haiku")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
   set(TARGET_OS "android")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  set(TARGET_OS "emscripten")
 endif()
 
 include(CheckCCompilerFlag)
@@ -74,7 +76,7 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.18)
   include(CheckLinkerFlag)
 endif()
 include(CheckSymbolExists)
-if(NOT (CMAKE_SYSTEM_NAME STREQUAL "Emscripten"))
+if(NOT (TARGET_OS STREQUAL "emscripten"))
   include(CheckAtomic)
 endif()
 
@@ -122,7 +124,7 @@ option(IPO "Enable interprocedural optimizations" OFF)
 option(FUSE_LD "Linker to use" OFF)
 option(SECURITY_COMPILER_FLAGS "Whether to set security-relevant compiler flags like -D_FORTIFY_SOURCE=2 and -fstack-protector-strong" ON)
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+if(TARGET_OS STREQUAL "emscripten")
   include(${PROJECT_SOURCE_DIR}/cmake/toolchains/Emscripten.toolchain)
 endif()
 
@@ -426,7 +428,7 @@ endif()
 
 if(FAT)
   set(LIB_DIR "${TARGET_OS}/libfat")
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+elseif(TARGET_OS STREQUAL "emscripten")
   set(LIB_DIR "webasm/libwasm")
 elseif(TARGET_CPU_ARCHITECTURE STREQUAL "arm" OR TARGET_CPU_ARCHITECTURE STREQUAL "arm64")
   set(LIB_DIR "${TARGET_OS}/lib${TARGET_CPU_ARCHITECTURE}")
@@ -455,7 +457,7 @@ function(set_extra_dirs_include VARIABLE NAME LIBRARY)
   is_bundled(IS_BUNDLED "${LIBRARY}")
   if(IS_BUNDLED)
     set(TMP_TARGET_OS ${TARGET_OS})
-    if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    if(TARGET_OS STREQUAL "emscripten")
      set(TMP_TARGET_OS webasm)
     endif()
     set("HINTS_${VARIABLE}_INCLUDEDIR" "ddnet-libs/${NAME}/include" "ddnet-libs/${NAME}/include/${TMP_TARGET_OS}" PARENT_SCOPE)
@@ -463,7 +465,7 @@ function(set_extra_dirs_include VARIABLE NAME LIBRARY)
 endfunction()
 
 if(CMAKE_CROSSCOMPILING)
-  if(TARGET_OS STREQUAL "android" OR CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  if(TARGET_OS STREQUAL "android" OR TARGET_OS STREQUAL "emscripten")
     # be more aggressive with android toolchain
     set(CROSSCOMPILING_NO_CMAKE_SYSTEM_PATH NO_CMAKE_SYSTEM_PATH NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
@@ -736,6 +738,15 @@ elseif(TARGET_OS STREQUAL "android")
     set(PLATFORM_LIBS ${TW_ANDROID_LIBS})
     set(PLATFORM_CLIENT_LIBS ${TW_ANDROID_LIBS_CLIENT})
     set(PLATFORM_CLIENT_INCLUDE_DIRS)
+elseif(TARGET_OS STREQUAL "emscripten")
+  find_package(OpenGL)
+  set(PLATFORM_CLIENT_LIBS GL)
+  set(PLATFORM_CLIENT_INCLUDE_DIRS "")
+  set(CMAKE_EXECUTABLE_SUFFIX ".html")
+  set(PLATFORM_CLIENT)
+  set(PLATFORM_LIBS)
+  list(APPEND PLATFORM_LIBS rt) # clock_gettime for glibc < 2.17
+  list(APPEND PLATFORM_LIBS dl) # for Rust
 else()
   find_package(Notify)
   find_package(OpenGL)
@@ -749,12 +760,6 @@ else()
   else()
     set(PLATFORM_LIBS)
   endif()
-endif()
-
-if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-  set(PLATFORM_CLIENT_LIBS GL)
-  set(PLATFORM_CLIENT_INCLUDE_DIRS "")
-  set(CMAKE_EXECUTABLE_SUFFIX ".html")
 endif()
 
 ########################################################################
@@ -2153,6 +2158,7 @@ set_src(GAME_SHARED GLOB src/game
   mapitems_ex_types.h
   prng.cpp
   prng.h
+  race_state.h
   teamscore.cpp
   teamscore.h
   tuning.h
@@ -2404,12 +2410,16 @@ if(CLIENT)
     pickup_data.h
     prediction/entities/character.cpp
     prediction/entities/character.h
+    prediction/entities/door.cpp
+    prediction/entities/door.h
     prediction/entities/dragger.cpp
     prediction/entities/dragger.h
     prediction/entities/laser.cpp
     prediction/entities/laser.h
     prediction/entities/pickup.cpp
     prediction/entities/pickup.h
+    prediction/entities/plasma.cpp
+    prediction/entities/plasma.h
     prediction/entities/projectile.cpp
     prediction/entities/projectile.h
     prediction/entity.cpp
@@ -2500,6 +2510,8 @@ if(CLIENT)
     prompt.h
     proof_mode.cpp
     proof_mode.h
+    quadart.cpp
+    quadart.h
     quick_action.h
     quick_actions.cpp
     quick_actions.h
@@ -2550,8 +2562,12 @@ if(CLIENT)
   endif()
 
   if(TARGET_OS STREQUAL "windows")
+    set(VERSION_EXECUTABLE "${CLIENT_EXECUTABLE}")
+    set(VERSION_COMPANY "${CLIENT_EXECUTABLE} Team")
+    configure_file("other/versioninfo/versioninfo.rc.in" "client.versioninfo.rc")
     configure_file("other/manifest/client.manifest.in" "client.manifest")
     set(CLIENT_ICON "other/icons/DDNet.rc")
+    set(CLIENT_VERSIONINFO "${CMAKE_CURRENT_BINARY_DIR}/client.versioninfo.rc")
     if(NOT MINGW)
       set(CLIENT_MANIFEST "${CMAKE_CURRENT_BINARY_DIR}/client.manifest")
     else()
@@ -2560,6 +2576,7 @@ if(CLIENT)
     endif()
   else()
     set(CLIENT_ICON)
+    set(CLIENT_VERSIONINFO)
     set(CLIENT_MANIFEST)
   endif()
 
@@ -2568,6 +2585,7 @@ if(CLIENT)
     add_library(game-client SHARED
       ${CLIENT_SRC}
       ${CLIENT_ICON}
+      ${CLIENT_VERSIONINFO}
       ${CLIENT_MANIFEST}
       ${DEPS_CLIENT}
       $<TARGET_OBJECTS:engine-gfx>
@@ -2579,6 +2597,7 @@ if(CLIENT)
     add_executable(game-client WIN32
       ${CLIENT_SRC}
       ${CLIENT_ICON}
+      ${CLIENT_VERSIONINFO}
       ${CLIENT_MANIFEST}
       ${DEPS_CLIENT}
       $<TARGET_OBJECTS:engine-gfx>
@@ -2752,9 +2771,14 @@ if(SERVER)
   )
   set(SERVER_SRC ${ENGINE_SERVER_WITHOUT_MAIN} ${GAME_SERVER} ${GAME_GENERATED_SERVER})
   if(TARGET_OS STREQUAL "windows")
+    set(VERSION_EXECUTABLE "${SERVER_EXECUTABLE}")
+    set(VERSION_COMPANY "${CLIENT_EXECUTABLE} Team")
+    configure_file("other/versioninfo/versioninfo.rc.in" "server.versioninfo.rc")
     set(SERVER_ICON "other/icons/DDNet-Server.rc")
+    set(SERVER_VERSIONINFO "${CMAKE_CURRENT_BINARY_DIR}/server.versioninfo.rc")
   else()
     set(SERVER_ICON)
+    set(SERVER_VERSIONINFO)
   endif()
 
   # Antibot
@@ -2795,6 +2819,7 @@ if(SERVER)
       $<TARGET_OBJECTS:game-server-without-main>
       "${PROJECT_SOURCE_DIR}/src/engine/server/main.cpp"
       ${SERVER_ICON}
+      ${SERVER_VERSIONINFO}
       $<TARGET_OBJECTS:engine-shared>
       $<TARGET_OBJECTS:game-shared>
       $<TARGET_OBJECTS:rust-bridge-shared>
@@ -2804,6 +2829,7 @@ if(SERVER)
       ${DEPS}
       "${PROJECT_SOURCE_DIR}/src/engine/server/main.cpp"
       ${SERVER_ICON}
+      ${SERVER_VERSIONINFO}
       $<TARGET_OBJECTS:game-server-without-main>
       $<TARGET_OBJECTS:engine-shared>
       $<TARGET_OBJECTS:game-shared>
@@ -2857,7 +2883,6 @@ if(TOOLS)
     dilate.cpp
     dummy_map.cpp
     map_convert_07.cpp
-    map_create_pixelart.cpp
     map_diff.cpp
     map_extract.cpp
     map_find_env.cpp
@@ -2865,6 +2890,7 @@ if(TOOLS)
     map_replace_area.cpp
     map_replace_image.cpp
     map_resave.cpp
+    map_test.cpp
     packetgen.cpp
     stun.cpp
     twping.cpp
@@ -2878,7 +2904,7 @@ if(TOOLS)
       set(TOOL_DEPS ${DEPS})
       set(TOOL_LIBS ${LIBS})
       unset(EXTRA_TOOL_SRC)
-      if(TOOL MATCHES "^(dilate|map_convert_07|map_create_pixelart|map_optimize|map_extract|map_replace_image)$")
+      if(TOOL MATCHES "^(dilate|map_convert_07|map_optimize|map_extract|map_replace_image)$")
         list(APPEND TOOL_INCLUDE_DIRS ${PNG_INCLUDE_DIRS})
         list(APPEND TOOL_DEPS $<TARGET_OBJECTS:engine-gfx>)
         list(APPEND TOOL_LIBS ${PNG_LIBRARIES})
@@ -3224,7 +3250,6 @@ if(TOOLS)
     demo_extract_chat
     dilate
     map_convert_07
-    map_create_pixelart
     map_diff
     map_extract
   )
@@ -3508,6 +3533,10 @@ foreach(target ${TARGETS})
   if(ENABLE_IPO)
     set_property(TARGET ${target} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
   endif()
+  if(TARGET_OS STREQUAL "emscripten")
+    # Preload data directory into the filesystem
+    target_link_options(${target} PRIVATE --preload-file data)
+  endif()
 endforeach()
 
 foreach(target ${TARGETS_LINK})
@@ -3605,9 +3634,6 @@ foreach(target ${TARGETS_OWN})
   endif()
   if(VERSION)
     target_compile_definitions(${target} PRIVATE GAME_RELEASE_VERSION="${VERSION}")
-  endif()
-  if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-   target_compile_definitions(${target} PRIVATE CONF_WEBASM)
   endif()
   if(TARGET_OS STREQUAL "android")
     if(ANDROID_PACKAGE_NAME)

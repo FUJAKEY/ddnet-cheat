@@ -64,6 +64,8 @@
 
 #if defined(CONF_PLATFORM_ANDROID)
 #include <android/android_main.h>
+#elif defined(CONF_PLATFORM_EMSCRIPTEN)
+#include <emscripten/emscripten.h>
 #endif
 
 #include "SDL.h"
@@ -80,8 +82,8 @@
 
 using namespace std::chrono_literals;
 
-static const ColorRGBA gs_ClientNetworkPrintColor{0.7f, 1, 0.7f, 1.0f};
-static const ColorRGBA gs_ClientNetworkErrPrintColor{1.0f, 0.25f, 0.25f, 1.0f};
+static constexpr ColorRGBA gs_ClientNetworkPrintColor{0.7f, 1, 0.7f, 1.0f};
+static constexpr ColorRGBA gs_ClientNetworkErrPrintColor{1.0f, 0.25f, 0.25f, 1.0f};
 
 CClient::CClient() :
 	m_DemoPlayer(&m_SnapshotDelta, true, [&]() { UpdateDemoIntraTimers(); }),
@@ -131,10 +133,6 @@ static inline bool RepackMsg(const CMsgPacker *pMsg, CPacker &Packer, bool Sixup
 				MsgId = protocol7::NETMSG_INPUT;
 			else if(MsgId == NETMSG_RCON_AUTH)
 				MsgId = protocol7::NETMSG_RCON_AUTH;
-			else if(MsgId == NETMSGTYPE_CL_SETTEAM)
-				MsgId = protocol7::NETMSGTYPE_CL_SETTEAM;
-			else if(MsgId == NETMSGTYPE_CL_VOTE)
-				MsgId = protocol7::NETMSGTYPE_CL_VOTE;
 			else if(MsgId == NETMSG_PING)
 				MsgId = protocol7::NETMSG_PING;
 			else
@@ -2365,8 +2363,7 @@ void CClient::FinishMapDownload()
 	SHA256_DIGEST *pSha256 = m_MapdownloadSha256Present ? &m_MapdownloadSha256 : nullptr;
 
 	bool FileSuccess = true;
-	if(Storage()->FileExists(m_aMapdownloadFilename, IStorage::TYPE_SAVE))
-		FileSuccess &= Storage()->RemoveFile(m_aMapdownloadFilename, IStorage::TYPE_SAVE);
+	FileSuccess &= Storage()->RemoveFile(m_aMapdownloadFilename, IStorage::TYPE_SAVE);
 	FileSuccess &= Storage()->RenameFile(m_aMapdownloadFilenameTemp, m_aMapdownloadFilename, IStorage::TYPE_SAVE);
 	if(!FileSuccess)
 	{
@@ -3038,7 +3035,6 @@ void CClient::Run()
 		g_UuidManager.DebugDump();
 	}
 
-#ifndef CONF_WEBASM
 	char aNetworkError[256];
 	if(!InitNetworkClient(aNetworkError, sizeof(aNetworkError)))
 	{
@@ -3046,7 +3042,6 @@ void CClient::Run()
 		ShowMessageBox("Network Error", aNetworkError);
 		return;
 	}
-#endif
 
 	if(!m_Http.Init(std::chrono::seconds{1}))
 	{
@@ -3412,21 +3407,21 @@ bool CClient::InitNetworkClient(char *pError, size_t ErrorSize)
 		}
 		BindAddr.port = PortRef;
 		unsigned RemainingAttempts = 25;
-		while(BindAddr.port == 0 || !m_aNetClient[i].Open(BindAddr))
+		while(!m_aNetClient[i].Open(BindAddr))
 		{
+			--RemainingAttempts;
+			if(RemainingAttempts == 0)
+			{
+				if(g_Config.m_Bindaddr[0])
+					str_format(pError, ErrorSize, "Could not open the network client, try changing or unsetting the bindaddr '%s'.", g_Config.m_Bindaddr);
+				else
+					str_copy(pError, "Could not open the network client.", ErrorSize);
+				return false;
+			}
 			if(BindAddr.port != 0)
 			{
-				--RemainingAttempts;
-				if(RemainingAttempts == 0)
-				{
-					if(g_Config.m_Bindaddr[0])
-						str_format(pError, ErrorSize, "Could not open the network client, try changing or unsetting the bindaddr '%s'.", g_Config.m_Bindaddr);
-					else
-						str_copy(pError, "Could not open the network client.", ErrorSize);
-					return false;
-				}
+				BindAddr.port = 0;
 			}
-			BindAddr.port = (secure_rand() % 64511) + 1024;
 		}
 	}
 	return true;
@@ -4252,50 +4247,16 @@ int CClient::HandleChecksum(int Conn, CUuid Uuid, CUnpacker *pUnpacker)
 	return 0;
 }
 
-void CClient::SwitchWindowScreen(int Index)
-{
-	//Tested on windows 11 64 bit (gtx 1660 super, intel UHD 630 opengl 1.2.0, 3.3.0 and vulkan 1.1.0)
-	int IsFullscreen = g_Config.m_GfxFullscreen;
-	int IsBorderless = g_Config.m_GfxBorderless;
-
-	if(!Graphics()->SetWindowScreen(Index))
-	{
-		return;
-	}
-
-	SetWindowParams(3, false); // prevent DDNet to get stretch on monitors
-
-	CVideoMode CurMode;
-	Graphics()->GetCurrentVideoMode(CurMode, Index);
-
-	const int Depth = CurMode.m_Red + CurMode.m_Green + CurMode.m_Blue > 16 ? 24 : 16;
-	g_Config.m_GfxColorDepth = Depth;
-	g_Config.m_GfxScreenWidth = CurMode.m_WindowWidth;
-	g_Config.m_GfxScreenHeight = CurMode.m_WindowHeight;
-	g_Config.m_GfxScreenRefreshRate = CurMode.m_RefreshRate;
-
-	Graphics()->ResizeToScreen();
-
-	SetWindowParams(IsFullscreen, IsBorderless);
-}
-
 void CClient::ConchainWindowScreen(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
 	CClient *pSelf = (CClient *)pUserData;
 	if(pSelf->Graphics() && pResult->NumArguments())
 	{
 		if(g_Config.m_GfxScreen != pResult->GetInteger(0))
-			pSelf->SwitchWindowScreen(pResult->GetInteger(0));
+			pSelf->Graphics()->SwitchWindowScreen(pResult->GetInteger(0));
 	}
 	else
 		pfnCallback(pResult, pCallbackUserData);
-}
-
-void CClient::SetWindowParams(int FullscreenMode, bool IsBorderless)
-{
-	g_Config.m_GfxFullscreen = clamp(FullscreenMode, 0, 3);
-	g_Config.m_GfxBorderless = (int)IsBorderless;
-	Graphics()->SetWindowParams(FullscreenMode, IsBorderless);
 }
 
 void CClient::ConchainFullscreen(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
@@ -4304,7 +4265,7 @@ void CClient::ConchainFullscreen(IConsole::IResult *pResult, void *pUserData, IC
 	if(pSelf->Graphics() && pResult->NumArguments())
 	{
 		if(g_Config.m_GfxFullscreen != pResult->GetInteger(0))
-			pSelf->SetWindowParams(pResult->GetInteger(0), g_Config.m_GfxBorderless);
+			pSelf->Graphics()->SetWindowParams(pResult->GetInteger(0), g_Config.m_GfxBorderless);
 	}
 	else
 		pfnCallback(pResult, pCallbackUserData);
@@ -4316,16 +4277,10 @@ void CClient::ConchainWindowBordered(IConsole::IResult *pResult, void *pUserData
 	if(pSelf->Graphics() && pResult->NumArguments())
 	{
 		if(!g_Config.m_GfxFullscreen && (g_Config.m_GfxBorderless != pResult->GetInteger(0)))
-			pSelf->SetWindowParams(g_Config.m_GfxFullscreen, !g_Config.m_GfxBorderless);
+			pSelf->Graphics()->SetWindowParams(g_Config.m_GfxFullscreen, !g_Config.m_GfxBorderless);
 	}
 	else
 		pfnCallback(pResult, pCallbackUserData);
-}
-
-void CClient::ToggleWindowVSync()
-{
-	if(Graphics()->SetVSync(g_Config.m_GfxVsync ^ 1))
-		g_Config.m_GfxVsync ^= 1;
 }
 
 void CClient::Notify(const char *pTitle, const char *pMessage)
@@ -4351,7 +4306,7 @@ void CClient::ConchainWindowVSync(IConsole::IResult *pResult, void *pUserData, I
 	if(pSelf->Graphics() && pResult->NumArguments())
 	{
 		if(g_Config.m_GfxVsync != pResult->GetInteger(0))
-			pSelf->ToggleWindowVSync();
+			pSelf->Graphics()->SetVSync(pResult->GetInteger(0));
 	}
 	else
 		pfnCallback(pResult, pCallbackUserData);
@@ -4678,7 +4633,7 @@ int main(int argc, const char **argv)
 		}
 	};
 	std::function<void()> PerformFinalCleanup = []() {
-#ifdef CONF_PLATFORM_ANDROID
+#if defined(CONF_PLATFORM_ANDROID)
 		// Forcefully terminate the entire process, to ensure that static variables
 		// will be initialized correctly when the app is started again after quitting.
 		// Returning from the main function is not enough, as this only results in the
@@ -4691,6 +4646,12 @@ int main(int argc, const char **argv)
 		//       ignores the activity lifecycle entirely, which may cause issues if
 		//       we ever used any global resources like the camera.
 		std::exit(0);
+#elif defined(CONF_PLATFORM_EMSCRIPTEN)
+		// Hide canvas after client quit as it will be entirely black without visible
+		// cursor, also blocking view of the console.
+		EM_ASM({
+			document.querySelector('#canvas').style.display = 'none';
+		});
 #endif
 	};
 	std::function<void()> PerformAllCleanup = [PerformCleanup, PerformFinalCleanup]() mutable {
@@ -4746,7 +4707,7 @@ int main(int argc, const char **argv)
 	});
 
 	// create the components
-	IEngine *pEngine = CreateEngine(GAME_NAME, pFutureConsoleLogger, 2 * std::thread::hardware_concurrency() + 2);
+	IEngine *pEngine = CreateEngine(GAME_NAME, pFutureConsoleLogger);
 	pKernel->RegisterInterface(pEngine, false);
 	CleanerFunctions.emplace([pEngine]() {
 		// Engine has to be destroyed before the graphics so that skin download thread can finish

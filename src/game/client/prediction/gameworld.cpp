@@ -3,9 +3,11 @@
 
 #include "gameworld.h"
 #include "entities/character.h"
+#include "entities/door.h"
 #include "entities/dragger.h"
 #include "entities/laser.h"
 #include "entities/pickup.h"
+#include "entities/plasma.h"
 #include "entities/projectile.h"
 #include "entity.h"
 #include <engine/shared/config.h>
@@ -546,6 +548,33 @@ void CGameWorld::NetObjAdd(int ObjId, int ObjType, const void *pObjData, const C
 				InsertEntity(pEnt);
 			}
 		}
+		else if(Data.m_Type == LASERTYPE_DOOR)
+		{
+			CDoor NetDoor = CDoor(this, ObjId, &Data);
+			auto *pDoor = dynamic_cast<CDoor *>(GetEntity(ObjId, ENTTYPE_DOOR));
+			if(pDoor && NetDoor.Match(pDoor))
+			{
+				pDoor->Keep();
+				pDoor->Read(&Data);
+				return;
+			}
+			CDoor *pEnt = new CDoor(NetDoor);
+			pEnt->ResetCollision();
+			InsertEntity(pEnt);
+		}
+		else if(Data.m_Type == LASERTYPE_PLASMA)
+		{
+			CPlasma NetPlasma = CPlasma(this, ObjId, &Data);
+			auto *pPlasma = dynamic_cast<CPlasma *>(GetEntity(ObjId, ENTTYPE_PLASMA));
+			if(pPlasma && NetPlasma.Match(pPlasma))
+			{
+				pPlasma->Keep();
+				pPlasma->Read(&Data);
+				return;
+			}
+			CPlasma *pEnt = new CPlasma(NetPlasma);
+			InsertEntity(pEnt);
+		}
 	}
 }
 
@@ -628,6 +657,8 @@ void CGameWorld::CopyWorld(CGameWorld *pFrom)
 				pCopy = new CCharacter(*((CCharacter *)pEnt));
 			else if(Type == ENTTYPE_PICKUP)
 				pCopy = new CPickup(*((CPickup *)pEnt));
+			else if(Type == ENTTYPE_PLASMA)
+				pCopy = new CPlasma(*((CPlasma *)pEnt));
 			if(pCopy)
 			{
 				pCopy->m_pParent = pEnt;
@@ -680,6 +711,22 @@ CEntity *CGameWorld::FindMatch(int ObjId, int ObjType, const void *pObjData)
 		{
 			CDragger *pEnt = (CDragger *)GetEntity(ObjId, ENTTYPE_DRAGGER);
 			if(pEnt && CDragger(this, ObjId, &Data).Match(pEnt))
+			{
+				return pEnt;
+			}
+		}
+		else if(Data.m_Type == LASERTYPE_DOOR)
+		{
+			CDoor *pEnt = (CDoor *)GetEntity(ObjId, ENTTYPE_DOOR);
+			if(pEnt && CDoor(this, ObjId, &Data).Match(pEnt))
+			{
+				return pEnt;
+			}
+		}
+		else if(Data.m_Type == LASERTYPE_PLASMA)
+		{
+			CPlasma *pEnt = (CPlasma *)GetEntity(ObjId, ENTTYPE_PLASMA);
+			if(pEnt && CPlasma(this, ObjId, &Data).Match(pEnt))
 			{
 				return pEnt;
 			}

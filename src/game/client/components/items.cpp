@@ -263,8 +263,8 @@ void CItems::RenderLaser(const CLaserData *pCurrent, bool IsPredicted)
 		ColorIn = g_Config.m_ClLaserFreezeInnerColor;
 		break;
 	case LASERTYPE_DRAGGER:
-		ColorOut = g_Config.m_ClLaserGrabberOutlineColor;
-		ColorIn = g_Config.m_ClLaserGrabberInnerColor;
+		ColorOut = g_Config.m_ClLaserDraggerOutlineColor;
+		ColorIn = g_Config.m_ClLaserDraggerInnerColor;
 		break;
 	case LASERTYPE_GUN:
 	case LASERTYPE_PLASMA:
@@ -305,6 +305,11 @@ void CItems::RenderLaser(const CLaserData *pCurrent, bool IsPredicted)
 		Ticks = (float)(Client()->GameTick(g_Config.m_ClDummy) - pCurrent->m_StartTick) + Client()->IntraGameTick(g_Config.m_ClDummy);
 
 	float TicksHead = Client()->GameTick(g_Config.m_ClDummy);
+	if(Type == LASERTYPE_DRAGGER)
+	{
+		TicksHead *= (((pCurrent->m_Subtype >> 1) % 3) * 4.0f) + 1;
+		TicksHead *= (pCurrent->m_Subtype & 1) ? -1 : 1;
+	}
 	RenderLaser(pCurrent->m_From, pCurrent->m_To, OuterColor, InnerColor, Ticks, TicksHead, Type);
 }
 
@@ -315,6 +320,12 @@ void CItems::RenderLaser(vec2 From, vec2 Pos, ColorRGBA OuterColor, ColorRGBA In
 
 	if(Len > 0)
 	{
+		if(Type == LASERTYPE_DRAGGER)
+		{
+			// rubber band effect
+			float Thickness = std::sqrt(Len) / 5.f;
+			TicksBody = clamp(Thickness, 1.0f, 5.0f);
+		}
 		vec2 Dir = normalize_pre_length(Pos - From, Len);
 
 		float Ms = TicksBody * 1000.0f / Client()->GameTickSpeed();
@@ -338,19 +349,71 @@ void CItems::RenderLaser(vec2 From, vec2 Pos, ColorRGBA OuterColor, ColorRGBA In
 
 		// do inner
 		Out = vec2(Dir.y, -Dir.x) * (5.0f * Ia);
+		vec2 ExtraOutlinePos = Dir;
+		vec2 ExtraOutlineFrom = Type == LASERTYPE_DOOR ? vec2(0, 0) : Dir;
 		Graphics()->SetColor(InnerColor); // center
 
 		Freeform = IGraphics::CFreeformItem(
-			From.x - Out.x, From.y - Out.y,
-			From.x + Out.x, From.y + Out.y,
-			Pos.x - Out.x, Pos.y - Out.y,
-			Pos.x + Out.x, Pos.y + Out.y);
+			From.x - Out.x + ExtraOutlineFrom.x, From.y - Out.y + ExtraOutlineFrom.y,
+			From.x + Out.x + ExtraOutlineFrom.x, From.y + Out.y + ExtraOutlineFrom.y,
+			Pos.x - Out.x - ExtraOutlinePos.x, Pos.y - Out.y - ExtraOutlinePos.y,
+			Pos.x + Out.x - ExtraOutlinePos.x, Pos.y + Out.y - ExtraOutlinePos.y);
 		Graphics()->QuadsDrawFreeform(&Freeform, 1);
 
 		Graphics()->QuadsEnd();
 	}
 
 	// render head
+	if(Type == LASERTYPE_DOOR)
+	{
+		Graphics()->TextureClear();
+		Graphics()->QuadsSetRotation(0);
+		Graphics()->SetColor(OuterColor);
+		Graphics()->RenderQuadContainerEx(m_ItemsQuadContainerIndex, m_DoorHeadOffset, 1, Pos.x - 8.0f, Pos.y - 8.0f);
+		Graphics()->SetColor(InnerColor);
+		Graphics()->RenderQuadContainerEx(m_ItemsQuadContainerIndex, m_DoorHeadOffset, 1, Pos.x - 6.0f, Pos.y - 6.0f, 6.f / 8.f, 6.f / 8.f);
+	}
+	else if(Type == LASERTYPE_DRAGGER)
+	{
+		Graphics()->TextureSet(GameClient()->m_ExtrasSkin.m_SpritePulley);
+		for(int Inner = 0; Inner < 2; ++Inner)
+		{
+			Graphics()->SetColor(Inner ? InnerColor : OuterColor);
+
+			float Size = Inner ? 4.f / 5.f : 1.f;
+
+			// circle at laser end
+			if(Len > 0)
+			{
+				Graphics()->QuadsSetRotation(0);
+				Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, m_PulleyHeadOffset, From.x, From.y, Size, Size);
+			}
+
+			//rotating orbs
+			Size = Inner ? 0.75f - 1.f / 5.f : 0.75f;
+			for(int Orb = 0; Orb < 3; ++Orb)
+			{
+				vec2 Offset(10.f, 0);
+				Offset = rotate(Offset, Orb * 120 + TicksHead);
+				Graphics()->QuadsSetRotation(TicksHead + Orb * pi * 2.f / 3.f); // rotate the sprite as well, as it might be customized
+				Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, m_PulleyHeadOffset, From.x + Offset.x, From.y + Offset.y, Size, Size);
+			}
+		}
+	}
+	else if(Type == LASERTYPE_FREEZE)
+	{
+		float Pulsation = 6.f / 5.f + 1.f / 10.f * std::sin(TicksHead / 2.f);
+		float Angle = angle(Pos - From);
+		Graphics()->TextureSet(GameClient()->m_ExtrasSkin.m_SpriteHectagon);
+		Graphics()->QuadsSetRotation(Angle);
+		Graphics()->SetColor(OuterColor);
+		Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, m_FreezeHeadOffset, Pos.x, Pos.y, 6.f / 5.f * Pulsation, 6.f / 5.f * Pulsation);
+		Graphics()->TextureSet(GameClient()->m_ExtrasSkin.m_SpriteParticleSnowflake);
+		// snowflakes are white
+		Graphics()->SetColor(ColorRGBA(1.f, 1.f, 1.f));
+		Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, m_FreezeHeadOffset, Pos.x, Pos.y, Pulsation, Pulsation);
+	}
+	else
 	{
 		int CurParticle = (int)TicksHead % 3;
 		Graphics()->TextureSet(GameClient()->m_ParticlesSkin.m_aSpriteParticleSplat[CurParticle]);
@@ -595,6 +658,17 @@ void CItems::OnInit()
 		Graphics()->QuadsSetSubset(0, 0, 1, 1);
 		ParticleSplatOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 24.f);
 	}
+
+	RenderTools()->GetSpriteScale(SPRITE_PART_PULLEY, ScaleX, ScaleY);
+	Graphics()->QuadsSetSubset(0, 0, 1, 1);
+	m_PulleyHeadOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 20.f * ScaleX);
+
+	RenderTools()->GetSpriteScale(SPRITE_PART_HECTAGON, ScaleX, ScaleY);
+	Graphics()->QuadsSetSubset(0, 0, 1, 1);
+	m_FreezeHeadOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 20.f * ScaleX);
+
+	IGraphics::CQuadItem Brick(0, 0, 16.0f, 16.0f);
+	m_DoorHeadOffset = Graphics()->QuadContainerAddQuads(m_ItemsQuadContainerIndex, &Brick, 1);
 
 	Graphics()->QuadContainerUpload(m_ItemsQuadContainerIndex);
 }

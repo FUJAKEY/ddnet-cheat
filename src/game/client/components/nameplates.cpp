@@ -13,14 +13,15 @@
 
 #include "nameplates.h"
 
+static constexpr float DEFAULT_PADDING = 5.0f;
+
 // Part Types
 
 class CNamePlatePart
 {
 protected:
 	vec2 m_Size = vec2(0.0f, 0.0f);
-	vec2 m_Padding = vec2(5.0f, 5.0f);
-	vec2 m_Offset = vec2(0.0f, 0.0f); // Offset to rendered X and Y not effecting layout
+	vec2 m_Padding = vec2(DEFAULT_PADDING, DEFAULT_PADDING);
 	bool m_NewLine = false; // Whether this part is a new line (doesn't do anything else)
 	bool m_Visible = true; // Whether this part is visible
 	bool m_ShiftOnInvis = false; // Whether when not visible will still take up space
@@ -32,7 +33,6 @@ public:
 	virtual void Render(CGameClient &This, vec2 Pos) const {}
 	vec2 Size() const { return m_Size; }
 	vec2 Padding() const { return m_Padding; }
-	vec2 Offset() const { return m_Offset; }
 	bool NewLine() const { return m_NewLine; }
 	bool Visible() const { return m_Visible; }
 	bool ShiftOnInvis() const { return m_ShiftOnInvis; }
@@ -42,13 +42,13 @@ public:
 
 using PartsVector = std::vector<std::unique_ptr<CNamePlatePart>>;
 
-static const ColorRGBA s_OutlineColor = ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f);
+static constexpr ColorRGBA s_OutlineColor = ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f);
 
 class CNamePlatePartText : public CNamePlatePart
 {
 protected:
 	STextContainerIndex m_TextContainerIndex;
-	virtual bool UpdateNeeded(CGameClient &This, const CNamePlateData &Data) { return true; }
+	virtual bool UpdateNeeded(CGameClient &This, const CNamePlateData &Data) = 0;
 	virtual void UpdateText(CGameClient &This, const CNamePlateData &Data) = 0;
 	ColorRGBA m_Color = ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
 	CNamePlatePartText(CGameClient &This) :
@@ -219,15 +219,12 @@ public:
 		{
 		case DIRECTION_LEFT:
 			m_Visible = Data.m_DirLeft;
-			m_Offset.y = m_Size.y / 4.0f;
 			break;
 		case DIRECTION_UP:
 			m_Visible = Data.m_DirJump;
-			m_Offset.y = m_Size.y / -4.0f;
 			break;
 		case DIRECTION_RIGHT:
 			m_Visible = Data.m_DirRight;
-			m_Offset.y = m_Size.y / 4.0f;
 			break;
 		}
 		m_Color.a = Data.m_Color.a;
@@ -371,18 +368,18 @@ protected:
 		m_Visible = Data.m_ShowHookStrongWeak;
 		if(!m_Visible)
 			return;
-		m_Size = vec2(Data.m_FontSizeHookStrongWeak, Data.m_FontSizeHookStrongWeak) * 1.5f;
-		switch(Data.m_HookStrongWeak)
+		m_Size = vec2(Data.m_FontSizeHookStrongWeak + DEFAULT_PADDING, Data.m_FontSizeHookStrongWeak + DEFAULT_PADDING);
+		switch(Data.m_HookStrongWeakState)
 		{
-		case CNamePlateData::HOOKSTRONGWEAK_STRONG:
+		case EHookStrongWeakState::STRONG:
 			m_Sprite = SPRITE_HOOK_STRONG;
 			m_Color = color_cast<ColorRGBA>(ColorHSLA(6401973));
 			break;
-		case CNamePlateData::HOOKSTRONGWEAK_NEUTRAL:
+		case EHookStrongWeakState::NEUTRAL:
 			m_Sprite = SPRITE_HOOK_ICON;
 			m_Color = ColorRGBA(1.0f, 1.0f, 1.0f);
 			break;
-		case CNamePlateData::HOOKSTRONGWEAK_WEAK:
+		case EHookStrongWeakState::WEAK:
 			m_Sprite = SPRITE_HOOK_WEAK;
 			m_Color = color_cast<ColorRGBA>(ColorHSLA(41131));
 			break;
@@ -395,6 +392,7 @@ public:
 		CNamePlatePartSprite(This)
 	{
 		m_Texture = g_pData->m_aImages[IMAGE_STRONGWEAK].m_Id;
+		m_Padding = vec2(0.0f, 0.0f);
 	}
 };
 
@@ -412,15 +410,15 @@ protected:
 		m_Visible = Data.m_ShowHookStrongWeakId;
 		if(!m_Visible)
 			return false;
-		switch(Data.m_HookStrongWeak)
+		switch(Data.m_HookStrongWeakState)
 		{
-		case CNamePlateData::HOOKSTRONGWEAK_STRONG:
+		case EHookStrongWeakState::STRONG:
 			m_Color = color_cast<ColorRGBA>(ColorHSLA(6401973));
 			break;
-		case CNamePlateData::HOOKSTRONGWEAK_NEUTRAL:
+		case EHookStrongWeakState::NEUTRAL:
 			m_Color = ColorRGBA(1.0f, 1.0f, 1.0f);
 			break;
-		case CNamePlateData::HOOKSTRONGWEAK_WEAK:
+		case EHookStrongWeakState::WEAK:
 			m_Color = color_cast<ColorRGBA>(ColorHSLA(41131));
 			break;
 		}
@@ -449,7 +447,6 @@ class CNamePlate
 private:
 	bool m_Inited = false;
 	bool m_InGame = false;
-	vec2 m_Position = vec2(0.0f, 0.0f);
 	PartsVector m_vpParts;
 	void RenderLine(CGameClient &This,
 		vec2 Pos, vec2 Size,
@@ -462,8 +459,8 @@ private:
 			if(Part.Visible())
 			{
 				Part.Render(This, vec2(
-							  Pos.x + (Part.Padding().x + Part.Size().x) / 2.0f + Part.Offset().x,
-							  Pos.y - std::max(Size.y, Part.Padding().y + Part.Size().y) / 2.0f + Part.Offset().y));
+							  Pos.x + (Part.Padding().x + Part.Size().x) / 2.0f,
+							  Pos.y - std::max(Size.y, Part.Padding().y + Part.Size().y) / 2.0f));
 			}
 			if(Part.Visible() || Part.ShiftOnInvis())
 				Pos.x += Part.Size().x + Part.Padding().x;
@@ -499,88 +496,88 @@ private:
 		AddPart<CNamePlatePartHookStrongWeak>(This);
 		AddPart<CNamePlatePartHookStrongWeakId>(This);
 	}
-	void Update(CGameClient &This, const CNamePlateData *pData)
-	{
-		Init(This);
-		if(pData)
-		{
-			m_InGame = pData->m_InGame;
-			m_Position = pData->m_Position;
-		}
-	}
 
 public:
+	CNamePlate() = default;
+	CNamePlate(CGameClient &This, const CNamePlateData &Data)
+	{
+		// Convenience constructor
+		Update(This, Data);
+	}
 	void Reset(CGameClient &This)
 	{
 		for(auto &Part : m_vpParts)
 			Part->Reset(This);
 	}
-	void Render(CGameClient &This, const CNamePlateData *pData)
+	void Update(CGameClient &This, const CNamePlateData &Data)
 	{
-		Update(This, pData);
-		vec2 Pos = m_Position;
+		Init(This);
+		m_InGame = Data.m_InGame;
+		for(auto &Part : m_vpParts)
+			Part->Update(This, Data);
+	}
+	void Render(CGameClient &This, const vec2 &PositionBottomMiddle)
+	{
+		dbg_assert(m_Inited, "Tried to render uninited nameplate");
+		vec2 Position = PositionBottomMiddle;
 		// X: Total width including padding of line, Y: Max height of line parts
-		vec2 Size = vec2(0.0f, 0.0f);
+		vec2 LineSize = vec2(0.0f, 0.0f);
 		bool Empty = true;
 		auto Start = m_vpParts.begin();
 		for(auto PartIt = m_vpParts.begin(); PartIt != m_vpParts.end(); ++PartIt)
 		{
 			CNamePlatePart &Part = **PartIt;
-			if(pData)
-				Part.Update(This, *pData);
 			if(Part.NewLine())
 			{
 				if(!Empty)
 				{
-					RenderLine(This, Pos, Size, Start, std::next(PartIt));
-					Pos.y -= Size.y;
+					RenderLine(This, Position, LineSize, Start, std::next(PartIt));
+					Position.y -= LineSize.y;
 				}
 				Start = std::next(PartIt);
-				Size = vec2(0.0f, 0.0f);
+				LineSize = vec2(0.0f, 0.0f);
 			}
 			else if(Part.Visible() || Part.ShiftOnInvis())
 			{
 				Empty = false;
-				Size.x += Part.Size().x + Part.Padding().x;
-				Size.y = std::max(Size.y, Part.Size().y + Part.Padding().y);
+				LineSize.x += Part.Size().x + Part.Padding().x;
+				LineSize.y = std::max(LineSize.y, Part.Size().y + Part.Padding().y);
 			}
 		}
-		RenderLine(This, Pos, Size, Start, m_vpParts.end());
+		RenderLine(This, Position, LineSize, Start, m_vpParts.end());
 		This.Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
-	vec2 Size(CGameClient &This, const CNamePlateData *pData)
+	vec2 Size() const
 	{
-		Update(This, pData);
+		dbg_assert(m_Inited, "Tried to get size of uninited nameplate");
 		// X: Total width including padding of line, Y: Max height of line parts
-		vec2 Size = vec2(0.0f, 0.0f);
+		vec2 LineSize = vec2(0.0f, 0.0f);
 		float WMax = 0.0f;
 		float HTotal = 0.0f;
 		bool Empty = true;
 		for(auto PartIt = m_vpParts.begin(); PartIt != m_vpParts.end(); ++PartIt) // NOLINT(modernize-loop-convert) For consistency with Render
 		{
 			CNamePlatePart &Part = **PartIt;
-			if(pData)
-				Part.Update(This, *pData);
 			if(Part.NewLine())
 			{
 				if(!Empty)
 				{
-					if(Size.x > WMax)
-						WMax = Size.x;
-					HTotal += Size.y;
+					if(LineSize.x > WMax)
+						WMax = LineSize.x;
+					HTotal += LineSize.y;
 				}
-				Size = vec2(0.0f, 0.0f);
+				LineSize = vec2(0.0f, 0.0f);
 			}
 			else if(Part.Visible() || Part.ShiftOnInvis())
 			{
 				Empty = false;
-				Size.x += Part.Size().x + Part.Padding().x;
-				Size.y = std::max(Size.y, Part.Size().y + Part.Padding().y);
+				LineSize.x += Part.Size().x + Part.Padding().x;
+				LineSize.y = std::max(LineSize.y, Part.Size().y + Part.Padding().y);
 			}
 		}
-		if(Size.x > WMax)
-			WMax = Size.x;
-		HTotal += Size.y;
+		if(LineSize.x > WMax)
+			WMax = LineSize.x;
+		HTotal += LineSize.y;
 		return vec2(WMax, HTotal);
 	}
 };
@@ -610,7 +607,7 @@ void CNamePlates::RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *p
 	const bool OtherTeam = GameClient()->IsOtherTeam(pPlayerInfo->m_ClientId);
 
 	Data.m_InGame = true;
-	Data.m_Position = Position - vec2(0.0f, (float)g_Config.m_ClNamePlatesOffset);
+
 	Data.m_ShowName = pPlayerInfo->m_Local ? g_Config.m_ClNamePlatesOwn : g_Config.m_ClNamePlates;
 	Data.m_pName = GameClient()->m_aClients[pPlayerInfo->m_ClientId].m_aName;
 	Data.m_ShowFriendMark = Data.m_ShowName && g_Config.m_ClNamePlatesFriendMark && GameClient()->m_aClients[pPlayerInfo->m_ClientId].m_Friend;
@@ -703,7 +700,7 @@ void CNamePlates::RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *p
 	}
 
 	Data.m_ShowHookStrongWeak = false;
-	Data.m_HookStrongWeak = CNamePlateData::HOOKSTRONGWEAK_NEUTRAL;
+	Data.m_HookStrongWeakState = EHookStrongWeakState::NEUTRAL;
 	Data.m_ShowHookStrongWeakId = false;
 	Data.m_HookStrongWeakId = 0;
 
@@ -721,21 +718,16 @@ void CNamePlates::RenderNamePlateGame(vec2 Position, const CNetObj_PlayerInfo *p
 				Data.m_ShowHookStrongWeak = Data.m_ShowHookStrongWeakId;
 			else
 			{
-				Data.m_HookStrongWeak = Selected.m_ExtendedData.m_StrongWeakId > Other.m_ExtendedData.m_StrongWeakId ? CNamePlateData::HOOKSTRONGWEAK_STRONG : CNamePlateData::HOOKSTRONGWEAK_WEAK;
+				Data.m_HookStrongWeakState = Selected.m_ExtendedData.m_StrongWeakId > Other.m_ExtendedData.m_StrongWeakId ? EHookStrongWeakState::STRONG : EHookStrongWeakState::WEAK;
 				Data.m_ShowHookStrongWeak = g_Config.m_Debug || g_Config.m_ClNamePlatesStrong > 0;
 			}
 		}
 	}
 
 	// Check if the nameplate is actually on screen
-	vec2 NamePlateSize = m_pData->m_aNamePlates[pPlayerInfo->m_ClientId].Size(*GameClient(), &Data);
-	ScreenX0 -= NamePlateSize.x / 2.0f;
-	ScreenX1 += NamePlateSize.x / 2.0f;
-	ScreenY1 += NamePlateSize.y;
-	if(!(in_range(Position.x, ScreenX0, ScreenX1) && in_range(Position.y, ScreenY0, ScreenY1)))
-		return;
-
-	m_pData->m_aNamePlates[pPlayerInfo->m_ClientId].Render(*GameClient(), nullptr); // Give no Data, as to not update twice
+	CNamePlate &NamePlate = m_pData->m_aNamePlates[pPlayerInfo->m_ClientId];
+	NamePlate.Update(*GameClient(), Data);
+	NamePlate.Render(*GameClient(), Position - vec2(0.0f, (float)g_Config.m_ClNamePlatesOffset));
 }
 
 void CNamePlates::RenderNamePlatePreview(vec2 Position, int Dummy)
@@ -778,12 +770,12 @@ void CNamePlates::RenderNamePlatePreview(vec2 Position, int Dummy)
 	Data.m_ShowHookStrongWeakId = g_Config.m_ClNamePlatesStrong == 2;
 	if(Dummy == g_Config.m_ClDummy)
 	{
-		Data.m_HookStrongWeak = CNamePlateData::HOOKSTRONGWEAK_NEUTRAL;
+		Data.m_HookStrongWeakState = EHookStrongWeakState::NEUTRAL;
 		Data.m_ShowHookStrongWeak = Data.m_ShowHookStrongWeakId;
 	}
 	else
 	{
-		Data.m_HookStrongWeak = Data.m_HookStrongWeakId == 2 ? CNamePlateData::HOOKSTRONGWEAK_STRONG : CNamePlateData::HOOKSTRONGWEAK_WEAK;
+		Data.m_HookStrongWeakState = Data.m_HookStrongWeakId == 2 ? EHookStrongWeakState::STRONG : EHookStrongWeakState::WEAK;
 		Data.m_ShowHookStrongWeak = g_Config.m_ClNamePlatesStrong > 0;
 	}
 
@@ -800,18 +792,17 @@ void CNamePlates::RenderNamePlatePreview(vec2 Position, int Dummy)
 	}
 	TeeRenderInfo.m_Size = 64.0f;
 
-	CNamePlate NamePlate;
-	Data.m_Position = Position;
-	Data.m_Position.y += NamePlate.Size(*GameClient(), &Data).y / 3.0f; // Slight bias so the tee doesn't look too low
-	Data.m_Position.y += (float)g_Config.m_ClNamePlatesOffset / 2.0f;
-	vec2 Dir = (Ui()->MousePos() - Data.m_Position);
+	CNamePlate NamePlate(*GameClient(), Data);
+	Position.y += NamePlate.Size().y / 2.0f;
+	Position.y += (float)g_Config.m_ClNamePlatesOffset / 2.0f;
+	vec2 Dir = Ui()->MousePos() - Position;
 	Dir /= TeeRenderInfo.m_Size;
 	const float Length = length(Dir);
 	if(Length > 1.0f)
 		Dir /= Length;
-	RenderTools()->RenderTee(CAnimState::GetIdle(), &TeeRenderInfo, 0, Dir, Data.m_Position);
-	Data.m_Position.y -= (float)g_Config.m_ClNamePlatesOffset;
-	NamePlate.Render(*GameClient(), &Data);
+	RenderTools()->RenderTee(CAnimState::GetIdle(), &TeeRenderInfo, 0, Dir, Position);
+	Position.y -= (float)g_Config.m_ClNamePlatesOffset;
+	NamePlate.Render(*GameClient(), Position - vec2(0.0f, (float)g_Config.m_ClNamePlatesOffset));
 	NamePlate.Reset(*GameClient());
 }
 
