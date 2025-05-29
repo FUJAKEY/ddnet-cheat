@@ -727,18 +727,26 @@ void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 		m_NeedFilter = true;
 	}
 
-	auto vVisibleButtons = m_vpVisibleButtons;
-	auto vInvisibleButtons = m_vpInvisibleButtons;
-
 	if(m_NeedFilter || m_NeedSort)
 	{
-		if(m_NeedFilter)
+		// Sorting can be done directly.
+		if(m_NeedSort)
 		{
-			m_NeedFilter = false;
+			m_NeedSort = false;
+			std::sort(m_vpVisibleButtons.begin(), m_vpVisibleButtons.end(), m_SortFunctions[(unsigned)m_SortType]);
+			std::sort(m_vpInvisibleButtons.begin(), m_vpInvisibleButtons.end(), m_SortFunctions[(unsigned)m_SortType]);
+		}
+
+		m_vpVisibleMutableButtons = m_vpVisibleButtons;
+		m_vpInvisibleMutableButtons = m_vpInvisibleButtons;
+
+		// Filtering should be done separately.
+		if(m_NeedFilter && !m_FilterInput.IsEmpty())
+		{
 			std::string FilterString = m_FilterInput.GetString();
 			// The two will get the filter done. Both label and command will be considered.
 			{
-				const auto DeleteIt = std::remove_if(vVisibleButtons.begin(), vVisibleButtons.end(), [&](CTouchControls::CTouchButton *pButton) {
+				const auto DeleteIt = std::remove_if(m_vpVisibleMutableButtons.begin(), m_vpVisibleMutableButtons.end(), [&](CTouchControls::CTouchButton *pButton) {
 					std::string Label = pButton->m_pBehavior->GetLabel().m_pLabel;
 					if(std::search(Label.begin(), Label.end(), FilterString.begin(), FilterString.end(), [](char &Char1, char &Char2) {
 						   if(Char1 >= 'A' && Char1 <= 'Z')
@@ -759,10 +767,10 @@ void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 						return false;
 					return true;
 				});
-				vVisibleButtons.erase(DeleteIt, vVisibleButtons.end());
+				m_vpVisibleMutableButtons.erase(DeleteIt, m_vpVisibleMutableButtons.end());
 			}
 			{
-				const auto DeleteIt = std::remove_if(vInvisibleButtons.begin(), vInvisibleButtons.end(), [&](CTouchControls::CTouchButton *pButton) {
+				const auto DeleteIt = std::remove_if(m_vpInvisibleMutableButtons.begin(), m_vpInvisibleMutableButtons.end(), [&](CTouchControls::CTouchButton *pButton) {
 					std::string Label = pButton->m_pBehavior->GetLabel().m_pLabel;
 					if(std::search(Label.begin(), Label.end(), FilterString.begin(), FilterString.end(), [](char Char1, char Char2) {
 						   if(Char1 >= 'A' && Char1 <= 'Z')
@@ -783,21 +791,16 @@ void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 						return false;
 					return true;
 				});
-				vInvisibleButtons.erase(DeleteIt, vInvisibleButtons.end());
+				m_vpInvisibleMutableButtons.erase(DeleteIt, m_vpInvisibleMutableButtons.end());
 			}
 		}
-		if(m_NeedSort)
-		{
-			m_NeedSort = false;
-			std::sort(vVisibleButtons.begin(), vVisibleButtons.end(), m_SortFunctions[(unsigned)m_SortType]);
-			std::sort(vInvisibleButtons.begin(), vInvisibleButtons.end(), m_SortFunctions[(unsigned)m_SortType]);
-		}
+		m_NeedFilter = false;
 		m_vpSortedButtons.clear();
-		m_vpSortedButtons.reserve(vVisibleButtons.size() + vInvisibleButtons.size());
-		std::for_each(vVisibleButtons.begin(), vVisibleButtons.end(), [&](auto *pButton) {
+		m_vpSortedButtons.reserve(m_vpVisibleMutableButtons.size() + m_vpInvisibleMutableButtons.size());
+		std::for_each(m_vpVisibleMutableButtons.begin(), m_vpVisibleMutableButtons.end(), [&](auto *pButton) {
 			m_vpSortedButtons.emplace_back(pButton);
 		});
-		std::for_each(vInvisibleButtons.begin(), vInvisibleButtons.end(), [&](auto *pButton) {
+		std::for_each(m_vpInvisibleMutableButtons.begin(), m_vpInvisibleMutableButtons.end(), [&](auto *pButton) {
 			m_vpSortedButtons.emplace_back(pButton);
 		});
 	}
@@ -816,7 +819,7 @@ void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 				EditBox.VSplitLeft(ROWSIZE, &A, &EditBox);
 				TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
 				TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING);
-				Ui()->DoLabel(&A, ButtonIndex >= vVisibleButtons.size() ? FontIcons::FONT_ICON_EYE_SLASH : FontIcons::FONT_ICON_EYE, FONTSIZE, TEXTALIGN_ML);
+				Ui()->DoLabel(&A, ButtonIndex >= m_vpVisibleMutableButtons.size() ? FontIcons::FONT_ICON_EYE_SLASH : FontIcons::FONT_ICON_EYE, FONTSIZE, TEXTALIGN_ML);
 				TextRender()->SetRenderFlags(0);
 				TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 				EditBox.VSplitLeft(LabelRect.w, &A, &EditBox);
@@ -826,6 +829,7 @@ void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 				{
 					SLabelProperties Props;
 					Props.m_MaxWidth = A.w;
+					Props.m_EnableWidthCheck = false;
 					Props.m_EllipsisAtEnd = true;
 					Ui()->DoLabel(&A, Label.c_str(), FONTSIZE, TEXTALIGN_ML, Props);
 				}
@@ -834,6 +838,7 @@ void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 					Label = Localize(Label.c_str());
 					SLabelProperties Props;
 					Props.m_MaxWidth = A.w;
+					Props.m_EnableWidthCheck = false;
 					Props.m_EllipsisAtEnd = true;
 					Ui()->DoLabel(&A, Label.c_str(), FONTSIZE, TEXTALIGN_ML, Props);
 				}
@@ -841,6 +846,7 @@ void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 				{
 					SLabelProperties Props;
 					Props.m_MaxWidth = A.w;
+					Props.m_EnableWidthCheck = false;
 					Props.m_EllipsisAtEnd = true;
 					TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
 					TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING);
@@ -853,6 +859,7 @@ void CMenus::RenderTouchButtonEditorWhileNothingSelected(CUIRect MainView)
 				std::string Command = DetermineTouchButtonCommandLabel(pButton);
 				SLabelProperties Props;
 				Props.m_MaxWidth = A.w;
+				Props.m_EnableWidthCheck = false;
 				Props.m_EllipsisAtEnd = true;
 				Ui()->DoLabel(&A, Command.c_str(), FONTSIZE, TEXTALIGN_ML, Props);
 				EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);

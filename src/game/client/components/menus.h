@@ -990,6 +990,8 @@ private:
 	bool m_BindTogglePreviewExtension = false;
 	std::vector<CTouchControls::CTouchButton *> m_vpVisibleButtons;
 	std::vector<CTouchControls::CTouchButton *> m_vpInvisibleButtons;
+	std::vector<CTouchControls::CTouchButton *> m_vpVisibleMutableButtons;
+	std::vector<CTouchControls::CTouchButton *> m_vpInvisibleMutableButtons;
 	std::vector<CTouchControls::CTouchButton *> m_vpSortedButtons;
 	CLineInputBuffered<1024> m_SearchInput;
 	unsigned m_SelectedPreviewButtonIndex = -1;
