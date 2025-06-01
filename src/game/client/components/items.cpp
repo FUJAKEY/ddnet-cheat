@@ -164,7 +164,7 @@ void CItems::RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCu
 	else if(pCurrent->m_Type == POWERUP_NINJA)
 	{
 		QuadOffset = m_PickupNinjaOffset;
-		if(Flags & TILEFLAG_ROTATE)
+		if(Flags & PICKUPFLAG_ROTATE)
 			m_pClient->m_Effects.PowerupShine(Pos, vec2(18, 96), 1.0f);
 		else
 			m_pClient->m_Effects.PowerupShine(Pos, vec2(96, 18), 1.0f);
@@ -180,20 +180,20 @@ void CItems::RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCu
 	Graphics()->SetColor(1.f, 1.f, 1.f, 1.f);
 
 	vec2 Scale = vec2(1, 1);
-	if(Flags & TILEFLAG_XFLIP)
+	if(Flags & PICKUPFLAG_XFLIP)
 		Scale.x = -Scale.x;
 
-	if(Flags & TILEFLAG_YFLIP)
+	if(Flags & PICKUPFLAG_YFLIP)
 		Scale.y = -Scale.y;
 
-	if(Flags & TILEFLAG_ROTATE)
+	if(Flags & PICKUPFLAG_ROTATE)
 	{
 		Graphics()->QuadsSetRotation(90.f * (pi / 180));
 		std::swap(Scale.x, Scale.y);
 
 		if(pCurrent->m_Type == POWERUP_NINJA)
 		{
-			if(Flags & TILEFLAG_XFLIP)
+			if(Flags & PICKUPFLAG_XFLIP)
 				Pos.y += 10.0f;
 			else
 				Pos.y -= 10.0f;
@@ -203,7 +203,7 @@ void CItems::RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCu
 	{
 		if(pCurrent->m_Type == POWERUP_NINJA)
 		{
-			if(Flags & TILEFLAG_XFLIP)
+			if(Flags & PICKUPFLAG_XFLIP)
 				Pos.x += 10.0f;
 			else
 				Pos.x -= 10.0f;

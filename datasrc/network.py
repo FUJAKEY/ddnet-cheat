@@ -40,6 +40,10 @@ LaserFlags = [
 	"NO_PREDICT",
 ]
 
+PickupFlags = [
+	"XFLIP", "YFLIP", "NO_PREDICT", "ROTATE"
+]
+
 LaserTypes = ["RIFLE", "SHOTGUN", "DOOR", "FREEZE", "DRAGGER", "GUN", "PLASMA"]
 DraggerTypes = ["WEAK", "WEAK_NW", "NORMAL", "NORMAL_NW", "STRONG", "STRONG_NW"]
 GunTypes = ["UNFREEZE", "EXPLOSIVE", "FREEZE", "EXPFREEZE"]
@@ -98,6 +102,7 @@ Flags = [
 	Flags("LEGACYPROJECTILEFLAG", LegacyProjectileFlags),
 	Flags("PROJECTILEFLAG", ProjectileFlags),
 	Flags("LASERFLAG", LaserFlags),
+	Flags("PICKUPFLAG", PickupFlags),
 ]
 
 Objects = [

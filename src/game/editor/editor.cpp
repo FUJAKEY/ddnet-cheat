@@ -8588,19 +8588,19 @@ void CEditor::RenderGameEntities(const std::shared_ptr<CLayerTiles> &pTiles)
 			{
 				const unsigned char Flags = pTiles->m_pTiles[y * pTiles->m_Width + x].m_Flags;
 
-				if(Flags & TILEFLAG_XFLIP)
+				if(Flags & PICKUPFLAG_XFLIP)
 					Scale.x = -Scale.x;
 
-				if(Flags & TILEFLAG_YFLIP)
+				if(Flags & PICKUPFLAG_YFLIP)
 					Scale.y = -Scale.y;
 
-				if(Flags & TILEFLAG_ROTATE)
+				if(Flags & PICKUPFLAG_ROTATE)
 				{
 					Graphics()->QuadsSetRotation(90.f * (pi / 180));
 
 					if(Index == ENTITY_POWERUP_NINJA)
 					{
-						if(Flags & TILEFLAG_XFLIP)
+						if(Flags & PICKUPFLAG_XFLIP)
 							Pos.y += 10.0f;
 						else
 							Pos.y -= 10.0f;
@@ -8610,7 +8610,7 @@ void CEditor::RenderGameEntities(const std::shared_ptr<CLayerTiles> &pTiles)
 				{
 					if(Index == ENTITY_POWERUP_NINJA)
 					{
-						if(Flags & TILEFLAG_XFLIP)
+						if(Flags & PICKUPFLAG_XFLIP)
 							Pos.x += 10.0f;
 						else
 							Pos.x -= 10.0f;
