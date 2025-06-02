@@ -1,6 +1,5 @@
 #include "touch_controls.h"
 
-#include <algorithm>
 #include <base/color.h>
 #include <base/log.h>
 #include <base/system.h>
@@ -23,6 +22,11 @@
 #include <game/client/ui.h>
 #include <game/client/ui_scrollregion.h>
 #include <game/localization.h>
+
+#include <algorithm>
+#include <cstdlib>
+#include <functional>
+#include <queue>
 
 using namespace std::chrono_literals;
 
@@ -2065,110 +2069,255 @@ void CTouchControls::RenderButtonsWhileInEditor()
 	}
 }
 
-void CTouchControls::CQuadtreeNode::Split()
+CTouchControls::CUnitRect CTouchControls::FindPositionXY(std::vector<CUnitRect> &vVisibleButtonRects, CUnitRect MyRect)
 {
-	m_NW = std::make_unique<CQuadtreeNode>(m_Space.m_X, m_Space.m_Y, m_Space.m_W / 2, m_Space.m_H / 2);
-	m_NE = std::make_unique<CQuadtreeNode>(m_Space.m_X + m_Space.m_W / 2, m_Space.m_Y, m_Space.m_W / 2, m_Space.m_H / 2);
-	m_SW = std::make_unique<CQuadtreeNode>(m_Space.m_X, m_Space.m_Y + m_Space.m_H / 2, m_Space.m_W / 2, m_Space.m_H / 2);
-	m_SE = std::make_unique<CQuadtreeNode>(m_Space.m_X + m_Space.m_W / 2, m_Space.m_Y + m_Space.m_H / 2, m_Space.m_W / 2, m_Space.m_H / 2);
-}
-
-void CTouchControls::CQuadtree::Insert(CQuadtreeNode &Node, const CUnitRect &Rect, size_t Depth)
-{
-	if(Node.m_NW)
 	{
-		if(Node.m_NW->m_Space.IsOverlap(Rect))
-			Insert(*Node.m_NW, Rect, Depth + 1);
-		if(Node.m_NE->m_Space.IsOverlap(Rect))
-			Insert(*Node.m_NE, Rect, Depth + 1);
-		if(Node.m_SW->m_Space.IsOverlap(Rect))
-			Insert(*Node.m_SW, Rect, Depth + 1);
-		if(Node.m_SE->m_Space.IsOverlap(Rect))
-			Insert(*Node.m_SE, Rect, Depth + 1);
-		return;
+		MyRect.m_X = clamp(MyRect.m_X, 0, BUTTON_SIZE_SCALE - MyRect.m_W);
+		MyRect.m_Y = clamp(MyRect.m_Y, 0, BUTTON_SIZE_SCALE - MyRect.m_H);
+		bool IfOverlap = std::any_of(vVisibleButtonRects.begin(), vVisibleButtonRects.end(), [&MyRect](const auto &Rect) {
+			return MyRect.IsOverlap(Rect);
+		});
+		if(!IfOverlap)
+			return MyRect;
 	}
-	Node.m_Rects.push_back(Rect);
-	if(Node.m_Rects.size() > m_MaxObj && Depth < m_MaxDep)
+	// 3000
+	// o(nlogn)
+	std::sort(vVisibleButtonRects.begin(), vVisibleButtonRects.end(), [](CUnitRect Lhs, CUnitRect Rhs) {
+		return Lhs.m_X < Rhs.m_X;
+	});
+	// 80000
+
+	struct STree
 	{
-		Node.Split();
-		for(const auto &TRect : Node.m_Rects)
+		std::vector<int> m_Order;
+		std::vector<ivec4> m_Zone;
+		ivec2 *m_Res = nullptr;
+		unsigned m_Front = 0;
+		void Init(const std::vector<CUnitRect> &Rects)
 		{
-			Insert(Node, TRect, Depth);
-		}
-		Node.m_Rects.clear();
-	}
-}
-
-bool CTouchControls::CQuadtree::Find(const CUnitRect &MyRect, CQuadtreeNode &Node)
-{
-	if(Node.m_NW)
-	{
-		if(MyRect.IsOverlap(Node.m_NE->m_Space) && Find(MyRect, *Node.m_NE))
-			return true;
-		if(MyRect.IsOverlap(Node.m_NW->m_Space) && Find(MyRect, *Node.m_NW))
-			return true;
-		if(MyRect.IsOverlap(Node.m_SE->m_Space) && Find(MyRect, *Node.m_SE))
-			return true;
-		if(MyRect.IsOverlap(Node.m_SW->m_Space) && Find(MyRect, *Node.m_SW))
-			return true;
-	}
-	return std::any_of(Node.m_Rects.begin(), Node.m_Rects.end(), [&MyRect](const auto &Rect) {
-		return MyRect.IsOverlap(Rect);
-	});
-}
-
-CTouchControls::CUnitRect CTouchControls::FindPositionXY(const std::vector<CUnitRect> &vVisibleButtonRects, CUnitRect MyRect)
-{
-	MyRect.m_X = clamp(MyRect.m_X, 0, BUTTON_SIZE_SCALE - MyRect.m_W);
-	MyRect.m_Y = clamp(MyRect.m_Y, 0, BUTTON_SIZE_SCALE - MyRect.m_H);
-	double TDis = BUTTON_SIZE_SCALE;
-	CUnitRect TRec = {-1, -1, -1, -1};
-	std::unordered_set<int> CandidateX;
-	std::unordered_set<int> CandidateY;
-	// o(N)
-	bool IfOverlap = std::any_of(vVisibleButtonRects.begin(), vVisibleButtonRects.end(), [&MyRect](const auto &Rect) {
-		return MyRect.IsOverlap(Rect);
-	});
-	if(!IfOverlap)
-		return MyRect;
-	// o(NlogN)
-	for(const auto &Rect : vVisibleButtonRects)
-	{
-		int Pos = Rect.m_X + Rect.m_W;
-		if(Pos + MyRect.m_W <= BUTTON_SIZE_SCALE)
-			CandidateX.emplace(Pos);
-		Pos = Rect.m_X - MyRect.m_W;
-		if(Pos >= 0)
-			CandidateX.emplace(Pos);
-		Pos = Rect.m_Y + Rect.m_H;
-		if(Pos + MyRect.m_H <= BUTTON_SIZE_SCALE)
-			CandidateY.emplace(Pos);
-		Pos = Rect.m_Y - MyRect.m_H;
-		if(Pos >= 0)
-			CandidateY.emplace(Pos);
-	}
-	CandidateX.insert(MyRect.m_X);
-	CandidateY.insert(MyRect.m_Y);
-
-	CQuadtree SearchTree(BUTTON_SIZE_SCALE, BUTTON_SIZE_SCALE);
-	std::for_each(vVisibleButtonRects.begin(), vVisibleButtonRects.end(), [&SearchTree](const auto &Rect) {
-		SearchTree.Insert(Rect);
-	});
-	for(const int &X : CandidateX)
-		for(const int &Y : CandidateY)
-		{
-			CUnitRect SampleRect = {X, Y, MyRect.m_W, MyRect.m_H};
-			if(!SearchTree.Find(SampleRect))
+			for(const CUnitRect &Rect : Rects)
 			{
-				double Dis = MyRect.Distance(SampleRect);
-				if(Dis < TDis)
-				{
-					TDis = Dis;
-					TRec = SampleRect;
-				}
+				m_Order.emplace_back(Rect.m_Y);
+				m_Order.emplace_back(Rect.m_Y + Rect.m_H);
+			}
+			m_Order.emplace_back(0);
+			m_Order.emplace_back(BUTTON_SIZE_SCALE);
+			std::sort(m_Order.begin(), m_Order.end());
+			m_Order.erase(std::unique(m_Order.begin(), m_Order.end()), m_Order.end());
+			m_Zone.resize(m_Order.size() * 4, {-1, -1, 0, 0});
+			New(0, m_Order.size() - 2, 0);
+			m_Res = (ivec2 *)malloc(m_Zone.size() * sizeof(ivec2));
+		}
+		void New(int Start, int End, unsigned Cur)
+		{
+			m_Zone.resize(maximum<size_t>(Cur + 1, m_Zone.size()), {-1, -1, 0, 0});
+			if(m_Zone[Cur].x != -1)
+				return;
+			m_Zone[Cur].x = Start;
+			m_Zone[Cur].y = End;
+			m_Zone[Cur].z = 0;
+			m_Zone[Cur].w = 0;
+		}
+		void Add(int Start, int End, unsigned Cur)
+		{
+			m_Zone[Cur].z++;
+			if(m_Zone[Cur].x == Start && m_Zone[Cur].y == End)
+			{
+				m_Zone[Cur].w++;
+				return;
+			}
+			int Mid = (m_Zone[Cur].x + m_Zone[Cur].y) / 2;
+			New(Mid + 1, m_Zone[Cur].y, Cur * 2 + 2);
+			New(m_Zone[Cur].x, Mid, Cur * 2 + 1);
+			if(Start <= Mid)
+			{
+				Add(Start, minimum<int>(Mid, End), Cur * 2 + 1);
+			}
+			if(End >= Mid + 1)
+			{
+				Add(maximum<int>(Mid + 1, Start), End, Cur * 2 + 2);
 			}
 		}
-	return TRec;
+		void Del(int Start, int End, unsigned Cur)
+		{
+			m_Zone[Cur].z--;
+			if(m_Zone[Cur].x == Start && m_Zone[Cur].y == End)
+			{
+				m_Zone[Cur].w--;
+				return;
+			}
+			int Mid = (m_Zone[Cur].x + m_Zone[Cur].y) / 2;
+			if(Start <= Mid)
+			{
+				Del(Start, minimum<int>(Mid, End), Cur * 2 + 1);
+			}
+			if(End >= Mid + 1)
+			{
+				Del(maximum<int>(Mid + 1, Start), End, Cur * 2 + 2);
+			}
+		}
+		void InnerQuery(unsigned Start)
+		{
+			unsigned *Dfs = (unsigned *)malloc(m_Zone.size() * sizeof(unsigned));
+			unsigned Top = 0;
+			Dfs[Top++] = Start;
+			while(Top != 0)
+			{
+				unsigned Cur = Dfs[Top - 1];
+				Top--;
+				if(m_Zone[Cur].w > 0)
+				{
+					m_Res[m_Front++] = {m_Zone[Cur].x, m_Zone[Cur].y};
+					continue;
+				}
+				if(m_Zone[Cur].x == m_Zone[Cur].y || m_Zone[Cur].z == 0)
+					continue;
+				if(m_Zone[Cur * 2 + 2].x != -1 && m_Zone[Cur * 2 + 2].z > 0)
+				{
+					Dfs[Top++] = Cur * 2 + 2;
+				}
+				if(m_Zone[Cur * 2 + 1].x != -1 && m_Zone[Cur * 2 + 1].z > 0)
+				{
+					Dfs[Top++] = Cur * 2 + 1;
+				}
+			}
+			free(Dfs);
+		}
+		// 8000
+		std::vector<ivec2> Query(int Length)
+		{
+			m_Front = 0;
+			InnerQuery(0);
+			if(m_Front == 0)
+			{
+				return {{0, BUTTON_SIZE_SCALE}};
+			}
+
+			// Inverse discretization
+			for(unsigned Index = 0; Index < m_Front; Index++)
+			{
+				m_Res[Index].x = m_Order[m_Res[Index].x];
+				m_Res[Index].y = m_Order[m_Res[Index].y + 1];
+			}
+			if(m_Res[0].x < Length)
+				m_Res[0].x = 0;
+			// Merge segments.
+			for(unsigned Index = 1; Index < m_Front; Index++)
+			{
+				if(m_Res[Index - 1].y + Length <= m_Res[Index].x)
+					continue;
+				m_Res[Index].x = m_Res[Index - 1].x;
+				m_Res[Index - 1].x = -1;
+			}
+			if(m_Res[m_Front - 1].y + Length > BUTTON_SIZE_SCALE)
+				m_Res[m_Front - 1].y = BUTTON_SIZE_SCALE;
+			m_Front = std::distance(m_Res, std::remove_if(m_Res, m_Res + m_Front, [](const ivec2 &Ele) {
+				return Ele.x == -1;
+			}));
+			// Result stores obstacles, now turn it into free spaces.
+			std::vector<ivec2> Free;
+			Free.reserve(m_Front);
+			if(m_Res[0].x != 0)
+				Free.emplace_back(0, m_Res[0].x);
+			for(unsigned Index = 1; Index < m_Front; Index++)
+			{
+				Free.emplace_back(m_Res[Index - 1].y, m_Res[Index].x);
+			}
+			if(m_Res[m_Front - 1].y != BUTTON_SIZE_SCALE)
+				Free.emplace_back(m_Res[m_Front - 1].y, BUTTON_SIZE_SCALE);
+			return Free;
+		}
+		ivec2 Discretization(int Start, int End)
+		{
+			ivec2 Result;
+			auto It = std::lower_bound(m_Order.begin(), m_Order.end(), Start);
+			Result.x = std::distance(m_Order.begin(), It);
+			It = std::lower_bound(m_Order.begin(), m_Order.end(), End);
+			Result.y = std::distance(m_Order.begin(), It) - 1;
+			return Result;
+		}
+	} Tree;
+	// 80000
+
+	std::set<int> CandidateX;
+	CandidateX.insert(MyRect.m_X);
+	for(const CUnitRect &Rect : vVisibleButtonRects)
+	{
+		if(Rect.m_X + MyRect.m_W + Rect.m_W <= BUTTON_SIZE_SCALE)
+			CandidateX.insert(Rect.m_X + Rect.m_W);
+		if(Rect.m_X - MyRect.m_W >= 0)
+			CandidateX.insert(Rect.m_X - MyRect.m_W);
+	}
+	CandidateX.insert(CandidateX.begin(), 0);
+	CandidateX.insert(BUTTON_SIZE_SCALE - MyRect.m_W);
+	// 300000
+
+	Tree.Init(vVisibleButtonRects);
+
+	auto Cmp = [&vVisibleButtonRects](int Lhs, int Rhs) -> bool {
+		return vVisibleButtonRects[Lhs].m_X + vVisibleButtonRects[Lhs].m_W > vVisibleButtonRects[Rhs].m_X + vVisibleButtonRects[Rhs].m_W;
+	};
+	std::priority_queue<int, std::vector<int>, decltype(Cmp)> Out(Cmp);
+
+	unsigned Index = 0;
+	CUnitRect Result = {-1, -1, -1, -1};
+
+	// 480000
+	unsigned long long AddTime = 0, DelTime = 0, QueryTime = 0;
+	for(int CurrentX : CandidateX)
+	{
+		auto T1 = std::chrono::steady_clock::now();
+		while(Index < vVisibleButtonRects.size() && vVisibleButtonRects[Index].m_X < CurrentX + MyRect.m_W)
+		{
+			auto Segment = Tree.Discretization(vVisibleButtonRects[Index].m_Y, vVisibleButtonRects[Index].m_Y + vVisibleButtonRects[Index].m_H);
+			Tree.Add(Segment.x, Segment.y, 0);
+			Out.emplace(Index++);
+		}
+		auto T2 = std::chrono::steady_clock::now();
+		AddTime += (T2 - T1).count();
+		while(!Out.empty() && vVisibleButtonRects[Out.top()].m_X + vVisibleButtonRects[Out.top()].m_W <= CurrentX)
+		{
+			auto Segment = Tree.Discretization(vVisibleButtonRects[Out.top()].m_Y, vVisibleButtonRects[Out.top()].m_Y + vVisibleButtonRects[Out.top()].m_H);
+			Tree.Del(Segment.x, Segment.y, 0);
+			Out.pop();
+		}
+		auto T3 = std::chrono::steady_clock::now();
+		DelTime += (T3 - T2).count();
+		auto Spaces = Tree.Query(MyRect.m_H);
+		auto T4 = std::chrono::steady_clock::now();
+		QueryTime += (T4 - T3).count();
+		int TPos = -BUTTON_SIZE_SCALE;
+		for(ivec2 &Space : Spaces)
+		{
+			if(MyRect.m_Y >= Space.x && MyRect.m_Y + MyRect.m_H <= Space.y)
+			{
+				TPos = MyRect.m_Y;
+				break;
+			}
+			if(std::abs(Space.x - MyRect.m_Y) < std::abs(TPos - MyRect.m_Y))
+			{
+				TPos = Space.x;
+			}
+			Space.y -= MyRect.m_H;
+			if(std::abs(Space.y - MyRect.m_Y) < std::abs(TPos - MyRect.m_Y))
+			{
+				TPos = Space.y;
+			}
+		}
+		if(TPos == -BUTTON_SIZE_SCALE)
+			continue;
+		CUnitRect SampleRect = {CurrentX, TPos, MyRect.m_W, MyRect.m_H};
+		if(Result.m_X == -1)
+			Result = SampleRect;
+		else if(MyRect.Distance(Result) > MyRect.Distance(SampleRect))
+			Result = SampleRect;
+	}
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf), "Add=%lld,Del=%lld,Qu=%lld", AddTime, DelTime, QueryTime);
+	log_error("asd", aBuf);
+	// 4500000
+	free(Tree.m_Res);
+	return Result;
 }
 
 // Create a new button and push_back to m_vTouchButton, then return a pointer.
@@ -2329,12 +2478,12 @@ std::vector<CTouchControls::CTouchButton *> CTouchControls::InvisibleButtons()
 	return vReturnValue;
 }
 
-double CTouchControls::CUnitRect::Distance(const CUnitRect &Other) const
+float CTouchControls::CUnitRect::Distance(const CUnitRect &Other) const
 {
-	double Dx = Other.m_X + Other.m_W / 2.0f - m_X - m_W / 2.0f;
+	float Dx = Other.m_X + Other.m_W / 2.0f - m_X - m_W / 2.0f;
 	Dx /= BUTTON_SIZE_SCALE;
 	Dx *= Dx;
-	double Dy = Other.m_Y + Other.m_H / 2.0f - m_Y - m_H / 2.0f;
+	float Dy = Other.m_Y + Other.m_H / 2.0f - m_Y - m_H / 2.0f;
 	Dy /= BUTTON_SIZE_SCALE;
 	Dy *= Dy;
 	return std::sqrt(Dx + Dy);

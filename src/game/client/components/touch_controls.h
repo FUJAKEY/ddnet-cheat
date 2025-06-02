@@ -80,7 +80,7 @@ public:
 		int m_Y;
 		int m_W;
 		int m_H;
-		double Distance(const CUnitRect &Other) const;
+		float Distance(const CUnitRect &Other) const;
 		bool IsOverlap(const CUnitRect &Other) const
 		{
 			return (m_X < Other.m_X + Other.m_W) && (m_X + m_W > Other.m_X) && (m_Y < Other.m_Y + Other.m_H) && (m_Y + m_H > Other.m_Y);
@@ -635,7 +635,7 @@ private:
 		void Insert(CQuadtreeNode &Node, const CUnitRect &Rect, size_t Depth);
 		bool Find(const CUnitRect &MyRect, CQuadtreeNode &Node);
 	};
-	CUnitRect FindPositionXY(const std::vector<CUnitRect> &vVisibleButtonRects, CUnitRect MyRect);
+	CUnitRect FindPositionXY(std::vector<CUnitRect> &vVisibleButtonRects, CUnitRect MyRect);
 
 	// This is how editor render buttons.
 	void RenderButtonsWhileInEditor();
