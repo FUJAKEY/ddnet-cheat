@@ -4,7 +4,6 @@
 #include <base/math.h>
 #include <base/system.h>
 
-#include <cstring>
 #include <engine/graphics.h>
 #include <engine/shared/localization.h>
 #include <engine/textrender.h>
@@ -45,22 +44,15 @@ void CMenus::RenderTouchButtonEditor(CUIRect MainView)
 	// Used to decide if need to update the Samplebutton.
 	bool Changed = false;
 	CUIRect Left, A, B, C, EditBox, Block;
-	MainView.h = 2 * MAINMARGIN + 9 * ROWSIZE + 8 * ROWGAP;
+	MainView.h = 2 * MAINMARGIN + 10 * ROWSIZE + 8 * ROWGAP;
 	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
 	MainView.VMargin(MAINMARGIN, &MainView);
 	MainView.HSplitTop(MAINMARGIN, nullptr, &MainView);
 	MainView.HSplitTop(ROWSIZE, &EditBox, &MainView);
 
-	if(m_BindTogglePreviewExtension && m_EditBehaviorType == (int)EBehaviorType::BIND_TOGGLE && m_EditElement == EElementType::BEHAVIOR)
-	{
-		Block = MainView;
-	}
-	else
-	{
-		MainView.HSplitTop(5 * ROWSIZE + 5 * ROWGAP, &Block, &Left);
-		Left.HSplitTop(ROWGAP, nullptr, &Left);
-		Left.HSplitBottom(MAINMARGIN, &Left, nullptr);
-	}
+	MainView.HSplitTop(7 * ROWSIZE + 6 * ROWGAP, &Block, &Left);
+	Left.HSplitTop(ROWGAP, nullptr, &Left);
+	Left.HSplitBottom(MAINMARGIN, &Left, nullptr);
 
 	// Choosing which to edit.
 	EditBox.VSplitLeft(EditBox.w / 3.0f, &C, &EditBox);
@@ -82,22 +74,13 @@ void CMenus::RenderTouchButtonEditor(CUIRect MainView)
 	// Edit blocks.
 	Block.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), IGraphics::CORNER_B, 5.0f);
 	Block.HSplitTop(ROWGAP, nullptr, &Block);
+	Block.VMargin(SUBMARGIN, &Block);
 	switch(m_EditElement)
 	{
 	case EElementType::LAYOUT: Changed = RenderLayoutSettingBlock(Block) || Changed; break;
 	case EElementType::VISIBILITY: Changed = RenderVisibilitySettingBlock(Block) || Changed; break;
 	case EElementType::BEHAVIOR: Changed = RenderBehaviorSettingBlock(Block) || Changed; break;
 	default: dbg_assert(false, "Unknown m_EditElement = %d.", m_EditElement);
-	}
-
-	// Leave some free space for the bind toggle preview.
-	if(m_BindTogglePreviewExtension && m_EditBehaviorType == (int)EBehaviorType::BIND_TOGGLE && m_EditElement == EElementType::BEHAVIOR)
-	{
-		if(Changed)
-		{
-			UpdateSampleButton();
-		}
-		return;
 	}
 
 	// Save & Cancel & Hint.
@@ -149,45 +132,19 @@ void CMenus::RenderTouchButtonEditor(CUIRect MainView)
 	// Functional Buttons.
 	Left.HSplitTop(ROWGAP, nullptr, &Left);
 	Left.HSplitTop(ROWSIZE, &EditBox, &Left);
-	const float ButtonWidth2 = (EditBox.w - SUBMARGIN) / 2.0f;
-	EditBox.VSplitLeft(ButtonWidth2, &A, &EditBox);
-	EditBox.VSplitLeft(SUBMARGIN, nullptr, &B);
-	static CButtonContainer s_AddNewButton;
-	// If a new button has created, Checked==0.
-	bool Checked = GameClient()->m_TouchControls.NoRealButtonSelected();
-	if(DoButton_Menu(&s_AddNewButton, Localize("New button"), Checked ? 1 : 0, &A))
-	{
-		CTouchControls::CUnitRect FreeRect = GameClient()->m_TouchControls.UpdatePosition({0, 0, CTouchControls::BUTTON_SIZE_MINIMUM, CTouchControls::BUTTON_SIZE_MINIMUM}, true);
-		if(Checked)
-		{
-			PopupMessage(Localize("Already Created New Button"), Localize("A new button is already created, please save or delete it before creating a new one"), Localize("OK"));
-		}
-		else if(FreeRect.m_X == -1)
-		{
-			PopupMessage(Localize("No Space"), Localize("No enough space for another button."), Localize("OK"));
-		}
-		else if(UnsavedChanges())
-		{
-			PopupConfirm(Localize("Unsaved Changes"), Localize("Save all changes before creating another button?"), Localize("Save"), Localize("Cancel"), &CMenus::PopupConfirm_NewButton);
-		}
-		else
-		{
-			PopupCancel_NewButton();
-		}
-	}
-
+	EditBox.VSplitLeft(ButtonWidth, &A, &EditBox);
+	EditBox.VSplitLeft(SUBMARGIN, nullptr, &EditBox);
 	static CButtonContainer s_RemoveButton;
-	if(DoButton_Menu(&s_RemoveButton, Localize("Delete"), 0, &B))
+	if(DoButton_Menu(&s_RemoveButton, Localize("Delete"), 0, &A))
 	{
 		PopupConfirm(Localize("Delete Button"), Localize("Are you sure to delete this button? This can't be undone."), Localize("Delete"), Localize("Cancel"), &CMenus::PopupConfirm_DeleteButton);
 	}
 
-	// Create a new button with current cached settings. New button will be automatically moved to nearest empty space.
-	Left.HSplitTop(ROWGAP, nullptr, &Left);
-	Left.HSplitTop(ROWSIZE, &EditBox, &Left);
-	EditBox.VSplitLeft(ButtonWidth2, &A, &EditBox);
+	EditBox.VSplitLeft(ButtonWidth, &A, &EditBox);
 	EditBox.VSplitLeft(SUBMARGIN, nullptr, &B);
+	// Create a new button with current cached settings. New button will be automatically moved to nearest empty space.
 	static CButtonContainer s_CopyPasteButton;
+	bool Checked = GameClient()->m_TouchControls.NoRealButtonSelected();
 	if(DoButton_Menu(&s_CopyPasteButton, Localize("Duplicate"), UnsavedChanges() || Checked ? 1 : 0, &A))
 	{
 		if(Checked)
@@ -471,15 +428,6 @@ bool CMenus::RenderBehaviorSettingBlock(CUIRect Block)
 	}
 	else
 	{
-		if(m_BindTogglePreviewExtension)
-			Block.HSplitBottom(MAINMARGIN, &Block, nullptr);
-		Block.HSplitBottom(ROWSIZE, &Block, &EditBox);
-		Block.HSplitBottom(SUBMARGIN, &Block, nullptr);
-		static CButtonContainer s_ExtendButton;
-		if(DoButton_Menu(&s_ExtendButton, m_BindTogglePreviewExtension ? Localize("Fold list") : Localize("Unfold list"), 0, &EditBox))
-		{
-			m_BindTogglePreviewExtension = !m_BindTogglePreviewExtension;
-		}
 		static CScrollRegion s_BindToggleScrollRegion;
 		CScrollRegionParams ScrollParam;
 		ScrollParam.m_ScrollUnit = 90.0f;
@@ -491,6 +439,7 @@ bool CMenus::RenderBehaviorSettingBlock(CUIRect Block)
 			Block.HSplitTop(ROWSIZE, &EditBox, &Block);
 			if(s_BindToggleScrollRegion.AddRect(EditBox))
 			{
+				EditBox.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), IGraphics::CORNER_T, 5.0f);
 				EditBox.VSplitMid(&EditBox, &C);
 				C.VSplitLeft(ScrollParam.m_ScrollbarWidth / 2.0f, nullptr, &C);
 				EditBox.VSplitLeft(ROWSIZE, &B, &EditBox);
@@ -506,7 +455,7 @@ bool CMenus::RenderBehaviorSettingBlock(CUIRect Block)
 				C.VSplitLeft(ROWSIZE, &B, &C);
 				C.VSplitLeft(SUBMARGIN, nullptr, &A);
 				Ui()->DoLabel(&A, Localize("Delete command"), FONTSIZE, TEXTALIGN_ML);
-				if(DoButton_FontIcon(&m_vBehaviorElements[CommandIndex].m_BindToggleDeleteButtons, "\xEF\x81\xA3", 0, &B, BUTTONFLAG_LEFT))
+				if(DoButton_FontIcon(&m_vBehaviorElements[CommandIndex].m_BindToggleDeleteButtons, FontIcons::FONT_ICON_TRASH, 0, &B, BUTTONFLAG_LEFT))
 				{
 					if(m_vBehaviorElements.size() > 2)
 					{
@@ -520,12 +469,15 @@ bool CMenus::RenderBehaviorSettingBlock(CUIRect Block)
 					Changed = true;
 				}
 			}
-			if(CommandIndex >= m_vBehaviorElements.size())
-				continue;
-			Block.HSplitTop(ROWGAP, nullptr, &Block);
+			Block.HSplitTop(ROWGAP, &EditBox, &Block);
+			if(s_BindToggleScrollRegion.AddRect(EditBox))
+			{
+				EditBox.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), IGraphics::CORNER_NONE, 0.0f);
+			}
 			Block.HSplitTop(ROWSIZE, &EditBox, &Block);
 			if(s_BindToggleScrollRegion.AddRect(EditBox))
 			{
+				EditBox.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), IGraphics::CORNER_NONE, 0.0f);
 				EditBox.VSplitMid(&A, &B);
 				B.VSplitLeft(ScrollParam.m_ScrollbarWidth / 2.0f, nullptr, &B);
 				char aBuf[128];
@@ -538,10 +490,15 @@ bool CMenus::RenderBehaviorSettingBlock(CUIRect Block)
 					Changed = true;
 				}
 			}
-			Block.HSplitTop(ROWGAP, nullptr, &Block);
+			Block.HSplitTop(ROWGAP, &EditBox, &Block);
+			if(s_BindToggleScrollRegion.AddRect(EditBox))
+			{
+				EditBox.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), IGraphics::CORNER_NONE, 0.0f);
+			}
 			Block.HSplitTop(ROWSIZE, &EditBox, &Block);
 			if(s_BindToggleScrollRegion.AddRect(EditBox))
 			{
+				EditBox.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), IGraphics::CORNER_NONE, 0.0f);
 				EditBox.VSplitMid(&A, &B);
 				B.VSplitLeft(ScrollParam.m_ScrollbarWidth / 2.0f, nullptr, &B);
 				char aBuf[128];
@@ -554,10 +511,15 @@ bool CMenus::RenderBehaviorSettingBlock(CUIRect Block)
 					Changed = true;
 				}
 			}
-			Block.HSplitTop(ROWGAP, nullptr, &Block);
+			Block.HSplitTop(ROWGAP, &EditBox, &Block);
+			if(s_BindToggleScrollRegion.AddRect(EditBox))
+			{
+				EditBox.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), IGraphics::CORNER_NONE, 0.0f);
+			}
 			Block.HSplitTop(ROWSIZE, &EditBox, &Block);
 			if(s_BindToggleScrollRegion.AddRect(EditBox))
 			{
+				EditBox.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.15f), IGraphics::CORNER_B, 5.0f);
 				EditBox.VSplitMid(&A, &B);
 				B.VSplitLeft(ScrollParam.m_ScrollbarWidth / 2.0f, nullptr, &B);
 				Ui()->DoLabel(&A, Localize("Label type:"), FONTSIZE, TEXTALIGN_ML);
@@ -604,6 +566,7 @@ bool CMenus::RenderVisibilitySettingBlock(CUIRect Block)
 	bool Changed = false;
 	CUIRect EditBox;
 
+	Block.HSplitTop(ROWGAP, nullptr, &Block);
 	static CScrollRegion s_VisibilityScrollRegion;
 	CScrollRegionParams ScrollParam;
 	ScrollParam.m_ScrollUnit = 90.0f;
@@ -611,9 +574,9 @@ bool CMenus::RenderVisibilitySettingBlock(CUIRect Block)
 	s_VisibilityScrollRegion.Begin(&Block, &ScrollOffset, &ScrollParam);
 	Block.y += ScrollOffset.y;
 
-	static std::vector<CButtonContainer> s_vVisibilitySelector[(int)CTouchControls::EButtonVisibility::NUM_VISIBILITIES];
-	if(s_vVisibilitySelector[0].empty())
-		std::for_each_n(s_vVisibilitySelector, (int)CTouchControls::EButtonVisibility::NUM_VISIBILITIES, [](auto &Element) {
+	static std::vector<CButtonContainer> s_avVisibilitySelector[(int)CTouchControls::EButtonVisibility::NUM_VISIBILITIES];
+	if(s_avVisibilitySelector[0].empty())
+		std::for_each_n(s_avVisibilitySelector, (int)CTouchControls::EButtonVisibility::NUM_VISIBILITIES, [](auto &Element) {
 			Element.resize(3);
 		});
 	const std::vector<const char *> &vLabels = {Localize("Included"), Localize("Excluded"), Localize("Ignored")};
@@ -625,7 +588,7 @@ bool CMenus::RenderVisibilitySettingBlock(CUIRect Block)
 			EditBox.HSplitTop(ROWGAP, nullptr, &EditBox);
 			EditBox.VMargin(MAINMARGIN, &EditBox);
 			if(DoLine_RadioMenu(EditBox, VISIBILITIES[Current],
-				   s_vVisibilitySelector[Current], vLabels, {(int)EVisibilityType::INCLUDE, (int)EVisibilityType::EXCLUDE, (int)EVisibilityType::IGNORE}, m_aCachedVisibilities[Current]))
+				   s_avVisibilitySelector[Current], vLabels, {(int)EVisibilityType::INCLUDE, (int)EVisibilityType::EXCLUDE, (int)EVisibilityType::IGNORE}, m_aCachedVisibilities[Current]))
 			{
 				SetUnsavedChanges(true);
 				Changed = true;
@@ -932,7 +895,7 @@ void CMenus::RenderConfigSettings(CUIRect MainView)
 	MainView.HSplitTop(MAINMARGIN, nullptr, &MainView);
 	MainView.HSplitTop(ROWSIZE, &EditBox, &MainView);
 	static CButtonContainer s_ActiveColorPicker;
-	ColorHSLA ColorTest = DoLine_ColorPicker(&s_ActiveColorPicker, ROWSIZE, 15.0f, 5.0f, &EditBox, Localize("Active Color"), &m_ColorActive, CTouchControls::DefaultBackgroundColorActive(), false, nullptr, true);
+	ColorHSLA ColorTest = DoLine_ColorPicker(&s_ActiveColorPicker, ROWSIZE, 15.0f, 5.0f, &EditBox, Localize("Active color"), &m_ColorActive, CTouchControls::DefaultBackgroundColorActive(), false, nullptr, true);
 	GameClient()->m_TouchControls.SetBackgroundColorActive(color_cast<ColorRGBA>(ColorHSLA(m_ColorActive, true)));
 	if(color_cast<ColorRGBA>(ColorTest) != GameClient()->m_TouchControls.BackgroundColorActive())
 		GameClient()->m_TouchControls.SetEditingChanges(true);
@@ -940,7 +903,7 @@ void CMenus::RenderConfigSettings(CUIRect MainView)
 	MainView.HSplitTop(ROWGAP, nullptr, &MainView);
 	MainView.HSplitTop(ROWSIZE, &EditBox, &MainView);
 	static CButtonContainer s_InactiveColorPicker;
-	ColorTest = DoLine_ColorPicker(&s_InactiveColorPicker, ROWSIZE, 15.0f, 5.0f, &EditBox, Localize("Inactive Color"), &m_ColorInactive, CTouchControls::DefaultBackgroundColorInactive(), false, nullptr, true);
+	ColorTest = DoLine_ColorPicker(&s_InactiveColorPicker, ROWSIZE, 15.0f, 5.0f, &EditBox, Localize("Inactive color"), &m_ColorInactive, CTouchControls::DefaultBackgroundColorInactive(), false, nullptr, true);
 	GameClient()->m_TouchControls.SetBackgroundColorInactive(color_cast<ColorRGBA>(ColorHSLA(m_ColorInactive, true)));
 	if(color_cast<ColorRGBA>(ColorTest) != GameClient()->m_TouchControls.BackgroundColorInactive())
 		GameClient()->m_TouchControls.SetEditingChanges(true);
@@ -1354,9 +1317,9 @@ void CMenus::CacheAllSettingsFromTarget(CTouchControls::CTouchButton *pTargetBut
 			auto *pCastedBehavior = static_cast<CTouchControls::CBindToggleTouchButtonBehavior *>(pTargetButton->m_pBehavior.get());
 			auto TargetCommands = pCastedBehavior->GetCommand();
 			// Can't use resize here :(
-			while(m_vBehaviorElements.size() > minimum<size_t>(TargetCommands.size(), 2))
+			while(m_vBehaviorElements.size() > maximum<size_t>(TargetCommands.size(), 2))
 				m_vBehaviorElements.pop_back();
-			while(m_vBehaviorElements.size() > minimum<size_t>(TargetCommands.size(), 2))
+			while(m_vBehaviorElements.size() < maximum<size_t>(TargetCommands.size(), 2))
 				m_vBehaviorElements.emplace_back(GameClient());
 			for(unsigned CommandIndex = 0; CommandIndex < TargetCommands.size(); CommandIndex++)
 			{

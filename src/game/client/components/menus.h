@@ -987,7 +987,6 @@ private:
 	bool m_NeedUpdatePreview = true; // Whether to reload the button being previewed.
 	bool m_NeedSort = true; // Whether to sort all previewed buttons.
 	bool m_NeedFilter = false; // Whether to exclude some buttons from preview.
-	bool m_BindTogglePreviewExtension = false;
 	std::vector<CTouchControls::CTouchButton *> m_vpVisibleButtons;
 	std::vector<CTouchControls::CTouchButton *> m_vpInvisibleButtons;
 	std::vector<CTouchControls::CTouchButton *> m_vpVisibleMutableButtons;
