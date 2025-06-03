@@ -376,7 +376,11 @@ bool IGameController::OnEntity(int Index, int x, int y, int Layer, int Flags, bo
 
 	if(Type != -1) // NOLINT(clang-analyzer-unix.Malloc)
 	{
-		CPickup *pPickup = new CPickup(&GameServer()->m_World, Type, SubType, Layer, Number);
+		static_assert((int)TILEFLAG_XFLIP == (int)PICKUPFLAG_XFLIP);
+		static_assert((int)TILEFLAG_YFLIP == (int)PICKUPFLAG_YFLIP);
+		static_assert((int)TILEFLAG_ROTATE == (int)PICKUPFLAG_ROTATE);
+		// remove unused OPAQUE flag
+		CPickup *pPickup = new CPickup(&GameServer()->m_World, Type, SubType, Layer, Number, Flags & ~TILEFLAG_OPAQUE);
 		pPickup->m_Pos = Pos;
 		return true; // NOLINT(clang-analyzer-unix.Malloc)
 	}
