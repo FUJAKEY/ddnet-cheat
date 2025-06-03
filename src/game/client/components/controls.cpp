@@ -11,6 +11,7 @@
 #include <game/client/components/scoreboard.h>
 #include <game/client/gameclient.h>
 #include <game/collision.h>
+#include <game/mapitems.h>
 
 #include <base/vmath.h>
 
@@ -237,10 +238,41 @@ int CControls::SnapInput(int *pData)
 
 		// set direction
 		m_aInputData[g_Config.m_ClDummy].m_Direction = 0;
-		if(m_aInputDirectionLeft[g_Config.m_ClDummy] && !m_aInputDirectionRight[g_Config.m_ClDummy])
-			m_aInputData[g_Config.m_ClDummy].m_Direction = -1;
-		if(!m_aInputDirectionLeft[g_Config.m_ClDummy] && m_aInputDirectionRight[g_Config.m_ClDummy])
-			m_aInputData[g_Config.m_ClDummy].m_Direction = 1;
+               if(m_aInputDirectionLeft[g_Config.m_ClDummy] && !m_aInputDirectionRight[g_Config.m_ClDummy])
+                       m_aInputData[g_Config.m_ClDummy].m_Direction = -1;
+               if(!m_aInputDirectionLeft[g_Config.m_ClDummy] && m_aInputDirectionRight[g_Config.m_ClDummy])
+                       m_aInputData[g_Config.m_ClDummy].m_Direction = 1;
+
+               if(g_Config.m_ClFujixEnable && m_pClient->m_Snap.m_pLocalCharacter && !m_pClient->m_Snap.m_SpecInfo.m_Active)
+               {
+                       CCharacterCore Pred = m_pClient->m_PredictedChar;
+                       Pred.m_Input = m_aInputData[g_Config.m_ClDummy];
+                       Pred.m_Input.m_Hook = 0;
+                       for(int i = 0; i < g_Config.m_ClFujixTicks; i++)
+                       {
+                               Pred.Tick(true);
+                               Pred.Move();
+                               Pred.Quantize();
+                               int MapIndex = Collision()->GetPureMapIndex(Pred.m_Pos);
+                               int Tiles[3] = {Collision()->GetTileIndex(MapIndex), Collision()->GetFrontTileIndex(MapIndex), Collision()->GetSwitchType(MapIndex)};
+                               bool Freeze = false;
+                               for(int t : Tiles)
+                                       if(t == TILE_FREEZE || t == TILE_DFREEZE || t == TILE_LFREEZE || t == TILE_DEATH)
+                                       {
+                                               Freeze = true;
+                                               break;
+                                       }
+                               if(Freeze)
+                               {
+                                       m_aInputData[g_Config.m_ClDummy].m_Hook = 1;
+                                       if(!m_aInputData[g_Config.m_ClDummy].m_TargetX && !m_aInputData[g_Config.m_ClDummy].m_TargetY)
+                                       {
+                                               m_aInputData[g_Config.m_ClDummy].m_TargetY = -1;
+                                       }
+                                       break;
+                               }
+                       }
+               }
 
 		// dummy copy moves
 		if(g_Config.m_ClDummyCopyMoves)
