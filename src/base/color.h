@@ -5,6 +5,7 @@
 #include <base/math.h>
 #include <base/vmath.h>
 
+#include <algorithm>
 #include <optional>
 
 /*
@@ -182,7 +183,7 @@ public:
 	{
 		ColorHSLA col = *this;
 		col.l = (l - Darkest) / (1 - Darkest);
-		col.l = clamp(col.l, 0.0f, 1.0f);
+		col.l = std::clamp(col.l, 0.0f, 1.0f);
 		return col.Pack(Alpha);
 	}
 };

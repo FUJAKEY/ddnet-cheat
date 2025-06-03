@@ -3,11 +3,8 @@
 #ifndef BASE_MATH_H
 #define BASE_MATH_H
 
-#include <algorithm>
 #include <cmath>
 #include <cstdlib>
-
-using std::clamp;
 
 constexpr float pi = 3.1415926535897932384626433f;
 
