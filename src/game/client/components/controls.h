@@ -26,15 +26,19 @@ public:
 	CNetObj_PlayerInput m_aInputData[NUM_DUMMIES];
 	CNetObj_PlayerInput m_aLastData[NUM_DUMMIES];
 	int m_aInputDirectionLeft[NUM_DUMMIES];
-	int m_aInputDirectionRight[NUM_DUMMIES];
-	int m_aShowHookColl[NUM_DUMMIES];
+       int m_aInputDirectionRight[NUM_DUMMIES];
+       int m_aShowHookColl[NUM_DUMMIES];
+
+       int m_FujixTicksLeft;
+       vec2 m_FujixTarget;
 
 	CControls();
 	virtual int Sizeof() const override { return sizeof(*this); }
 
 	virtual void OnReset() override;
-	virtual void OnRender() override;
-	virtual void OnMessage(int MsgType, void *pRawMsg) override;
+       virtual void OnRender() override;
+       void DrawFujixPrediction();
+       virtual void OnMessage(int MsgType, void *pRawMsg) override;
 	virtual bool OnCursorMove(float x, float y, IInput::ECursorType CursorType) override;
 	virtual void OnConsoleInit() override;
 	virtual void OnPlayerDeath();
