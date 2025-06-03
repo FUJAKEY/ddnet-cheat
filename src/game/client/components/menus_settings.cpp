@@ -1745,12 +1745,29 @@ void CMenus::RenderSettingsGraphics(CUIRect MainView)
 	}
 
 	// check if the new settings require a restart
-	if(CheckSettings)
-	{
-		m_NeedRestartGraphics = !(s_GfxFsaaSamples == g_Config.m_GfxFsaaSamples &&
-					  !s_GfxBackendChanged &&
-					  !s_GfxGpuChanged);
-	}
+        if(CheckSettings)
+        {
+                m_NeedRestartGraphics = !(s_GfxFsaaSamples == g_Config.m_GfxFsaaSamples &&
+                                          !s_GfxBackendChanged &&
+                                          !s_GfxGpuChanged);
+        }
+}
+
+void CMenus::RenderSettingsFujix(CUIRect MainView)
+{
+       CUIRect Button;
+       MainView.HSplitTop(20.0f, &Button, &MainView);
+       if(DoButton_CheckBox(&g_Config.m_ClFujixEnable, "Enable Fujix", g_Config.m_ClFujixEnable, &Button))
+               g_Config.m_ClFujixEnable ^= 1;
+
+       MainView.HSplitTop(20.0f, &Button, &MainView);
+       if(DoButton_CheckBox(&g_Config.m_ClShowFujixPrediction, "Show prediction", g_Config.m_ClShowFujixPrediction, &Button))
+               g_Config.m_ClShowFujixPrediction ^= 1;
+
+       MainView.HSplitTop(20.0f, &Button, &MainView);
+       char aBuf[64];
+       str_format(aBuf, sizeof(aBuf), "Prediction Ticks: %d", g_Config.m_ClFujixTicks);
+       Ui()->DoScrollbarOption(&g_Config.m_ClFujixTicks, &g_Config.m_ClFujixTicks, &Button, aBuf, 1, 20);
 }
 
 void CMenus::RenderSettingsSound(CUIRect MainView)
@@ -1959,9 +1976,10 @@ void CMenus::RenderSettings(CUIRect MainView)
 		Localize("Player"),
 		Client()->IsSixup() ? "Tee 0.7" : Localize("Tee"),
 		Localize("Appearance"),
-		Localize("Controls"),
-		Localize("Graphics"),
-		Localize("Sound"),
+               Localize("Controls"),
+               Localize("Graphics"),
+               "FUJIX",
+               Localize("Sound"),
 		Localize("DDNet"),
 		Localize("Assets")};
 	static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
@@ -2007,12 +2025,17 @@ void CMenus::RenderSettings(CUIRect MainView)
 		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_CONTROLS);
 		RenderSettingsControls(MainView);
 	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_GRAPHICS)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_GRAPHICS);
-		RenderSettingsGraphics(MainView);
-	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_SOUND)
+       else if(g_Config.m_UiSettingsPage == SETTINGS_GRAPHICS)
+       {
+               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_GRAPHICS);
+               RenderSettingsGraphics(MainView);
+       }
+       else if(g_Config.m_UiSettingsPage == SETTINGS_FUJIX)
+       {
+               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_RESERVED0);
+               RenderSettingsFujix(MainView);
+       }
+       else if(g_Config.m_UiSettingsPage == SETTINGS_SOUND)
 	{
 		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_SOUND);
 		RenderSettingsSound(MainView);
