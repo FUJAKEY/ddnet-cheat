@@ -11,6 +11,7 @@
 #include <game/client/components/scoreboard.h>
 #include <game/client/gameclient.h>
 #include <game/collision.h>
+#include <game/mapitems.h>
 
 #include <base/vmath.h>
 
@@ -18,10 +19,13 @@
 
 CControls::CControls()
 {
-	mem_zero(&m_aLastData, sizeof(m_aLastData));
-	mem_zero(m_aMousePos, sizeof(m_aMousePos));
-	mem_zero(m_aMousePosOnAction, sizeof(m_aMousePosOnAction));
-	mem_zero(m_aTargetPos, sizeof(m_aTargetPos));
+        mem_zero(&m_aLastData, sizeof(m_aLastData));
+        mem_zero(m_aMousePos, sizeof(m_aMousePos));
+        mem_zero(m_aMousePosOnAction, sizeof(m_aMousePosOnAction));
+        mem_zero(m_aTargetPos, sizeof(m_aTargetPos));
+
+       m_FujixTicksLeft = 0;
+       m_FujixTarget = vec2(0, 0);
 }
 
 void CControls::OnReset()
@@ -32,7 +36,9 @@ void CControls::OnReset()
 	for(int &AmmoCount : m_aAmmoCount)
 		AmmoCount = 0;
 
-	m_LastSendTime = 0;
+       m_LastSendTime = 0;
+
+       m_FujixTicksLeft = 0;
 }
 
 void CControls::ResetInput(int Dummy)
@@ -45,8 +51,10 @@ void CControls::ResetInput(int Dummy)
 	m_aLastData[Dummy].m_Jump = 0;
 	m_aInputData[Dummy] = m_aLastData[Dummy];
 
-	m_aInputDirectionLeft[Dummy] = 0;
-	m_aInputDirectionRight[Dummy] = 0;
+       m_aInputDirectionLeft[Dummy] = 0;
+       m_aInputDirectionRight[Dummy] = 0;
+
+       m_FujixTicksLeft = 0;
 }
 
 void CControls::OnPlayerDeath()
@@ -237,10 +245,97 @@ int CControls::SnapInput(int *pData)
 
 		// set direction
 		m_aInputData[g_Config.m_ClDummy].m_Direction = 0;
-		if(m_aInputDirectionLeft[g_Config.m_ClDummy] && !m_aInputDirectionRight[g_Config.m_ClDummy])
-			m_aInputData[g_Config.m_ClDummy].m_Direction = -1;
-		if(!m_aInputDirectionLeft[g_Config.m_ClDummy] && m_aInputDirectionRight[g_Config.m_ClDummy])
-			m_aInputData[g_Config.m_ClDummy].m_Direction = 1;
+               if(m_aInputDirectionLeft[g_Config.m_ClDummy] && !m_aInputDirectionRight[g_Config.m_ClDummy])
+                       m_aInputData[g_Config.m_ClDummy].m_Direction = -1;
+               if(!m_aInputDirectionLeft[g_Config.m_ClDummy] && m_aInputDirectionRight[g_Config.m_ClDummy])
+                       m_aInputData[g_Config.m_ClDummy].m_Direction = 1;
+
+               if(g_Config.m_ClFujixEnable && m_pClient->m_Snap.m_pLocalCharacter && !m_pClient->m_Snap.m_SpecInfo.m_Active)
+               {
+                       if(m_FujixTicksLeft == 0)
+                       {
+                               bool Freeze = false;
+                               CCharacterCore Pred = m_pClient->m_PredictedChar;
+                               Pred.m_Input = m_aInputData[g_Config.m_ClDummy];
+                               Pred.m_Input.m_Hook = 0;
+                               for(int i = 0; i < g_Config.m_ClFujixTicks; i++)
+                               {
+                                       Pred.Tick(true);
+                                       Pred.Move();
+                                       Pred.Quantize();
+                                       int MapIndex = Collision()->GetPureMapIndex(Pred.m_Pos);
+                                       int Tiles[3] = {Collision()->GetTileIndex(MapIndex), Collision()->GetFrontTileIndex(MapIndex), Collision()->GetSwitchType(MapIndex)};
+                                       for(int t : Tiles)
+                                       {
+                                               if(t == TILE_FREEZE || t == TILE_DFREEZE || t == TILE_LFREEZE || t == TILE_DEATH)
+                                               {
+                                                       Freeze = true;
+                                                       break;
+                                               }
+                                       }
+                                       if(Freeze)
+                                               break;
+                               }
+
+                               if(Freeze)
+                               {
+                                       static const vec2 Directions[] = {vec2(0, -1), vec2(-1, -1), vec2(1, -1), vec2(-1, 0), vec2(1, 0), vec2(-1, 1), vec2(1, 1), vec2(0, 1)};
+                                       float HookLen = m_pClient->m_aTuning[g_Config.m_ClDummy].m_HookLength;
+                                       for(const vec2 &Dir : Directions)
+                                       {
+                                               vec2 To = Pred.m_Pos + normalize(Dir) * HookLen;
+                                               vec2 Col, Before;
+                                               int Hit = Collision()->IntersectLine(Pred.m_Pos, To, &Col, &Before);
+                                               if(!Hit)
+                                                       continue;
+                                               if(Hit == TILE_NOHOOK || Hit == TILE_FREEZE || Hit == TILE_DFREEZE || Hit == TILE_LFREEZE || Hit == TILE_DEATH)
+                                                       continue;
+
+                                               CCharacterCore HookPred = Pred;
+                                               HookPred.m_Input = m_aInputData[g_Config.m_ClDummy];
+                                               HookPred.m_Input.m_Hook = 1;
+                                               HookPred.m_Input.m_TargetX = (int)(Dir.x * 256);
+                                               HookPred.m_Input.m_TargetY = (int)(Dir.y * 256);
+                                               bool Safe = true;
+                                               for(int s = 0; s < g_Config.m_ClFujixTicks && Safe; s++)
+                                               {
+                                                       HookPred.Tick(true);
+                                                       HookPred.Move();
+                                                       HookPred.Quantize();
+                                                       int MapIndex2 = Collision()->GetPureMapIndex(HookPred.m_Pos);
+                                                       int Tiles2[3] = {Collision()->GetTileIndex(MapIndex2), Collision()->GetFrontTileIndex(MapIndex2), Collision()->GetSwitchType(MapIndex2)};
+                                                       for(int t : Tiles2)
+                                                       {
+                                                               if(t == TILE_FREEZE || t == TILE_DFREEZE || t == TILE_LFREEZE || t == TILE_DEATH)
+                                                               {
+                                                                       Safe = false;
+                                                                       break;
+                                                               }
+                                                       }
+                                                       if(HookPred.m_HookState == HOOK_RETRACT_START || HookPred.m_HookState == HOOK_RETRACTED)
+                                                               Safe = false;
+                                               }
+
+                                               if(Safe)
+                                               {
+                                                       m_FujixTicksLeft = 10;
+                                                       m_FujixTarget = Col;
+                                                       break;
+                                               }
+                                       }
+                               }
+                       }
+               }
+
+               if(m_FujixTicksLeft > 0)
+               {
+                       vec2 LocalPos = m_pClient->m_LocalCharacterPos;
+                       vec2 Dir = normalize(m_FujixTarget - LocalPos);
+                       m_aInputData[g_Config.m_ClDummy].m_TargetX = (int)(Dir.x * GetMaxMouseDistance());
+                       m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)(Dir.y * GetMaxMouseDistance());
+                       m_aInputData[g_Config.m_ClDummy].m_Hook = 1;
+                       m_FujixTicksLeft--;
+               }
 
 		// dummy copy moves
 		if(g_Config.m_ClDummyCopyMoves)
