@@ -3,12 +3,12 @@
 #ifndef ENGINE_SERVER_H
 #define ENGINE_SERVER_H
 
+#include <algorithm>
 #include <array>
 #include <optional>
 #include <type_traits>
 
 #include <base/hash.h>
-#include <base/math.h>
 #include <base/system.h>
 
 #include "kernel.h"

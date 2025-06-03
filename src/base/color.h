@@ -5,6 +5,7 @@
 #include <base/math.h>
 #include <base/vmath.h>
 
+#include <algorithm>
 #include <optional>
 
 /*

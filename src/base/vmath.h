@@ -6,6 +6,8 @@
 #include <cmath>
 #include <cstdint>
 
+#include <algorithm>
+
 #include "math.h"
 
 // ------------------------------------
