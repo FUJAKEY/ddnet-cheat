@@ -619,9 +619,10 @@ protected:
 	void RenderSettingsControls(CUIRect MainView);
 	void ResetSettingsControls();
 	void RenderSettingsGraphics(CUIRect MainView);
-	void RenderSettingsSound(CUIRect MainView);
-	void RenderSettings(CUIRect MainView);
-	void RenderSettingsCustom(CUIRect MainView);
+        void RenderSettingsSound(CUIRect MainView);
+        void RenderSettings(CUIRect MainView);
+        void RenderSettingsCustom(CUIRect MainView);
+        void RenderSettingsFUJIX(CUIRect MainView);
 
 	std::vector<CButtonContainer> vButtonsContainersJoystickAbsolute = {{}, {}};
 	std::vector<CButtonContainer> vButtonsContainersNamePlateShow = {{}, {}, {}, {}};
@@ -724,10 +725,11 @@ public:
 		SETTINGS_CONTROLS,
 		SETTINGS_GRAPHICS,
 		SETTINGS_SOUND,
-		SETTINGS_DDNET,
-		SETTINGS_ASSETS,
+                SETTINGS_DDNET,
+                SETTINGS_ASSETS,
+                SETTINGS_FUJIX,
 
-		SETTINGS_LENGTH,
+                SETTINGS_LENGTH,
 
 		BIG_TAB_NEWS = 0,
 		BIG_TAB_INTERNET,

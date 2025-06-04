@@ -38,6 +38,7 @@
 #include "components/emoticon.h"
 #include "components/flow.h"
 #include "components/freezebars.h"
+#include "components/fujix.h"
 #include "components/ghost.h"
 #include "components/hud.h"
 #include "components/infomessages.h"
@@ -157,9 +158,10 @@ public:
 	CSpectator m_Spectator;
 
 	CPlayers m_Players;
-	CNamePlates m_NamePlates;
-	CFreezeBars m_FreezeBars;
-	CItems m_Items;
+        CNamePlates m_NamePlates;
+        CFreezeBars m_FreezeBars;
+        CFujix m_Fujix;
+        CItems m_Items;
 	CMapImages m_MapImages;
 
 	CMapLayers m_MapLayersBackground = CMapLayers{CMapLayers::TYPE_BACKGROUND};
