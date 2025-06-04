@@ -6,6 +6,8 @@
 #include <base/vmath.h>
 
 #include <engine/client.h>
+#include <base/system.h>
+#include <engine/graphics.h>
 
 #include <game/client/component.h>
 #include <game/generated/protocol.h>
@@ -32,6 +34,13 @@ public:
        int m_FujixTicksLeft;
        vec2 m_FujixTarget;
        int m_FujixLockControls;
+       int m_FujixFallbackTicksLeft;
+       bool m_FujixUsingFallback;
+       IGraphics::CLineItem m_aFujixLines[64];
+       int m_FujixLineNum;
+       vec2 m_FujixPredPos;
+
+       void UpdateFujixPrediction();
 
 	CControls();
 	virtual int Sizeof() const override { return sizeof(*this); }

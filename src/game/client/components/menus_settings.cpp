@@ -910,7 +910,7 @@ static CKeyInfo gs_aKeys[] =
 
 		{Localizable("Toggle dummy"), "toggle cl_dummy 0 1", 0, 0},
 		{Localizable("Dummy copy"), "toggle cl_dummy_copy_moves 0 1", 0, 0},
-		{Localizable("Hammerfly dummy"), "toggle cl_dummy_hammer 0 1", 0, 0},
+               {Localizable("Hammerfly dummy"), "toggle cl_dummy_hammer 0 1", 0, 0},
 
 		{Localizable("Emoticon"), "+emote", 0, 0},
 		{Localizable("Spectator mode"), "+spectate", 0, 0},
@@ -1753,15 +1753,14 @@ void CMenus::RenderSettingsGraphics(CUIRect MainView)
         }
 }
 
-void CMenus::RenderSettingsAutoHook(CUIRect MainView)
+void CMenus::RenderSettingsFujix(CUIRect MainView)
 {
        CUIRect Button;
        MainView.HSplitTop(20.0f, &Button, &MainView);
-       if(DoButton_CheckBox(&g_Config.m_ClFujixEnable, "Enable Anti Freeze", g_Config.m_ClFujixEnable, &Button))
-               g_Config.m_ClFujixEnable ^= 1;
+       Ui()->DoLabel(&Button, Localize("Beta features are disabled"), 14.0f, TEXTALIGN_MC);
 
        MainView.HSplitTop(20.0f, &Button, &MainView);
-       if(DoButton_CheckBox(&g_Config.m_ClShowFujixPrediction, "Show prediction", g_Config.m_ClShowFujixPrediction, &Button))
+       if(DoButton_CheckBox(&g_Config.m_ClShowFujixPrediction, Localize("Show prediction"), g_Config.m_ClShowFujixPrediction, &Button))
                g_Config.m_ClShowFujixPrediction ^= 1;
 
        MainView.HSplitTop(20.0f, &Button, &MainView);
@@ -1978,10 +1977,10 @@ void CMenus::RenderSettings(CUIRect MainView)
 		Localize("Appearance"),
                Localize("Controls"),
                Localize("Graphics"),
-               "AUTOHOOK",
                Localize("Sound"),
-		Localize("DDNet"),
-		Localize("Assets")};
+                Localize("DDNet"),
+                Localize("Assets"),
+               "FUJIX"};
 	static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 
 	for(int i = 0; i < SETTINGS_LENGTH; i++)
@@ -2030,26 +2029,26 @@ void CMenus::RenderSettings(CUIRect MainView)
                GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_GRAPHICS);
                RenderSettingsGraphics(MainView);
        }
-       else if(g_Config.m_UiSettingsPage == SETTINGS_AUTOHOOK)
-       {
-               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_RESERVED0);
-               RenderSettingsAutoHook(MainView);
-       }
        else if(g_Config.m_UiSettingsPage == SETTINGS_SOUND)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_SOUND);
-		RenderSettingsSound(MainView);
-	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_DDNET)
+       {
+               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_SOUND);
+               RenderSettingsSound(MainView);
+       }
+       else if(g_Config.m_UiSettingsPage == SETTINGS_DDNET)
 	{
 		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_DDNET);
 		RenderSettingsDDNet(MainView);
 	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_ASSETS)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
-		RenderSettingsCustom(MainView);
-	}
+       else if(g_Config.m_UiSettingsPage == SETTINGS_ASSETS)
+       {
+               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
+               RenderSettingsCustom(MainView);
+       }
+       else if(g_Config.m_UiSettingsPage == SETTINGS_FUJIX)
+       {
+               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_RESERVED0);
+               RenderSettingsFujix(MainView);
+       }
 	else
 	{
 		dbg_assert(false, "ui_settings_page invalid");
