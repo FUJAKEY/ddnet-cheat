@@ -23,12 +23,14 @@ CControls::CControls()
 {
         mem_zero(&m_aLastData, sizeof(m_aLastData));
         mem_zero(m_aMousePos, sizeof(m_aMousePos));
-        mem_zero(m_aMousePosOnAction, sizeof(m_aMousePosOnAction));
+       mem_zero(m_aMousePosOnAction, sizeof(m_aMousePosOnAction));
        mem_zero(m_aTargetPos, sizeof(m_aTargetPos));
 
        m_FujixTicksLeft = 0;
        m_FujixTarget = vec2(0, 0);
        m_FujixLockControls = 0;
+       m_FujixFallbackTicksLeft = 0;
+       m_FujixUsingFallback = false;
 }
 
 void CControls::OnReset()
@@ -43,6 +45,8 @@ void CControls::OnReset()
 
        m_FujixTicksLeft = 0;
        m_FujixLockControls = 0;
+       m_FujixFallbackTicksLeft = 0;
+       m_FujixUsingFallback = false;
 }
 
 void CControls::ResetInput(int Dummy)
@@ -60,6 +64,8 @@ void CControls::ResetInput(int Dummy)
 
        m_FujixTicksLeft = 0;
        m_FujixLockControls = 0;
+       m_FujixFallbackTicksLeft = 0;
+       m_FujixUsingFallback = false;
 }
 
 void CControls::OnPlayerDeath()
@@ -69,6 +75,8 @@ void CControls::OnPlayerDeath()
 
        m_FujixTicksLeft = 0;
        m_FujixLockControls = 0;
+       m_FujixFallbackTicksLeft = 0;
+       m_FujixUsingFallback = false;
 }
 
 struct CInputState
@@ -306,7 +314,7 @@ int CControls::SnapInput(int *pData)
 
                        if(Freeze)
                        {
-                               const int NumDir = IsKoGMap() ? 64 : 32;
+                               const int NumDir = IsKoGMap() ? 64 : 48;
                                float HookLen = m_pClient->m_aTuning[g_Config.m_ClDummy].m_HookLength;
                                bool Found = false;
                                vec2 BestTarget = vec2(0, 0);
@@ -420,12 +428,16 @@ int CControls::SnapInput(int *pData)
                                        m_FujixTicksLeft = 5;
                                        m_FujixTarget = BestTarget;
                                        m_FujixLockControls = 1;
+                                       m_FujixFallbackTicksLeft = 0;
+                                       m_FujixUsingFallback = false;
                                }
                                else if(FallbackFound)
                                {
                                        m_FujixTicksLeft = 5;
                                        m_FujixTarget = FallbackTarget;
                                        m_FujixLockControls = 1;
+                                       m_FujixFallbackTicksLeft = 10;
+                                       m_FujixUsingFallback = true;
                                }
                        }
 
@@ -433,7 +445,15 @@ int CControls::SnapInput(int *pData)
                        {
                                if(m_FujixTicksLeft > 0)
                                        m_FujixTicksLeft--;
-                               if(m_FujixTicksLeft == 0)
+                               if(m_FujixFallbackTicksLeft > 0)
+                                       m_FujixFallbackTicksLeft--;
+                               if(m_FujixFallbackTicksLeft == 0 && m_FujixUsingFallback)
+                               {
+                                       m_FujixTicksLeft = 0;
+                                       m_FujixLockControls = 0;
+                                       m_FujixUsingFallback = false;
+                               }
+                               if(m_FujixTicksLeft == 0 && !m_FujixUsingFallback)
                                        m_FujixLockControls = 0;
                        }
 
