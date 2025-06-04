@@ -306,11 +306,35 @@ int CControls::SnapInput(int *pData)
 
                        if(Freeze)
                        {
-                               const int NumDir = IsKoGMap() ? 32 : 16;
+                               const int NumDir = IsKoGMap() ? 64 : 32;
                                float HookLen = m_pClient->m_aTuning[g_Config.m_ClDummy].m_HookLength;
                                bool Found = false;
                                vec2 BestTarget = vec2(0, 0);
                                float BestDist = 1e9f;
+                               const auto IsCandidateSafe = [&](const vec2 &Target) {
+                                       CCharacterCore Test = m_pClient->m_PredictedChar;
+                                       CNetObj_PlayerInput TestInput = m_aInputData[g_Config.m_ClDummy];
+                                       TestInput.m_Hook = 1;
+                                       for(int i = 0; i < g_Config.m_ClFujixTicks && i < 20; i++)
+                                       {
+                                               vec2 DirT = normalize(Target - Test.m_Pos);
+                                               TestInput.m_TargetX = (int)(DirT.x * GetMaxMouseDistance());
+                                               TestInput.m_TargetY = (int)(DirT.y * GetMaxMouseDistance());
+                                               Test.m_Input = TestInput;
+                                               Test.Tick(true);
+                                               Test.Move();
+                                               Test.Quantize();
+
+                                               int MapIdx = Collision()->GetPureMapIndex(Test.m_Pos);
+                                               int T[3] = {Collision()->GetTileIndex(MapIdx), Collision()->GetFrontTileIndex(MapIdx), Collision()->GetSwitchType(MapIdx)};
+                                               for(int t : T)
+                                               {
+                                                       if(t == TILE_FREEZE || t == TILE_DFREEZE || t == TILE_LFREEZE || t == TILE_DEATH)
+                                                               return false;
+                                               }
+                                       }
+                                       return true;
+                               };
                                for(int k = 0; k < NumDir; k++)
                                {
                                        float a = (2.0f * pi * k) / NumDir;
@@ -339,7 +363,7 @@ int CControls::SnapInput(int *pData)
                                                                }
                                                        }
                                                }
-                                               if(!ThroughFreeze)
+                                               if(!ThroughFreeze && IsCandidateSafe(Col))
                                                {
                                                        float Dist = distance(SafePos, Col);
                                                        if(Dist < BestDist)
@@ -371,7 +395,7 @@ int CControls::SnapInput(int *pData)
                                                                }
                                                        }
                                                }
-                                               if(!ThroughFreeze)
+                                               if(!ThroughFreeze && IsCandidateSafe(CharCol))
                                                {
                                                        float Dist = distance(SafePos, CharCol);
                                                        if(Dist < BestDist)
