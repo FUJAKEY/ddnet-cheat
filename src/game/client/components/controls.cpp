@@ -609,7 +609,8 @@ void CControls::OnRender()
                m_aTargetPos[g_Config.m_ClDummy] = m_aMousePos[g_Config.m_ClDummy];
        }
 
-       DrawFujixPrediction();
+UpdateFujixPrediction();
+DrawFujixPrediction();
 }
 
 void CControls::DrawFujixPrediction()
