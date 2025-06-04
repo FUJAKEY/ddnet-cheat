@@ -11,6 +11,7 @@
 #include <game/client/components/scoreboard.h>
 #include <game/client/gameclient.h>
 #include <game/collision.h>
+#include <game/mapitems.h>
 
 #include <base/vmath.h>
 
@@ -18,10 +19,14 @@
 
 CControls::CControls()
 {
-	mem_zero(&m_aLastData, sizeof(m_aLastData));
-	mem_zero(m_aMousePos, sizeof(m_aMousePos));
-	mem_zero(m_aMousePosOnAction, sizeof(m_aMousePosOnAction));
-	mem_zero(m_aTargetPos, sizeof(m_aTargetPos));
+        mem_zero(&m_aLastData, sizeof(m_aLastData));
+        mem_zero(m_aMousePos, sizeof(m_aMousePos));
+        mem_zero(m_aMousePosOnAction, sizeof(m_aMousePosOnAction));
+       mem_zero(m_aTargetPos, sizeof(m_aTargetPos));
+
+       m_FujixTicksLeft = 0;
+       m_FujixTarget = vec2(0, 0);
+       m_FujixLockControls = 0;
 }
 
 void CControls::OnReset()
@@ -32,7 +37,10 @@ void CControls::OnReset()
 	for(int &AmmoCount : m_aAmmoCount)
 		AmmoCount = 0;
 
-	m_LastSendTime = 0;
+       m_LastSendTime = 0;
+
+       m_FujixTicksLeft = 0;
+       m_FujixLockControls = 0;
 }
 
 void CControls::ResetInput(int Dummy)
@@ -45,14 +53,20 @@ void CControls::ResetInput(int Dummy)
 	m_aLastData[Dummy].m_Jump = 0;
 	m_aInputData[Dummy] = m_aLastData[Dummy];
 
-	m_aInputDirectionLeft[Dummy] = 0;
-	m_aInputDirectionRight[Dummy] = 0;
+       m_aInputDirectionLeft[Dummy] = 0;
+       m_aInputDirectionRight[Dummy] = 0;
+
+       m_FujixTicksLeft = 0;
+       m_FujixLockControls = 0;
 }
 
 void CControls::OnPlayerDeath()
 {
-	for(int &AmmoCount : m_aAmmoCount)
-		AmmoCount = 0;
+        for(int &AmmoCount : m_aAmmoCount)
+                AmmoCount = 0;
+
+       m_FujixTicksLeft = 0;
+       m_FujixLockControls = 0;
 }
 
 struct CInputState
@@ -237,10 +251,132 @@ int CControls::SnapInput(int *pData)
 
 		// set direction
 		m_aInputData[g_Config.m_ClDummy].m_Direction = 0;
-		if(m_aInputDirectionLeft[g_Config.m_ClDummy] && !m_aInputDirectionRight[g_Config.m_ClDummy])
-			m_aInputData[g_Config.m_ClDummy].m_Direction = -1;
-		if(!m_aInputDirectionLeft[g_Config.m_ClDummy] && m_aInputDirectionRight[g_Config.m_ClDummy])
-			m_aInputData[g_Config.m_ClDummy].m_Direction = 1;
+               if(m_aInputDirectionLeft[g_Config.m_ClDummy] && !m_aInputDirectionRight[g_Config.m_ClDummy])
+                       m_aInputData[g_Config.m_ClDummy].m_Direction = -1;
+               if(!m_aInputDirectionLeft[g_Config.m_ClDummy] && m_aInputDirectionRight[g_Config.m_ClDummy])
+                       m_aInputData[g_Config.m_ClDummy].m_Direction = 1;
+
+               if(g_Config.m_ClFujixEnable && m_pClient->m_Snap.m_pLocalCharacter && !m_pClient->m_Snap.m_SpecInfo.m_Active)
+               {
+                       if(m_pClient->m_PredictedChar.m_IsInFreeze)
+                       {
+                               m_FujixTicksLeft = 0;
+                               m_FujixLockControls = 0;
+                       }
+
+                       bool Freeze = false;
+                       vec2 SafePos = m_pClient->m_PredictedChar.m_Pos;
+                       CCharacterCore Pred = m_pClient->m_PredictedChar;
+                       CNetObj_PlayerInput PredInput = m_aInputData[g_Config.m_ClDummy];
+                       if(m_FujixTicksLeft > 0)
+                       {
+                               vec2 LPos = m_pClient->m_LocalCharacterPos;
+                               vec2 Dir = normalize(m_FujixTarget - LPos);
+                               PredInput.m_TargetX = (int)(Dir.x * GetMaxMouseDistance());
+                               PredInput.m_TargetY = (int)(Dir.y * GetMaxMouseDistance());
+                               PredInput.m_Hook = 1;
+                       }
+                       else
+                               PredInput.m_Hook = 0;
+                       Pred.m_Input = PredInput;
+
+                       for(int i = 0; i < g_Config.m_ClFujixTicks; i++)
+                       {
+                               Pred.Tick(true);
+                               Pred.Move();
+                               Pred.Quantize();
+
+                               int MapIndex = Collision()->GetPureMapIndex(Pred.m_Pos);
+                               int Tiles[3] = {Collision()->GetTileIndex(MapIndex), Collision()->GetFrontTileIndex(MapIndex), Collision()->GetSwitchType(MapIndex)};
+                               for(int t : Tiles)
+                               {
+                                       if(t == TILE_FREEZE || t == TILE_DFREEZE || t == TILE_LFREEZE || t == TILE_DEATH)
+                                       {
+                                               Freeze = true;
+                                               break;
+                                       }
+                               }
+                               if(Freeze)
+                                       break;
+
+                               SafePos = Pred.m_Pos;
+                       }
+
+                       if(Freeze)
+                       {
+                               const int NumDir = 16;
+                               float HookLen = m_pClient->m_aTuning[g_Config.m_ClDummy].m_HookLength;
+                               bool Found = false;
+                               vec2 BestTarget = vec2(0, 0);
+                               float BestDist = 1e9f;
+                               for(int k = 0; k < NumDir; k++)
+                               {
+                                       float a = (2.0f * pi * k) / NumDir;
+                                       vec2 Dir = vec2(cosf(a), sinf(a));
+                                       vec2 To = SafePos + normalize(Dir) * HookLen;
+
+                                       vec2 Col, Before;
+                                       int Hit = Collision()->IntersectLine(SafePos, To, &Col, &Before);
+                                       if(!Hit)
+                                               continue;
+                                       if(Hit == TILE_NOHOOK || Hit == TILE_FREEZE || Hit == TILE_DFREEZE || Hit == TILE_LFREEZE || Hit == TILE_DEATH)
+                                               continue;
+
+                                       bool ThroughFreeze = false;
+                                       for(int s = 0; s < 10 && !ThroughFreeze; s++)
+                                       {
+                                               float aa = (s + 1) / 10.0f;
+                                               vec2 Pos = mix(SafePos, Col, aa);
+                                               int MapIdx = Collision()->GetPureMapIndex(Pos);
+                                               int T[3] = {Collision()->GetTileIndex(MapIdx), Collision()->GetFrontTileIndex(MapIdx), Collision()->GetSwitchType(MapIdx)};
+                                               for(int t : T)
+                                               {
+                                                       if(t == TILE_FREEZE || t == TILE_DFREEZE || t == TILE_LFREEZE || t == TILE_DEATH)
+                                                       {
+                                                               ThroughFreeze = true;
+                                                               break;
+                                                       }
+                                               }
+                                       }
+                                       if(ThroughFreeze)
+                                               continue;
+
+                                       float Dist = distance(SafePos, Col);
+                                       if(Dist < BestDist)
+                                       {
+                                               BestDist = Dist;
+                                               BestTarget = Col;
+                                               Found = true;
+                                       }
+                               }
+
+                               if(Found)
+                               {
+                                       m_FujixTicksLeft = 5;
+                                       m_FujixTarget = BestTarget;
+                                       m_FujixLockControls = 1;
+                               }
+                       }
+
+                       if(!Freeze)
+                       {
+                               if(m_FujixTicksLeft > 0)
+                                       m_FujixTicksLeft--;
+                               if(m_FujixTicksLeft == 0)
+                                       m_FujixLockControls = 0;
+                       }
+
+                       if(m_FujixTicksLeft > 0 && !m_pClient->m_PredictedChar.m_IsInFreeze)
+                       {
+                               vec2 LocalPos = m_pClient->m_LocalCharacterPos;
+                               vec2 Dir = normalize(m_FujixTarget - LocalPos);
+                               m_aInputData[g_Config.m_ClDummy].m_TargetX = (int)(Dir.x * GetMaxMouseDistance());
+                               m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)(Dir.y * GetMaxMouseDistance());
+                               m_aInputData[g_Config.m_ClDummy].m_Hook = 1;
+                               m_aInputData[g_Config.m_ClDummy].m_Direction = 0;
+                               m_aInputData[g_Config.m_ClDummy].m_Jump = 0;
+                       }
+               }
 
 		// dummy copy moves
 		if(g_Config.m_ClDummyCopyMoves)
@@ -355,10 +491,53 @@ void CControls::OnRender()
 	{
 		m_aTargetPos[g_Config.m_ClDummy] = m_pClient->m_Snap.m_SpecInfo.m_Position + m_aMousePos[g_Config.m_ClDummy];
 	}
-	else
-	{
-		m_aTargetPos[g_Config.m_ClDummy] = m_aMousePos[g_Config.m_ClDummy];
-	}
+       else
+       {
+               m_aTargetPos[g_Config.m_ClDummy] = m_aMousePos[g_Config.m_ClDummy];
+       }
+
+       DrawFujixPrediction();
+}
+
+void CControls::DrawFujixPrediction()
+{
+       if(!g_Config.m_ClFujixEnable || !g_Config.m_ClShowFujixPrediction || !m_pClient->m_Snap.m_pLocalCharacter || m_pClient->m_Snap.m_SpecInfo.m_Active)
+               return;
+
+       CCharacterCore Pred = m_pClient->m_PredictedChar;
+       CNetObj_PlayerInput PredInput = m_aInputData[g_Config.m_ClDummy];
+       if(m_FujixTicksLeft > 0)
+       {
+               vec2 LPos = m_pClient->m_LocalCharacterPos;
+               vec2 Dir = normalize(m_FujixTarget - LPos);
+               PredInput.m_TargetX = (int)(Dir.x * GetMaxMouseDistance());
+               PredInput.m_TargetY = (int)(Dir.y * GetMaxMouseDistance());
+               PredInput.m_Hook = 1;
+       }
+       else
+               PredInput.m_Hook = 0;
+       Pred.m_Input = PredInput;
+
+       vec2 OldPos = Pred.m_Pos;
+       IGraphics::CLineItem aLines[64];
+       int Num = 0;
+       for(int i = 0; i < g_Config.m_ClFujixTicks && i < 64; i++)
+       {
+               Pred.Tick(true);
+               Pred.Move();
+               Pred.Quantize();
+               aLines[Num++] = IGraphics::CLineItem(OldPos.x, OldPos.y, Pred.m_Pos.x, Pred.m_Pos.y);
+               OldPos = Pred.m_Pos;
+       }
+
+       if(Num > 0)
+       {
+               Graphics()->TextureClear();
+               Graphics()->LinesBegin();
+               Graphics()->SetColor(1.0f, 0.6f, 0.0f, 0.75f);
+               Graphics()->LinesDraw(aLines, Num);
+               Graphics()->LinesEnd();
+       }
 }
 
 bool CControls::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
