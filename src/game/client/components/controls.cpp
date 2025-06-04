@@ -10,6 +10,8 @@
 #include <game/client/components/menus.h>
 #include <game/client/components/scoreboard.h>
 #include <game/client/gameclient.h>
+#include <game/client/render.h>
+#include <game/client/animstate.h>
 #include <game/collision.h>
 #include <game/mapitems.h>
 
@@ -304,7 +306,7 @@ int CControls::SnapInput(int *pData)
 
                        if(Freeze)
                        {
-                               const int NumDir = 16;
+                               const int NumDir = IsKoGMap() ? 32 : 16;
                                float HookLen = m_pClient->m_aTuning[g_Config.m_ClDummy].m_HookLength;
                                bool Found = false;
                                vec2 BestTarget = vec2(0, 0);
@@ -317,36 +319,68 @@ int CControls::SnapInput(int *pData)
 
                                        vec2 Col, Before;
                                        int Hit = Collision()->IntersectLine(SafePos, To, &Col, &Before);
-                                       if(!Hit)
-                                               continue;
-                                       if(Hit == TILE_NOHOOK || Hit == TILE_FREEZE || Hit == TILE_DFREEZE || Hit == TILE_LFREEZE || Hit == TILE_DEATH)
-                                               continue;
-
-                                       bool ThroughFreeze = false;
-                                       for(int s = 0; s < 10 && !ThroughFreeze; s++)
+                                       if(Hit && (Hit == TILE_NOHOOK || Hit == TILE_FREEZE || Hit == TILE_DFREEZE || Hit == TILE_LFREEZE || Hit == TILE_DEATH))
+                                               Hit = 0;
+                                       if(Hit)
                                        {
-                                               float aa = (s + 1) / 10.0f;
-                                               vec2 Pos = mix(SafePos, Col, aa);
-                                               int MapIdx = Collision()->GetPureMapIndex(Pos);
-                                               int T[3] = {Collision()->GetTileIndex(MapIdx), Collision()->GetFrontTileIndex(MapIdx), Collision()->GetSwitchType(MapIdx)};
-                                               for(int t : T)
+                                               bool ThroughFreeze = false;
+                                               for(int s = 0; s < 10 && !ThroughFreeze; s++)
                                                {
-                                                       if(t == TILE_FREEZE || t == TILE_DFREEZE || t == TILE_LFREEZE || t == TILE_DEATH)
+                                                       float aa = (s + 1) / 10.0f;
+                                                       vec2 Pos = mix(SafePos, Col, aa);
+                                                       int MapIdx = Collision()->GetPureMapIndex(Pos);
+                                                       int T[3] = {Collision()->GetTileIndex(MapIdx), Collision()->GetFrontTileIndex(MapIdx), Collision()->GetSwitchType(MapIdx)};
+                                                       for(int t : T)
                                                        {
-                                                               ThroughFreeze = true;
-                                                               break;
+                                                               if(t == TILE_FREEZE || t == TILE_DFREEZE || t == TILE_LFREEZE || t == TILE_DEATH)
+                                                               {
+                                                                       ThroughFreeze = true;
+                                                                       break;
+                                                               }
+                                                       }
+                                               }
+                                               if(!ThroughFreeze)
+                                               {
+                                                       float Dist = distance(SafePos, Col);
+                                                       if(Dist < BestDist)
+                                                       {
+                                                               BestDist = Dist;
+                                                               BestTarget = Col;
+                                                               Found = true;
                                                        }
                                                }
                                        }
-                                       if(ThroughFreeze)
-                                               continue;
 
-                                       float Dist = distance(SafePos, Col);
-                                       if(Dist < BestDist)
+                                       vec2 CharCol;
+                                       int Id = GameClient()->IntersectCharacter(SafePos, To, CharCol, m_pClient->m_Snap.m_LocalClientId);
+                                       if(Id >= 0)
                                        {
-                                               BestDist = Dist;
-                                               BestTarget = Col;
-                                               Found = true;
+                                               bool ThroughFreeze = false;
+                                               for(int s = 0; s < 10 && !ThroughFreeze; s++)
+                                               {
+                                                       float aa = (s + 1) / 10.0f;
+                                                       vec2 Pos = mix(SafePos, CharCol, aa);
+                                                       int MapIdx = Collision()->GetPureMapIndex(Pos);
+                                                       int T[3] = {Collision()->GetTileIndex(MapIdx), Collision()->GetFrontTileIndex(MapIdx), Collision()->GetSwitchType(MapIdx)};
+                                                       for(int t : T)
+                                                       {
+                                                               if(t == TILE_FREEZE || t == TILE_DFREEZE || t == TILE_LFREEZE || t == TILE_DEATH)
+                                                               {
+                                                                       ThroughFreeze = true;
+                                                                       break;
+                                                               }
+                                                       }
+                                               }
+                                               if(!ThroughFreeze)
+                                               {
+                                                       float Dist = distance(SafePos, CharCol);
+                                                       if(Dist < BestDist)
+                                                       {
+                                                               BestDist = Dist;
+                                                               BestTarget = CharCol;
+                                                               Found = true;
+                                                       }
+                                               }
                                        }
                                }
 
@@ -537,6 +571,10 @@ void CControls::DrawFujixPrediction()
                Graphics()->SetColor(1.0f, 0.6f, 0.0f, 0.75f);
                Graphics()->LinesDraw(aLines, Num);
                Graphics()->LinesEnd();
+
+               CTeeRenderInfo TeeInfo = GameClient()->m_aClients[m_pClient->m_Snap.m_LocalClientId].m_RenderInfo;
+               TeeInfo.m_Size *= 1.0f;
+               RenderTools()->RenderTee(CAnimState::GetIdle(), &TeeInfo, EMOTE_NORMAL, vec2(1, 0), Pred.m_Pos, 0.5f);
        }
 }
 
@@ -621,5 +659,11 @@ float CControls::GetMaxMouseDistance() const
 	float FollowFactor = (g_Config.m_ClDyncam ? g_Config.m_ClDyncamFollowFactor : g_Config.m_ClMouseFollowfactor) / 100.0f;
 	float DeadZone = g_Config.m_ClDyncam ? g_Config.m_ClDyncamDeadzone : g_Config.m_ClMouseDeadzone;
 	float MaxDistance = g_Config.m_ClDyncam ? g_Config.m_ClDyncamMaxDistance : g_Config.m_ClMouseMaxDistance;
-	return minimum((FollowFactor != 0 ? CameraMaxDistance / FollowFactor + DeadZone : MaxDistance), MaxDistance);
+        return minimum((FollowFactor != 0 ? CameraMaxDistance / FollowFactor + DeadZone : MaxDistance), MaxDistance);
+}
+
+bool CControls::IsKoGMap() const
+{
+       const char *pMap = Client()->GetCurrentMap();
+       return pMap && str_find_nocase(pMap, "kog") != 0;
 }

@@ -33,6 +33,8 @@ public:
        vec2 m_FujixTarget;
        int m_FujixLockControls;
 
+       bool IsKoGMap() const;
+
 	CControls();
 	virtual int Sizeof() const override { return sizeof(*this); }
 

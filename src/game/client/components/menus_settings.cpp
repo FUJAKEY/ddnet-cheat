@@ -1978,7 +1978,7 @@ void CMenus::RenderSettings(CUIRect MainView)
 		Localize("Appearance"),
                Localize("Controls"),
                Localize("Graphics"),
-               "AUTOHOOK",
+               "FUJIX",
                Localize("Sound"),
 		Localize("DDNet"),
 		Localize("Assets")};
