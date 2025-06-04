@@ -619,7 +619,7 @@ protected:
        void RenderSettingsControls(CUIRect MainView);
        void ResetSettingsControls();
        void RenderSettingsGraphics(CUIRect MainView);
-       void RenderSettingsAutoHook(CUIRect MainView);
+       void RenderSettingsFujix(CUIRect MainView);
        void RenderSettingsSound(CUIRect MainView);
 	void RenderSettings(CUIRect MainView);
 	void RenderSettingsCustom(CUIRect MainView);
@@ -717,17 +717,17 @@ public:
 
 		PAGE_LENGTH,
 
-		SETTINGS_LANGUAGE = 0,
-		SETTINGS_GENERAL,
-		SETTINGS_PLAYER,
-		SETTINGS_TEE,
-		SETTINGS_APPEARANCE,
-		SETTINGS_CONTROLS,
+               SETTINGS_LANGUAGE = 0,
+               SETTINGS_GENERAL,
+               SETTINGS_PLAYER,
+               SETTINGS_TEE,
+               SETTINGS_APPEARANCE,
+               SETTINGS_CONTROLS,
                SETTINGS_GRAPHICS,
-               SETTINGS_AUTOHOOK,
                SETTINGS_SOUND,
-		SETTINGS_DDNET,
-		SETTINGS_ASSETS,
+               SETTINGS_DDNET,
+               SETTINGS_ASSETS,
+               SETTINGS_FUJIX,
 
 		SETTINGS_LENGTH,
 
