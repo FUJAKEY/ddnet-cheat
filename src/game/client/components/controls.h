@@ -6,6 +6,7 @@
 #include <base/vmath.h>
 
 #include <engine/client.h>
+#include <base/system.h>
 
 #include <game/client/component.h>
 #include <game/generated/protocol.h>
@@ -32,6 +33,14 @@ public:
        int m_FujixTicksLeft;
        vec2 m_FujixTarget;
        int m_FujixLockControls;
+       int m_FujixFallbackTicksLeft;
+       bool m_FujixUsingFallback;
+       bool m_PhantomRecording;
+       IOHANDLE m_PhantomFile;
+       int m_PhantomLastTick;
+       bool m_PhantomPlaying;
+       int m_PhantomPlayIndex;
+       std::vector<vec2> m_vPhantomFrames;
 
 	CControls();
 	virtual int Sizeof() const override { return sizeof(*this); }
@@ -39,6 +48,12 @@ public:
 	virtual void OnReset() override;
        virtual void OnRender() override;
        void DrawFujixPrediction();
+       void StartPhantomRecord();
+       void StopPhantomRecord();
+       void RecordPhantomTick();
+       void StartPhantomPlayback();
+       void StopPhantomPlayback();
+       void UpdatePhantomPlayback();
        virtual void OnMessage(int MsgType, void *pRawMsg) override;
 	virtual bool OnCursorMove(float x, float y, IInput::ECursorType CursorType) override;
 	virtual void OnConsoleInit() override;

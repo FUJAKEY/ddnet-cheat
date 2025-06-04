@@ -1,17 +1,23 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <base/math.h>
+#include <base/system.h>
 
 #include <engine/client.h>
 #include <engine/shared/config.h>
+#include <engine/storage.h>
 
 #include <game/client/components/camera.h>
 #include <game/client/components/chat.h>
 #include <game/client/components/menus.h>
 #include <game/client/components/scoreboard.h>
 #include <game/client/gameclient.h>
+#include <game/client/render.h>
+#include <game/client/animstate.h>
 #include <game/collision.h>
 #include <game/mapitems.h>
+
+#include <vector>
 
 #include <base/vmath.h>
 
@@ -21,12 +27,19 @@ CControls::CControls()
 {
         mem_zero(&m_aLastData, sizeof(m_aLastData));
         mem_zero(m_aMousePos, sizeof(m_aMousePos));
-        mem_zero(m_aMousePosOnAction, sizeof(m_aMousePosOnAction));
+       mem_zero(m_aMousePosOnAction, sizeof(m_aMousePosOnAction));
        mem_zero(m_aTargetPos, sizeof(m_aTargetPos));
 
        m_FujixTicksLeft = 0;
        m_FujixTarget = vec2(0, 0);
        m_FujixLockControls = 0;
+       m_FujixFallbackTicksLeft = 0;
+       m_FujixUsingFallback = false;
+       m_PhantomRecording = false;
+       m_PhantomFile = 0;
+       m_PhantomLastTick = 0;
+       m_PhantomPlaying = false;
+       m_PhantomPlayIndex = 0;
 }
 
 void CControls::OnReset()
@@ -41,6 +54,18 @@ void CControls::OnReset()
 
        m_FujixTicksLeft = 0;
        m_FujixLockControls = 0;
+       m_FujixFallbackTicksLeft = 0;
+       m_FujixUsingFallback = false;
+       if(m_PhantomFile)
+               io_close(m_PhantomFile);
+       m_PhantomRecording = false;
+       m_PhantomFile = 0;
+       m_PhantomPlaying = false;
+       m_PhantomPlayIndex = 0;
+       m_vPhantomFrames.clear();
+       m_PhantomPlaying = false;
+       m_PhantomPlayIndex = 0;
+       m_vPhantomFrames.clear();
 }
 
 void CControls::ResetInput(int Dummy)
@@ -58,6 +83,15 @@ void CControls::ResetInput(int Dummy)
 
        m_FujixTicksLeft = 0;
        m_FujixLockControls = 0;
+       m_FujixFallbackTicksLeft = 0;
+       m_FujixUsingFallback = false;
+       if(m_PhantomFile)
+               io_close(m_PhantomFile);
+       m_PhantomRecording = false;
+       m_PhantomFile = 0;
+       m_PhantomPlaying = false;
+       m_PhantomPlayIndex = 0;
+       m_vPhantomFrames.clear();
 }
 
 void CControls::OnPlayerDeath()
@@ -67,6 +101,12 @@ void CControls::OnPlayerDeath()
 
        m_FujixTicksLeft = 0;
        m_FujixLockControls = 0;
+       m_FujixFallbackTicksLeft = 0;
+       m_FujixUsingFallback = false;
+       if(m_PhantomFile)
+               io_close(m_PhantomFile);
+       m_PhantomRecording = false;
+       m_PhantomFile = 0;
 }
 
 struct CInputState
@@ -213,7 +253,18 @@ int CControls::SnapInput(int *pData)
 
 	bool Send = m_aLastData[g_Config.m_ClDummy].m_PlayerFlags != m_aInputData[g_Config.m_ClDummy].m_PlayerFlags;
 
-	m_aLastData[g_Config.m_ClDummy].m_PlayerFlags = m_aInputData[g_Config.m_ClDummy].m_PlayerFlags;
+       m_aLastData[g_Config.m_ClDummy].m_PlayerFlags = m_aInputData[g_Config.m_ClDummy].m_PlayerFlags;
+
+       if(g_Config.m_ClPhantomRecorder && !m_PhantomRecording)
+               StartPhantomRecord();
+       else if(!g_Config.m_ClPhantomRecorder && m_PhantomRecording)
+               StopPhantomRecord();
+       if(g_Config.m_ClPhantomPlay && !m_PhantomPlaying)
+               StartPhantomPlayback();
+       else if(!g_Config.m_ClPhantomPlay && m_PhantomPlaying)
+               StopPhantomPlayback();
+       if(m_PhantomPlaying)
+               UpdatePhantomPlayback();
 
 	// we freeze the input if chat or menu is activated
 	if(!(m_aInputData[g_Config.m_ClDummy].m_PlayerFlags & PLAYERFLAG_PLAYING))
@@ -304,11 +355,61 @@ int CControls::SnapInput(int *pData)
 
                        if(Freeze)
                        {
-                               const int NumDir = 16;
+                               const int NumDir = 64;
                                float HookLen = m_pClient->m_aTuning[g_Config.m_ClDummy].m_HookLength;
                                bool Found = false;
                                vec2 BestTarget = vec2(0, 0);
                                float BestDist = 1e9f;
+                               bool FallbackFound = false;
+                               vec2 FallbackTarget = vec2(0, 0);
+                               float FallbackDist = 1e9f;
+                               const auto IsCandidateSafe = [&](const vec2 &Target) {
+                                       CCharacterCore Test = m_pClient->m_PredictedChar;
+                                       CNetObj_PlayerInput TestInput = m_aInputData[g_Config.m_ClDummy];
+
+                                       TestInput.m_Hook = 1;
+                                       int HookSteps = clamp(g_Config.m_ClFujixTicks, 1, 20);
+                                       for(int i = 0; i < HookSteps; i++)
+                                       {
+                                               vec2 DirT = normalize(Target - Test.m_Pos);
+                                               TestInput.m_TargetX = (int)(DirT.x * GetMaxMouseDistance());
+                                               TestInput.m_TargetY = (int)(DirT.y * GetMaxMouseDistance());
+                                               Test.m_Input = TestInput;
+                                               Test.Tick(true);
+                                               Test.Move();
+                                               Test.Quantize();
+
+                                               int MapIdx = Collision()->GetPureMapIndex(Test.m_Pos);
+                                               int T[3] = {Collision()->GetTileIndex(MapIdx), Collision()->GetFrontTileIndex(MapIdx), Collision()->GetSwitchType(MapIdx)};
+                                               for(int t : T)
+                                               {
+                                                       if(t == TILE_FREEZE || t == TILE_DFREEZE || t == TILE_LFREEZE || t == TILE_DEATH)
+                                                               return false;
+                                               }
+                                       }
+
+                                       TestInput.m_Hook = 0;
+                                       for(int i = 0; i < 20; i++)
+                                       {
+                                               vec2 DirT = normalize(Target - Test.m_Pos);
+                                               TestInput.m_TargetX = (int)(DirT.x * GetMaxMouseDistance());
+                                               TestInput.m_TargetY = (int)(DirT.y * GetMaxMouseDistance());
+                                               Test.m_Input = TestInput;
+                                               Test.Tick(true);
+                                               Test.Move();
+                                               Test.Quantize();
+
+                                               int MapIdx = Collision()->GetPureMapIndex(Test.m_Pos);
+                                               int T[3] = {Collision()->GetTileIndex(MapIdx), Collision()->GetFrontTileIndex(MapIdx), Collision()->GetSwitchType(MapIdx)};
+                                               for(int t : T)
+                                               {
+                                                       if(t == TILE_FREEZE || t == TILE_DFREEZE || t == TILE_LFREEZE || t == TILE_DEATH)
+                                                               return false;
+                                               }
+                                       }
+
+                                       return true;
+                               };
                                for(int k = 0; k < NumDir; k++)
                                {
                                        float a = (2.0f * pi * k) / NumDir;
@@ -317,9 +418,9 @@ int CControls::SnapInput(int *pData)
 
                                        vec2 Col, Before;
                                        int Hit = Collision()->IntersectLine(SafePos, To, &Col, &Before);
+                                       if(Hit && (Hit == TILE_NOHOOK || Hit == TILE_FREEZE || Hit == TILE_DFREEZE || Hit == TILE_LFREEZE || Hit == TILE_DEATH))
+                                               Hit = 0;
                                        if(!Hit)
-                                               continue;
-                                       if(Hit == TILE_NOHOOK || Hit == TILE_FREEZE || Hit == TILE_DFREEZE || Hit == TILE_LFREEZE || Hit == TILE_DEATH)
                                                continue;
 
                                        bool ThroughFreeze = false;
@@ -338,15 +439,28 @@ int CControls::SnapInput(int *pData)
                                                        }
                                                }
                                        }
+
                                        if(ThroughFreeze)
                                                continue;
 
                                        float Dist = distance(SafePos, Col);
-                                       if(Dist < BestDist)
+                                       if(IsCandidateSafe(Col))
                                        {
-                                               BestDist = Dist;
-                                               BestTarget = Col;
-                                               Found = true;
+                                               if(Dist < BestDist)
+                                               {
+                                                       BestDist = Dist;
+                                                       BestTarget = Col;
+                                                       Found = true;
+                                               }
+                                       }
+                                       else
+                                       {
+                                               if(Dist < FallbackDist)
+                                               {
+                                                       FallbackDist = Dist;
+                                                       FallbackTarget = Col;
+                                                       FallbackFound = true;
+                                               }
                                        }
                                }
 
@@ -355,6 +469,16 @@ int CControls::SnapInput(int *pData)
                                        m_FujixTicksLeft = 5;
                                        m_FujixTarget = BestTarget;
                                        m_FujixLockControls = 1;
+                                       m_FujixFallbackTicksLeft = 0;
+                                       m_FujixUsingFallback = false;
+                               }
+                               else if(FallbackFound)
+                               {
+                                       m_FujixTicksLeft = 5;
+                                       m_FujixTarget = FallbackTarget;
+                                       m_FujixLockControls = 1;
+                                       m_FujixFallbackTicksLeft = 15;
+                                       m_FujixUsingFallback = true;
                                }
                        }
 
@@ -362,7 +486,15 @@ int CControls::SnapInput(int *pData)
                        {
                                if(m_FujixTicksLeft > 0)
                                        m_FujixTicksLeft--;
-                               if(m_FujixTicksLeft == 0)
+                               if(m_FujixFallbackTicksLeft > 0)
+                                       m_FujixFallbackTicksLeft--;
+                               if(m_FujixFallbackTicksLeft == 0 && m_FujixUsingFallback)
+                               {
+                                       m_FujixTicksLeft = 0;
+                                       m_FujixLockControls = 0;
+                                       m_FujixUsingFallback = false;
+                               }
+                               if(m_FujixTicksLeft == 0 && !m_FujixUsingFallback)
                                        m_FujixLockControls = 0;
                        }
 
@@ -446,9 +578,12 @@ int CControls::SnapInput(int *pData)
 	if(!Send)
 		return 0;
 
-	m_LastSendTime = time_get();
-	mem_copy(pData, &m_aInputData[g_Config.m_ClDummy], sizeof(m_aInputData[0]));
-	return sizeof(m_aInputData[0]);
+       m_LastSendTime = time_get();
+       mem_copy(pData, &m_aInputData[g_Config.m_ClDummy], sizeof(m_aInputData[0]));
+
+       RecordPhantomTick();
+
+       return sizeof(m_aInputData[0]);
 }
 
 void CControls::OnRender()
@@ -537,6 +672,125 @@ void CControls::DrawFujixPrediction()
                Graphics()->SetColor(1.0f, 0.6f, 0.0f, 0.75f);
                Graphics()->LinesDraw(aLines, Num);
                Graphics()->LinesEnd();
+
+               CTeeRenderInfo TeeInfo = GameClient()->m_aClients[m_pClient->m_Snap.m_LocalClientId].m_RenderInfo;
+               TeeInfo.m_Size *= 1.0f;
+               RenderTools()->RenderTee(CAnimState::GetIdle(), &TeeInfo, EMOTE_NORMAL, vec2(1, 0), Pred.m_Pos, 0.5f);
+       }
+}
+
+void CControls::StartPhantomRecord()
+{
+       if(m_PhantomRecording)
+               return;
+       Storage()->CreateFolder("phantom", IStorage::TYPE_SAVE);
+       char aDate[20], aFilename[IO_MAX_PATH_LENGTH];
+       str_timestamp(aDate, sizeof(aDate));
+       if(g_Config.m_ClPhantomName[0])
+               str_format(aFilename, sizeof(aFilename), "phantom/%s.txt", g_Config.m_ClPhantomName);
+       else
+               str_format(aFilename, sizeof(aFilename), "phantom/record_%s.txt", aDate);
+       m_PhantomFile = Storage()->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
+       if(m_PhantomFile)
+       {
+               m_PhantomRecording = true;
+               const char *pHeader = "tick x y\n";
+               io_write(m_PhantomFile, pHeader, str_length(pHeader));
+               m_PhantomLastTick = Client()->GameTick(g_Config.m_ClDummy);
+       }
+}
+
+void CControls::StopPhantomRecord()
+{
+       if(!m_PhantomRecording)
+               return;
+       if(m_PhantomFile)
+               io_close(m_PhantomFile);
+       m_PhantomFile = 0;
+       m_PhantomRecording = false;
+}
+
+void CControls::StartPhantomPlayback()
+{
+       if(m_PhantomPlaying)
+               return;
+
+       char aFilename[IO_MAX_PATH_LENGTH];
+       str_format(aFilename, sizeof(aFilename), "phantom/%s.txt", g_Config.m_ClPhantomName);
+       IOHANDLE File = Storage()->OpenFile(aFilename, IOFLAG_READ, IStorage::TYPE_SAVE);
+       if(!File)
+               return;
+
+       char *pData = io_read_all_str(File);
+       io_close(File);
+       if(!pData)
+               return;
+
+       m_vPhantomFrames.clear();
+       char *pLine = strtok(pData, "\n");
+       while(pLine)
+       {
+               int Tick;
+               float X, Y;
+               if(sscanf(pLine, "%d %f %f", &Tick, &X, &Y) == 3)
+                       m_vPhantomFrames.push_back(vec2(X, Y));
+               pLine = strtok(nullptr, "\n");
+       }
+       free(pData);
+       m_PhantomPlayIndex = 0;
+       m_PhantomPlaying = !m_vPhantomFrames.empty();
+}
+
+void CControls::StopPhantomPlayback()
+{
+       m_PhantomPlaying = false;
+       m_PhantomPlayIndex = 0;
+       m_vPhantomFrames.clear();
+}
+
+void CControls::UpdatePhantomPlayback()
+{
+       if(!m_PhantomPlaying || m_PhantomPlayIndex >= (int)m_vPhantomFrames.size())
+       {
+               StopPhantomPlayback();
+               return;
+       }
+
+       vec2 Pos = m_pClient->m_PredictedChar.m_Pos;
+       vec2 Target = m_vPhantomFrames[m_PhantomPlayIndex];
+       vec2 Dir = Target - Pos;
+
+       m_aInputData[g_Config.m_ClDummy].m_Direction = Dir.x > 2.0f ? 1 : (Dir.x < -2.0f ? -1 : 0);
+       m_aInputData[g_Config.m_ClDummy].m_Jump = Dir.y < -2.0f ? 1 : 0;
+       if(length(Dir) > 0.1f)
+       {
+               vec2 N = normalize(Dir);
+               m_aInputData[g_Config.m_ClDummy].m_TargetX = (int)(N.x * GetMaxMouseDistance());
+               m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)(N.y * GetMaxMouseDistance());
+               m_aInputData[g_Config.m_ClDummy].m_Hook = 1;
+       }
+       else
+       {
+               m_aInputData[g_Config.m_ClDummy].m_Hook = 0;
+       }
+
+       if(distance(Pos, Target) < 2.0f)
+               m_PhantomPlayIndex++;
+}
+
+void CControls::RecordPhantomTick()
+{
+       if(!m_PhantomRecording || !m_PhantomFile)
+               return;
+       int Tick = Client()->GameTick(g_Config.m_ClDummy);
+       int Interval = maximum(1, Client()->GameTickSpeed() / g_Config.m_ClPhantomTps);
+       if(Tick >= m_PhantomLastTick + Interval)
+       {
+               m_PhantomLastTick = Tick;
+               vec2 Pos = m_pClient->m_PredictedChar.m_Pos;
+               char aBuf[64];
+               str_format(aBuf, sizeof(aBuf), "%d %.2f %.2f\n", Tick, Pos.x, Pos.y);
+               io_write(m_PhantomFile, aBuf, str_length(aBuf));
        }
 }
 
@@ -621,5 +875,6 @@ float CControls::GetMaxMouseDistance() const
 	float FollowFactor = (g_Config.m_ClDyncam ? g_Config.m_ClDyncamFollowFactor : g_Config.m_ClMouseFollowfactor) / 100.0f;
 	float DeadZone = g_Config.m_ClDyncam ? g_Config.m_ClDyncamDeadzone : g_Config.m_ClMouseDeadzone;
 	float MaxDistance = g_Config.m_ClDyncam ? g_Config.m_ClDyncamMaxDistance : g_Config.m_ClMouseMaxDistance;
-	return minimum((FollowFactor != 0 ? CameraMaxDistance / FollowFactor + DeadZone : MaxDistance), MaxDistance);
+        return minimum((FollowFactor != 0 ? CameraMaxDistance / FollowFactor + DeadZone : MaxDistance), MaxDistance);
 }
+

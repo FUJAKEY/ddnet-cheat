@@ -265,26 +265,42 @@
 				"command": "vote no"
 			}
 		},
-		{
-			"x": 766667,
-			"y": 16667,
-			"w": 100000,
-			"h": 100000,
-			"shape": "rect",
-			"visibilities": [
-				"dummy-connected"
-			],
-			"behavior": {
-				"type": "bind",
-				"label": "Toggle dummy",
-				"label-type": "localized",
-				"command": "toggle cl_dummy 0 1"
-			}
-		},
-		{
-			"x": 883333,
-			"y": 16667,
-			"w": 100000,
+                {
+                        "x": 766667,
+                        "y": 16667,
+                        "w": 100000,
+                        "h": 100000,
+                        "shape": "rect",
+                        "visibilities": [
+                                "dummy-connected"
+                        ],
+                        "behavior": {
+                                "type": "bind",
+                                "label": "Toggle dummy",
+                                "label-type": "localized",
+                                "command": "toggle cl_dummy 0 1"
+                        }
+                },
+                {
+                        "x": 666667,
+                        "y": 16667,
+                        "w": 100000,
+                        "h": 100000,
+                        "shape": "rect",
+                        "visibilities": [
+                                "ingame"
+                        ],
+                        "behavior": {
+                                "type": "bind",
+                                "label": "Phantom",
+                                "label-type": "localized",
+                                "command": "toggle cl_phantom_recorder 0 1"
+                        }
+                },
+                {
+                        "x": 883333,
+                        "y": 16667,
+                        "w": 100000,
 			"h": 100000,
 			"shape": "rect",
 			"visibilities": [

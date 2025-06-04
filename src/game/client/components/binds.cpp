@@ -521,7 +521,8 @@ void CBinds::SetDDRaceBinds(bool FreeOnly)
 		Bind(KEY_B, "say /top5", FreeOnly);
 		Bind(KEY_S, "+showhookcoll", FreeOnly);
 		Bind(KEY_X, "toggle cl_dummy 0 1", FreeOnly);
-		Bind(KEY_H, "toggle cl_dummy_hammer 0 1", FreeOnly);
+               Bind(KEY_H, "toggle cl_dummy_hammer 0 1", FreeOnly);
+               Bind(KEY_F8, "toggle cl_phantom_recorder 0 1", FreeOnly);
 		Bind(KEY_SLASH, "+show_chat; chat all /", FreeOnly);
 		Bind(KEY_PAGEUP, "toggle cl_overlay_entities 0 100", FreeOnly);
 		Bind(KEY_KP_0, "say /emote normal 999999", FreeOnly);
