@@ -616,10 +616,11 @@ protected:
 	void RenderSettingsTeeCustom7(CUIRect MainView);
 	void RenderSkinSelection7(CUIRect MainView);
 	void RenderSkinPartSelection7(CUIRect MainView);
-	void RenderSettingsControls(CUIRect MainView);
-	void ResetSettingsControls();
-	void RenderSettingsGraphics(CUIRect MainView);
-	void RenderSettingsSound(CUIRect MainView);
+       void RenderSettingsControls(CUIRect MainView);
+       void ResetSettingsControls();
+       void RenderSettingsGraphics(CUIRect MainView);
+       void RenderSettingsAutoHook(CUIRect MainView);
+       void RenderSettingsSound(CUIRect MainView);
 	void RenderSettings(CUIRect MainView);
 	void RenderSettingsCustom(CUIRect MainView);
 
@@ -722,8 +723,9 @@ public:
 		SETTINGS_TEE,
 		SETTINGS_APPEARANCE,
 		SETTINGS_CONTROLS,
-		SETTINGS_GRAPHICS,
-		SETTINGS_SOUND,
+               SETTINGS_GRAPHICS,
+               SETTINGS_AUTOHOOK,
+               SETTINGS_SOUND,
 		SETTINGS_DDNET,
 		SETTINGS_ASSETS,
 
