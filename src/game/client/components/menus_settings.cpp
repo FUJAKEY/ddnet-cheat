@@ -1962,8 +1962,9 @@ void CMenus::RenderSettings(CUIRect MainView)
 		Localize("Controls"),
 		Localize("Graphics"),
 		Localize("Sound"),
-		Localize("DDNet"),
-		Localize("Assets")};
+                Localize("DDNet"),
+                Localize("Assets"),
+                Localize("FUJIX")};
 	static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 
 	for(int i = 0; i < SETTINGS_LENGTH; i++)
@@ -2022,15 +2023,20 @@ void CMenus::RenderSettings(CUIRect MainView)
 		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_DDNET);
 		RenderSettingsDDNet(MainView);
 	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_ASSETS)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
-		RenderSettingsCustom(MainView);
-	}
-	else
-	{
-		dbg_assert(false, "ui_settings_page invalid");
-	}
+        else if(g_Config.m_UiSettingsPage == SETTINGS_ASSETS)
+        {
+                GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
+                RenderSettingsCustom(MainView);
+        }
+        else if(g_Config.m_UiSettingsPage == SETTINGS_FUJIX)
+        {
+                GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_RESERVED0);
+                RenderSettingsFUJIX(MainView);
+        }
+        else
+        {
+                dbg_assert(false, "ui_settings_page invalid");
+        }
 
 	if(NeedRestart)
 	{
@@ -3453,6 +3459,19 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 #endif
+}
+
+void CMenus::RenderSettingsFUJIX(CUIRect MainView)
+{
+        CUIRect Label, Button;
+        MainView.HSplitTop(30.0f, &Label, &MainView);
+        Ui()->DoLabel(&Label, Localize("FUJIX"), 20.0f, TEXTALIGN_ML);
+        MainView.HSplitTop(5.0f, nullptr, &MainView);
+        MainView.HSplitTop(20.0f, &Button, &MainView);
+        if(DoButton_CheckBox(&g_Config.m_ClAvoidanceFreeze, Localize("Avoidance freeze"), g_Config.m_ClAvoidanceFreeze, &Button))
+                g_Config.m_ClAvoidanceFreeze ^= 1;
+       MainView.HSplitTop(20.0f, &Button, &MainView);
+       Ui()->DoScrollbarOption(&g_Config.m_ClAvoidanceFreezePredict, &g_Config.m_ClAvoidanceFreezePredict, &Button, Localize("Predict ticks"), 2, 20);
 }
 
 CUi::EPopupMenuFunctionResult CMenus::PopupMapPicker(void *pContext, CUIRect View, bool Active)

@@ -2347,6 +2347,8 @@ if(CLIENT)
     components/flow.h
     components/freezebars.cpp
     components/freezebars.h
+    components/fujix.cpp
+    components/fujix.h
     components/ghost.cpp
     components/ghost.h
     components/hud.cpp
