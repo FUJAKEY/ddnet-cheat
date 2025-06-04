@@ -6,6 +6,7 @@
 #include <base/vmath.h>
 
 #include <engine/client.h>
+#include <base/system.h>
 
 #include <game/client/component.h>
 #include <game/generated/protocol.h>
@@ -32,6 +33,8 @@ public:
        int m_FujixTicksLeft;
        vec2 m_FujixTarget;
        int m_FujixLockControls;
+       int m_FujixFallbackTicksLeft;
+       bool m_FujixUsingFallback;
 
 	CControls();
 	virtual int Sizeof() const override { return sizeof(*this); }
