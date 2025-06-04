@@ -311,6 +311,9 @@ int CControls::SnapInput(int *pData)
                                bool Found = false;
                                vec2 BestTarget = vec2(0, 0);
                                float BestDist = 1e9f;
+                               bool FallbackFound = false;
+                               vec2 FallbackTarget = vec2(0, 0);
+                               float FallbackDist = 1e9f;
                                const auto IsCandidateSafe = [&](const vec2 &Target) {
                                        CCharacterCore Test = m_pClient->m_PredictedChar;
                                        CNetObj_PlayerInput TestInput = m_aInputData[g_Config.m_ClDummy];
@@ -368,65 +371,46 @@ int CControls::SnapInput(int *pData)
                                        int Hit = Collision()->IntersectLine(SafePos, To, &Col, &Before);
                                        if(Hit && (Hit == TILE_NOHOOK || Hit == TILE_FREEZE || Hit == TILE_DFREEZE || Hit == TILE_LFREEZE || Hit == TILE_DEATH))
                                                Hit = 0;
-                                       if(Hit)
+                                       if(!Hit)
+                                               continue;
+
+                                       bool ThroughFreeze = false;
+                                       for(int s = 0; s < 10 && !ThroughFreeze; s++)
                                        {
-                                               bool ThroughFreeze = false;
-                                               for(int s = 0; s < 10 && !ThroughFreeze; s++)
+                                               float aa = (s + 1) / 10.0f;
+                                               vec2 Pos = mix(SafePos, Col, aa);
+                                               int MapIdx = Collision()->GetPureMapIndex(Pos);
+                                               int T[3] = {Collision()->GetTileIndex(MapIdx), Collision()->GetFrontTileIndex(MapIdx), Collision()->GetSwitchType(MapIdx)};
+                                               for(int t : T)
                                                {
-                                                       float aa = (s + 1) / 10.0f;
-                                                       vec2 Pos = mix(SafePos, Col, aa);
-                                                       int MapIdx = Collision()->GetPureMapIndex(Pos);
-                                                       int T[3] = {Collision()->GetTileIndex(MapIdx), Collision()->GetFrontTileIndex(MapIdx), Collision()->GetSwitchType(MapIdx)};
-                                                       for(int t : T)
+                                                       if(t == TILE_FREEZE || t == TILE_DFREEZE || t == TILE_LFREEZE || t == TILE_DEATH)
                                                        {
-                                                               if(t == TILE_FREEZE || t == TILE_DFREEZE || t == TILE_LFREEZE || t == TILE_DEATH)
-                                                               {
-                                                                       ThroughFreeze = true;
-                                                                       break;
-                                                               }
-                                                       }
-                                               }
-                                               if(!ThroughFreeze && IsCandidateSafe(Col))
-                                               {
-                                                       float Dist = distance(SafePos, Col);
-                                                       if(Dist < BestDist)
-                                                       {
-                                                               BestDist = Dist;
-                                                               BestTarget = Col;
-                                                               Found = true;
+                                                               ThroughFreeze = true;
+                                                               break;
                                                        }
                                                }
                                        }
 
-                                       vec2 CharCol;
-                                       int Id = GameClient()->IntersectCharacter(SafePos, To, CharCol, m_pClient->m_Snap.m_LocalClientId);
-                                       if(Id >= 0)
+                                       if(ThroughFreeze)
+                                               continue;
+
+                                       float Dist = distance(SafePos, Col);
+                                       if(IsCandidateSafe(Col))
                                        {
-                                               bool ThroughFreeze = false;
-                                               for(int s = 0; s < 10 && !ThroughFreeze; s++)
+                                               if(Dist < BestDist)
                                                {
-                                                       float aa = (s + 1) / 10.0f;
-                                                       vec2 Pos = mix(SafePos, CharCol, aa);
-                                                       int MapIdx = Collision()->GetPureMapIndex(Pos);
-                                                       int T[3] = {Collision()->GetTileIndex(MapIdx), Collision()->GetFrontTileIndex(MapIdx), Collision()->GetSwitchType(MapIdx)};
-                                                       for(int t : T)
-                                                       {
-                                                               if(t == TILE_FREEZE || t == TILE_DFREEZE || t == TILE_LFREEZE || t == TILE_DEATH)
-                                                               {
-                                                                       ThroughFreeze = true;
-                                                                       break;
-                                                               }
-                                                       }
+                                                       BestDist = Dist;
+                                                       BestTarget = Col;
+                                                       Found = true;
                                                }
-                                               if(!ThroughFreeze && IsCandidateSafe(CharCol))
+                                       }
+                                       else
+                                       {
+                                               if(Dist < FallbackDist)
                                                {
-                                                       float Dist = distance(SafePos, CharCol);
-                                                       if(Dist < BestDist)
-                                                       {
-                                                               BestDist = Dist;
-                                                               BestTarget = CharCol;
-                                                               Found = true;
-                                                       }
+                                                       FallbackDist = Dist;
+                                                       FallbackTarget = Col;
+                                                       FallbackFound = true;
                                                }
                                        }
                                }
@@ -435,6 +419,12 @@ int CControls::SnapInput(int *pData)
                                {
                                        m_FujixTicksLeft = 5;
                                        m_FujixTarget = BestTarget;
+                                       m_FujixLockControls = 1;
+                               }
+                               else if(FallbackFound)
+                               {
+                                       m_FujixTicksLeft = 5;
+                                       m_FujixTarget = FallbackTarget;
                                        m_FujixLockControls = 1;
                                }
                        }
