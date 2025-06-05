@@ -647,8 +647,10 @@ public:
 
 	int IntersectCharacter(vec2 HookPos, vec2 NewPos, vec2 &NewPos2, int OwnId);
 
-	int LastRaceTick() const;
-	int CurrentRaceTime() const;
+       int LastRaceTick() const;
+       int CurrentRaceTime() const;
+       void AutoAvoidFreeze();
+       bool FindSafeHookPos(const vec2 &Pos, vec2 &OutDir);
 
 	bool IsTeamPlay() { return m_Snap.m_pGameInfoObj && m_Snap.m_pGameInfoObj->m_GameFlags & GAMEFLAG_TEAMS; }
 
