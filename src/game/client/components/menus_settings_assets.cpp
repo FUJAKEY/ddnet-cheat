@@ -30,9 +30,10 @@ enum
 	ASSETS_TAB_GAME = 1,
 	ASSETS_TAB_EMOTICONS = 2,
 	ASSETS_TAB_PARTICLES = 3,
-	ASSETS_TAB_HUD = 4,
-	ASSETS_TAB_EXTRAS = 5,
-	NUMBER_OF_ASSETS_TABS = 6,
+       ASSETS_TAB_HUD = 4,
+       ASSETS_TAB_EXTRAS = 5,
+       ASSETS_TAB_FUJIX = 6,
+       NUMBER_OF_ASSETS_TABS = 7,
 };
 
 void CMenus::LoadEntities(SCustomEntities *pEntitiesItem, void *pUser)
@@ -353,13 +354,14 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	MainView.HSplitTop(20.0f, &TabBar, &MainView);
 	const float TabWidth = TabBar.w / NUMBER_OF_ASSETS_TABS;
 	static CButtonContainer s_aPageTabs[NUMBER_OF_ASSETS_TABS] = {};
-	const char *apTabNames[NUMBER_OF_ASSETS_TABS] = {
-		Localize("Entities"),
-		Localize("Game"),
-		Localize("Emoticons"),
-		Localize("Particles"),
-		Localize("HUD"),
-		Localize("Extras")};
+       const char *apTabNames[NUMBER_OF_ASSETS_TABS] = {
+               Localize("Entities"),
+               Localize("Game"),
+               Localize("Emoticons"),
+               Localize("Particles"),
+               Localize("HUD"),
+               Localize("Extras"),
+               "FUJIX"};
 
 	for(int Tab = ASSETS_TAB_ENTITIES; Tab < NUMBER_OF_ASSETS_TABS; ++Tab)
 	{
@@ -416,10 +418,21 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		InitAssetList(m_vExtrasList, "assets/extras", "extras", ExtrasScan, Graphics(), Storage(), &User);
 	}
 
-	MainView.HSplitTop(10.0f, nullptr, &MainView);
+       MainView.HSplitTop(10.0f, nullptr, &MainView);
 
-	// skin selector
-	MainView.HSplitTop(MainView.h - 10.0f - ms_ButtonHeight, &CustomList, &MainView);
+       if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+       {
+               CUIRect Row;
+               MainView.HSplitTop(20.0f, &Row, &MainView);
+               if(DoButton_CheckBox(&g_Config.m_ClFujixSafeFreeze, "Safe freeze", g_Config.m_ClFujixSafeFreeze, &Row))
+                       g_Config.m_ClFujixSafeFreeze ^= 1;
+               MainView.HSplitTop(20.0f, &Row, &MainView);
+               Ui()->DoScrollbarOption(&g_Config.m_ClFujixSafeFreezeTicks, &g_Config.m_ClFujixSafeFreezeTicks, &Row, "Ticks", 1, 20, &CUi::ms_LinearScrollbarScale);
+               return;
+       }
+
+       // skin selector
+       MainView.HSplitTop(MainView.h - 10.0f - ms_ButtonHeight, &CustomList, &MainView);
 	if(gs_aInitCustomList[s_CurCustomTab])
 	{
 		int ListSize = 0;

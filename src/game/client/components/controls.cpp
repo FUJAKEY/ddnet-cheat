@@ -11,6 +11,7 @@
 #include <game/client/components/scoreboard.h>
 #include <game/client/gameclient.h>
 #include <game/collision.h>
+#include <game/mapitems.h>
 
 #include <base/vmath.h>
 
@@ -357,8 +358,24 @@ void CControls::OnRender()
 	}
 	else
 	{
-		m_aTargetPos[g_Config.m_ClDummy] = m_aMousePos[g_Config.m_ClDummy];
-	}
+               m_aTargetPos[g_Config.m_ClDummy] = m_aMousePos[g_Config.m_ClDummy];
+       }
+
+       if(g_Config.m_ClFujixSafeFreeze && m_pClient->m_Snap.m_pLocalCharacter)
+       {
+               vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
+               for(int i = 1; i <= g_Config.m_ClFujixSafeFreezeTicks; i++)
+               {
+                       vec2 CheckPos = Pos + vec2(0.0f, i * 32.0f);
+                       int Tile = Collision()->GetTileIndex(Collision()->GetPureMapIndex(CheckPos));
+                       if(Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE)
+                       {
+                               m_aInputData[g_Config.m_ClDummy].m_Hook = 1;
+                               m_aTargetPos[g_Config.m_ClDummy] = vec2(0.0f, -100.0f);
+                               break;
+                       }
+               }
+       }
 }
 
 bool CControls::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
