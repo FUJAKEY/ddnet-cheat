@@ -11,6 +11,7 @@
 #include <game/client/components/scoreboard.h>
 #include <game/client/gameclient.h>
 #include <game/collision.h>
+#include <game/mapitems.h>
 
 #include <base/vmath.h>
 
@@ -18,21 +19,23 @@
 
 CControls::CControls()
 {
-	mem_zero(&m_aLastData, sizeof(m_aLastData));
-	mem_zero(m_aMousePos, sizeof(m_aMousePos));
-	mem_zero(m_aMousePosOnAction, sizeof(m_aMousePosOnAction));
-	mem_zero(m_aTargetPos, sizeof(m_aTargetPos));
+        mem_zero(&m_aLastData, sizeof(m_aLastData));
+        mem_zero(m_aMousePos, sizeof(m_aMousePos));
+        mem_zero(m_aMousePosOnAction, sizeof(m_aMousePosOnAction));
+        mem_zero(m_aTargetPos, sizeof(m_aTargetPos));
+       m_SafeFreezeActive = false;
 }
 
 void CControls::OnReset()
 {
-	ResetInput(0);
-	ResetInput(1);
+        ResetInput(0);
+        ResetInput(1);
 
 	for(int &AmmoCount : m_aAmmoCount)
 		AmmoCount = 0;
 
-	m_LastSendTime = 0;
+       m_LastSendTime = 0;
+       m_SafeFreezeActive = false;
 }
 
 void CControls::ResetInput(int Dummy)
@@ -51,8 +54,10 @@ void CControls::ResetInput(int Dummy)
 
 void CControls::OnPlayerDeath()
 {
-	for(int &AmmoCount : m_aAmmoCount)
-		AmmoCount = 0;
+        for(int &AmmoCount : m_aAmmoCount)
+                AmmoCount = 0;
+
+       m_SafeFreezeActive = false;
 }
 
 struct CInputState
@@ -357,9 +362,67 @@ void CControls::OnRender()
 	}
 	else
 	{
-		m_aTargetPos[g_Config.m_ClDummy] = m_aMousePos[g_Config.m_ClDummy];
-	}
-}
+               m_aTargetPos[g_Config.m_ClDummy] = m_aMousePos[g_Config.m_ClDummy];
+       }
+
+              if(g_Config.m_ClFujixSafeFreeze && m_pClient->m_Snap.m_pLocalCharacter)
+       {
+               vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
+
+               bool FallingIntoFreeze = false;
+               for(int i = 1; i <= g_Config.m_ClFujixSafeFreezeTicks; i++)
+               {
+                       vec2 CheckPos = Pos + vec2(0.0f, i * 32.0f);
+                       int Tile = Collision()->GetTileIndex(Collision()->GetPureMapIndex(CheckPos));
+                       if(Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE)
+                       {
+                               FallingIntoFreeze = true;
+                               break;
+                       }
+               }
+
+               if(FallingIntoFreeze && !m_aInputData[g_Config.m_ClDummy].m_Hook && !m_SafeFreezeActive)
+                       m_SafeFreezeActive = true;
+
+               if(m_SafeFreezeActive)
+               {
+                       m_aInputData[g_Config.m_ClDummy].m_Hook = 1;
+
+                       vec2 HookTarget = Pos - vec2(0.0f, g_Config.m_ClFujixSafeFreezeTicks * 32.0f);
+                       for(int i = 1; i <= g_Config.m_ClFujixSafeFreezeTicks * 2; i++)
+                       {
+                               vec2 Candidate = Pos - vec2(0.0f, i * 32.0f);
+                               if(Collision()->CheckPoint(Candidate))
+                               {
+                                       int Tile = Collision()->GetTileIndex(Collision()->GetPureMapIndex(Candidate));
+                                       if(Tile != TILE_FREEZE && Tile != TILE_DFREEZE && Tile != TILE_LFREEZE && Tile != TILE_NOHOOK)
+                                       {
+                                               HookTarget = Candidate;
+                                               break;
+                                       }
+                               }
+                       }
+                       m_aTargetPos[g_Config.m_ClDummy] = HookTarget;
+
+                       bool CancelHook = false;
+                       for(int i = 1; i <= g_Config.m_ClFujixSafeFreezeTicks; i++)
+                       {
+                               vec2 CheckPos = Pos - vec2(0.0f, i * 32.0f);
+                               int Tile = Collision()->GetTileIndex(Collision()->GetPureMapIndex(CheckPos));
+                               if(Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE)
+                               {
+                                       CancelHook = true;
+                                       break;
+                               }
+                       }
+                       if(CancelHook)
+                       {
+                               m_SafeFreezeActive = false;
+                               m_aInputData[g_Config.m_ClDummy].m_Hook = 0;
+                       }
+               }
+       }
+       }
 
 bool CControls::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
 {
