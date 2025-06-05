@@ -642,7 +642,24 @@ int CCollision::IsNoLaser(int x, int y) const
 
 int CCollision::IsFrontNoLaser(int x, int y) const
 {
-	return (CCollision::GetFrontTile(x, y) == TILE_NOLASER);
+        return (CCollision::GetFrontTile(x, y) == TILE_NOLASER);
+}
+
+bool CCollision::IsFreezeTile(int x, int y) const
+{
+       int Index = GetPureMapIndex(x, y);
+       if(Index < 0)
+               return false;
+       int Tile = m_pTiles[Index].m_Index;
+       if(Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE)
+               return true;
+       if(m_pFront)
+       {
+               int Front = m_pFront[Index].m_Index;
+               if(Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE)
+                       return true;
+       }
+       return false;
 }
 
 int CCollision::IsTeleport(int Index) const

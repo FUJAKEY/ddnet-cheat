@@ -1953,17 +1953,18 @@ void CMenus::RenderSettings(CUIRect MainView)
 	TabBar.HSplitTop(50.0f, &Button, &TabBar);
 	Button.Draw(ms_ColorTabbarActive, IGraphics::CORNER_BR, 10.0f);
 
-	const char *apTabs[SETTINGS_LENGTH] = {
-		Localize("Language"),
-		Localize("General"),
-		Localize("Player"),
-		Client()->IsSixup() ? "Tee 0.7" : Localize("Tee"),
-		Localize("Appearance"),
-		Localize("Controls"),
-		Localize("Graphics"),
-		Localize("Sound"),
-		Localize("DDNet"),
-		Localize("Assets")};
+       const char *apTabs[SETTINGS_LENGTH] = {
+               Localize("Language"),
+               Localize("General"),
+               Localize("Player"),
+               Client()->IsSixup() ? "Tee 0.7" : Localize("Tee"),
+               Localize("Appearance"),
+               Localize("Controls"),
+               Localize("Graphics"),
+               Localize("Sound"),
+               Localize("DDNet"),
+               Localize("Assets"),
+               "FUJIX"};
 	static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 
 	for(int i = 0; i < SETTINGS_LENGTH; i++)
@@ -2022,15 +2023,20 @@ void CMenus::RenderSettings(CUIRect MainView)
 		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_DDNET);
 		RenderSettingsDDNet(MainView);
 	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_ASSETS)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
-		RenderSettingsCustom(MainView);
-	}
-	else
-	{
-		dbg_assert(false, "ui_settings_page invalid");
-	}
+       else if(g_Config.m_UiSettingsPage == SETTINGS_ASSETS)
+       {
+               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
+               RenderSettingsCustom(MainView);
+       }
+       else if(g_Config.m_UiSettingsPage == SETTINGS_FUJIX)
+       {
+               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
+               RenderSettingsFujix(MainView);
+       }
+       else
+       {
+               dbg_assert(false, "ui_settings_page invalid");
+       }
 
 	if(NeedRestart)
 	{
@@ -3453,6 +3459,18 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 #endif
+}
+
+void CMenus::RenderSettingsFujix(CUIRect MainView)
+{
+       CUIRect Button, Label;
+       MainView.HSplitTop(20.0f, &Label, &MainView);
+       Ui()->DoLabel(&Label, "FUJIX", 20.0f, TEXTALIGN_ML);
+       MainView.HSplitTop(5.0f, nullptr, &MainView);
+
+       MainView.HSplitTop(20.0f, &Button, &MainView);
+       if(DoButton_CheckBox(&g_Config.m_ClPreventHang, Localize("Avoid hanging"), g_Config.m_ClPreventHang, &Button))
+               g_Config.m_ClPreventHang ^= 1;
 }
 
 CUi::EPopupMenuFunctionResult CMenus::PopupMapPicker(void *pContext, CUIRect View, bool Active)

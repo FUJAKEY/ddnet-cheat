@@ -101,9 +101,10 @@ public:
 	int IsSolid(int x, int y) const;
 	bool IsThrough(int x, int y, int OffsetX, int OffsetY, vec2 Pos0, vec2 Pos1) const;
 	bool IsHookBlocker(int x, int y, vec2 Pos0, vec2 Pos1) const;
-	int IsWallJump(int Index) const;
-	int IsNoLaser(int x, int y) const;
-	int IsFrontNoLaser(int x, int y) const;
+        int IsWallJump(int Index) const;
+        int IsNoLaser(int x, int y) const;
+        int IsFrontNoLaser(int x, int y) const;
+       bool IsFreezeTile(int x, int y) const;
 
 	int IsTimeCheckpoint(int Index) const;
 	int IsFrontTimeCheckpoint(int Index) const;

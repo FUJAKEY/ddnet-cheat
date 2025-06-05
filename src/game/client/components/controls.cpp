@@ -355,10 +355,12 @@ void CControls::OnRender()
 	{
 		m_aTargetPos[g_Config.m_ClDummy] = m_pClient->m_Snap.m_SpecInfo.m_Position + m_aMousePos[g_Config.m_ClDummy];
 	}
-	else
-	{
-		m_aTargetPos[g_Config.m_ClDummy] = m_aMousePos[g_Config.m_ClDummy];
-	}
+       else
+       {
+               m_aTargetPos[g_Config.m_ClDummy] = m_aMousePos[g_Config.m_ClDummy];
+       }
+
+       AvoidHang();
 }
 
 bool CControls::OnCursorMove(float x, float y, IInput::ECursorType CursorType)
@@ -438,9 +440,63 @@ float CControls::GetMinMouseDistance() const
 
 float CControls::GetMaxMouseDistance() const
 {
-	float CameraMaxDistance = 200.0f;
-	float FollowFactor = (g_Config.m_ClDyncam ? g_Config.m_ClDyncamFollowFactor : g_Config.m_ClMouseFollowfactor) / 100.0f;
-	float DeadZone = g_Config.m_ClDyncam ? g_Config.m_ClDyncamDeadzone : g_Config.m_ClMouseDeadzone;
-	float MaxDistance = g_Config.m_ClDyncam ? g_Config.m_ClDyncamMaxDistance : g_Config.m_ClMouseMaxDistance;
-	return minimum((FollowFactor != 0 ? CameraMaxDistance / FollowFactor + DeadZone : MaxDistance), MaxDistance);
+        float CameraMaxDistance = 200.0f;
+        float FollowFactor = (g_Config.m_ClDyncam ? g_Config.m_ClDyncamFollowFactor : g_Config.m_ClMouseFollowfactor) / 100.0f;
+        float DeadZone = g_Config.m_ClDyncam ? g_Config.m_ClDyncamDeadzone : g_Config.m_ClMouseDeadzone;
+        float MaxDistance = g_Config.m_ClDyncam ? g_Config.m_ClDyncamMaxDistance : g_Config.m_ClMouseMaxDistance;
+        return minimum((FollowFactor != 0 ? CameraMaxDistance / FollowFactor + DeadZone : MaxDistance), MaxDistance);
+}
+
+void CControls::AvoidHang()
+{
+       if(!g_Config.m_ClPreventHang)
+               return;
+       if(!m_aInputData[g_Config.m_ClDummy].m_Hook)
+               return;
+       if(!m_pClient->m_Snap.m_pLocalCharacter)
+               return;
+
+       vec2 Pos = m_pClient->m_LocalCharacterPos;
+       vec2 Dir = normalize(m_aTargetPos[g_Config.m_ClDummy] - Pos);
+       float Len = length(m_aTargetPos[g_Config.m_ClDummy] - Pos);
+       vec2 HookPos = Pos;
+       float Step = m_pClient->m_aTuning[g_Config.m_ClDummy].m_HookFireSpeed;
+
+       auto HitsFreeze = [&](vec2 TestDir) -> bool {
+               vec2 PosTest = Pos;
+               for(int i = 0; i < 26; i++)
+               {
+                       vec2 Next = PosTest + TestDir * Step;
+                       vec2 Col;
+                       int Hit = Collision()->IntersectLine(PosTest, Next, &Col, nullptr);
+                       if(Hit)
+                       {
+                               if(Collision()->IsFreezeTile(round_to_int(Col.x), round_to_int(Col.y)))
+                                       return true;
+                               return false;
+                       }
+                       PosTest = Next;
+               }
+               return false;
+       };
+
+       if(!HitsFreeze(Dir))
+               return;
+
+       const int Attempts = 16;
+       const float AngleStep = 2.0f * pi / Attempts;
+       float StartAngle = angle(Dir);
+
+       for(int j = 1; j <= Attempts; j++)
+       {
+               for(int sign : {-1, 1})
+               {
+                       vec2 NewDir = direction(StartAngle + sign * j * AngleStep);
+                       if(!HitsFreeze(NewDir))
+                       {
+                               m_aTargetPos[g_Config.m_ClDummy] = Pos + NewDir * Len;
+                               return;
+                       }
+               }
+       }
 }

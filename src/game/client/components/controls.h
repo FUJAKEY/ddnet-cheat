@@ -36,11 +36,13 @@ public:
 	virtual void OnRender() override;
 	virtual void OnMessage(int MsgType, void *pRawMsg) override;
 	virtual bool OnCursorMove(float x, float y, IInput::ECursorType CursorType) override;
-	virtual void OnConsoleInit() override;
-	virtual void OnPlayerDeath();
+       virtual void OnConsoleInit() override;
+       virtual void OnPlayerDeath();
 
-	int SnapInput(int *pData);
-	void ClampMousePos();
-	void ResetInput(int Dummy);
+       void AvoidHang();
+
+       int SnapInput(int *pData);
+       void ClampMousePos();
+       void ResetInput(int Dummy);
 };
 #endif
