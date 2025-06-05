@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <limits>
+#include <cmath>
 
 #include <engine/client/checksum.h>
 #include <engine/client/enums.h>
@@ -483,16 +484,18 @@ void CGameClient::OnUpdate()
 		}
 	});
 
-	if(g_Config.m_ClSubTickAiming && m_Binds.m_MouseOnAction)
-	{
-		m_Controls.m_aMousePosOnAction[g_Config.m_ClDummy] = m_Controls.m_aMousePos[g_Config.m_ClDummy];
-		m_Binds.m_MouseOnAction = false;
-	}
+       if(g_Config.m_ClSubTickAiming && m_Binds.m_MouseOnAction)
+       {
+               m_Controls.m_aMousePosOnAction[g_Config.m_ClDummy] = m_Controls.m_aMousePos[g_Config.m_ClDummy];
+               m_Binds.m_MouseOnAction = false;
+       }
 
-	for(auto &pComponent : m_vpAll)
-	{
-		pComponent->OnUpdate();
-	}
+       AutoAvoidFreeze();
+
+       for(auto &pComponent : m_vpAll)
+       {
+               pComponent->OnUpdate();
+       }
 }
 
 void CGameClient::OnDummySwap()
@@ -922,11 +925,94 @@ int CGameClient::LastRaceTick() const
 
 int CGameClient::CurrentRaceTime() const
 {
-	if(m_LastRaceTick < 0)
-	{
-		return 0;
-	}
-	return (Client()->GameTick(g_Config.m_ClDummy) - m_LastRaceTick) / Client()->GameTickSpeed();
+       if(m_LastRaceTick < 0)
+       {
+               return 0;
+       }
+       return (Client()->GameTick(g_Config.m_ClDummy) - m_LastRaceTick) / Client()->GameTickSpeed();
+}
+
+bool CGameClient::FindSafeHookPos(const vec2 &Pos, vec2 &OutDir)
+{
+       float BestDist = -1.0f;
+       for(int i = 0; i < 128; ++i)
+       {
+               float Angle = i * (2.0f * pi / 128.0f);
+               vec2 Target = Pos + vec2(std::cos(Angle), std::sin(Angle)) * m_PredictedChar.m_Tuning.m_HookLength;
+               vec2 Col, Before;
+               int Hit = Collision()->IntersectLineTeleHook(Pos, Target, &Col, &Before);
+               int Tile = Collision()->GetCollisionAt(Col.x, Col.y);
+               if(!Hit && Tile != TILE_FREEZE && Tile != TILE_DFREEZE && Tile != TILE_LFREEZE)
+               {
+                       float Dist = distance(Pos, Col);
+                       if(BestDist < 0.0f || Dist < BestDist)
+                       {
+                               BestDist = Dist;
+                               OutDir = normalize(Target - Pos);
+                       }
+               }
+       }
+       return BestDist > 0.0f;
+}
+
+static bool PredictFreeze(CCollision *pCol, const vec2 &Pos)
+{
+       const float Radius = CCharacterCore::PhysicalSize() / 3.f;
+       int Index = pCol->GetPureMapIndex(Pos);
+       int Tiles[3] = {
+               pCol->GetTileIndex(Index),
+               pCol->GetFrontTileIndex(Index),
+               pCol->GetSwitchType(Index)};
+       for(int Tile : Tiles)
+       {
+               if(Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE || Tile == TILE_DEATH)
+                       return true;
+       }
+       if(pCol->GetCollisionAt(Pos.x + Radius, Pos.y - Radius) == TILE_DEATH ||
+          pCol->GetCollisionAt(Pos.x + Radius, Pos.y + Radius) == TILE_DEATH ||
+          pCol->GetCollisionAt(Pos.x - Radius, Pos.y - Radius) == TILE_DEATH ||
+          pCol->GetCollisionAt(Pos.x - Radius, Pos.y + Radius) == TILE_DEATH ||
+          pCol->GetFrontCollisionAt(Pos.x + Radius, Pos.y - Radius) == TILE_DEATH ||
+          pCol->GetFrontCollisionAt(Pos.x + Radius, Pos.y + Radius) == TILE_DEATH ||
+          pCol->GetFrontCollisionAt(Pos.x - Radius, Pos.y - Radius) == TILE_DEATH ||
+          pCol->GetFrontCollisionAt(Pos.x - Radius, Pos.y + Radius) == TILE_DEATH)
+               return true;
+       return false;
+}
+
+void CGameClient::AutoAvoidFreeze()
+{
+       if(!g_Config.m_ClFujixAvoidFreeze || !m_Snap.m_pLocalCharacter)
+               return;
+
+       CCharacter *pChar = m_PredictedWorld.GetCharacterById(m_Snap.m_LocalClientId);
+       if(!pChar)
+               return;
+
+       CCharacterCore Core = *pChar->Core();
+       CNetObj_PlayerInput Input = m_Controls.m_aInputData[g_Config.m_ClDummy];
+       bool FreezeAhead = false;
+       for(int i = 0; i < 26; ++i)
+       {
+               Core.m_Input = Input;
+               Core.Tick(true);
+               Core.Move();
+               Core.Quantize();
+               if(PredictFreeze(Collision(), Core.m_Pos))
+               {
+                       FreezeAhead = true;
+                       break;
+               }
+       }
+       if(!FreezeAhead)
+               return;
+
+       vec2 Dir;
+       if(FindSafeHookPos(pChar->Core()->m_Pos, Dir))
+       {
+               m_Controls.m_aInputData[g_Config.m_ClDummy].m_Hook = 1;
+               m_Controls.m_aMousePos[g_Config.m_ClDummy] = Dir * 200.0f;
+       }
 }
 
 bool CGameClient::Predict() const

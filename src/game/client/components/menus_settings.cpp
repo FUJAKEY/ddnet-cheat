@@ -1962,8 +1962,9 @@ void CMenus::RenderSettings(CUIRect MainView)
 		Localize("Controls"),
 		Localize("Graphics"),
 		Localize("Sound"),
-		Localize("DDNet"),
-		Localize("Assets")};
+               Localize("DDNet"),
+               Localize("Assets"),
+               "FUJIX"};
 	static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 
 	for(int i = 0; i < SETTINGS_LENGTH; i++)
@@ -2017,20 +2018,25 @@ void CMenus::RenderSettings(CUIRect MainView)
 		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_SOUND);
 		RenderSettingsSound(MainView);
 	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_DDNET)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_DDNET);
-		RenderSettingsDDNet(MainView);
-	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_ASSETS)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
-		RenderSettingsCustom(MainView);
-	}
-	else
-	{
-		dbg_assert(false, "ui_settings_page invalid");
-	}
+       else if(g_Config.m_UiSettingsPage == SETTINGS_DDNET)
+       {
+               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_DDNET);
+               RenderSettingsDDNet(MainView);
+       }
+       else if(g_Config.m_UiSettingsPage == SETTINGS_ASSETS)
+       {
+               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
+               RenderSettingsCustom(MainView);
+       }
+       else if(g_Config.m_UiSettingsPage == SETTINGS_FUJIX)
+       {
+               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_FUJIX);
+               RenderSettingsFujix(MainView);
+       }
+       else
+       {
+               dbg_assert(false, "ui_settings_page invalid");
+       }
 
 	if(NeedRestart)
 	{
@@ -3453,6 +3459,16 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 #endif
+}
+
+void CMenus::RenderSettingsFujix(CUIRect MainView)
+{
+       CUIRect Button;
+       MainView.HSplitTop(20.0f, &Button, &MainView);
+       if(DoButton_CheckBox(&g_Config.m_ClFujixAvoidFreeze, Localize("Avoid Freeze"), g_Config.m_ClFujixAvoidFreeze, &Button))
+       {
+               g_Config.m_ClFujixAvoidFreeze ^= 1;
+       }
 }
 
 CUi::EPopupMenuFunctionResult CMenus::PopupMapPicker(void *pContext, CUIRect View, bool Active)
