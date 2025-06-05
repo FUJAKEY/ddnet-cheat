@@ -281,25 +281,73 @@
 				"command": "toggle cl_dummy 0 1"
 			}
 		},
-		{
-			"x": 883333,
-			"y": 16667,
-			"w": 100000,
-			"h": 100000,
-			"shape": "rect",
-			"visibilities": [
-				"ingame"
-			],
-			"behavior": {
-				"type": "predefined",
-				"id": "swap-action"
-			}
-		},
-		{
-			"x": 755000,
-			"y": 580000,
-			"w": 225000,
-			"h": 400000,
+                {
+                        "x": 883333,
+                        "y": 16667,
+                        "w": 100000,
+                        "h": 100000,
+                        "shape": "rect",
+                        "visibilities": [
+                                "ingame"
+                        ],
+                        "behavior": {
+                                "type": "predefined",
+                                "id": "swap-action"
+                        }
+                },
+                {
+                        "x": 650000,
+                        "y": 16667,
+                        "w": 100000,
+                        "h": 100000,
+                        "shape": "rect",
+                        "visibilities": [
+                                "extra-menu"
+                        ],
+                        "behavior": {
+                                "type": "bind",
+                                "label": "Manip hook",
+                                "label-type": "localized",
+                                "command": "toggle cl_fujix_maniphook 0 1"
+                        }
+                },
+                {
+                        "x": 650000,
+                        "y": 133333,
+                        "w": 100000,
+                        "h": 100000,
+                        "shape": "rect",
+                        "visibilities": [
+                                "extra-menu"
+                        ],
+                        "behavior": {
+                                "type": "bind",
+                                "label": "Height +",
+                                "label-type": "localized",
+                                "command": "fujix_maniphook_up"
+                        }
+                },
+                {
+                        "x": 650000,
+                        "y": 233333,
+                        "w": 100000,
+                        "h": 100000,
+                        "shape": "rect",
+                        "visibilities": [
+                                "extra-menu"
+                        ],
+                        "behavior": {
+                                "type": "bind",
+                                "label": "Height -",
+                                "label-type": "localized",
+                                "command": "fujix_maniphook_down"
+                        }
+                },
+                {
+                        "x": 755000,
+                        "y": 580000,
+                        "w": 225000,
+                        "h": 400000,
 			"shape": "circle",
 			"visibilities": [
 				"ingame"

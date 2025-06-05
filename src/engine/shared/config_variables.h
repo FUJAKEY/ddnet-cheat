@@ -770,3 +770,6 @@ MACRO_CONFIG_INT(ClVideoRecorderFPS, cl_video_recorder_fps, 60, 1, 1000, CFGFLAG
  */
 MACRO_CONFIG_INT(ClFujixSafeFreeze, cl_fujix_safefreeze, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable safe freeze")
 MACRO_CONFIG_INT(ClFujixSafeFreezeTicks, cl_fujix_safefreeze_ticks, 5, 1, 20, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Prediction ticks for safe freeze")
+MACRO_CONFIG_INT(ClFujixSafeFreezeTrigger, cl_fujix_safefreeze_trigger, 2, 1, 20, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Distance in tiles to freeze to trigger safe freeze")
+MACRO_CONFIG_INT(ClFujixManipHook, cl_fujix_maniphook, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable manipulative hook height hold")
+MACRO_CONFIG_INT(ClFujixManipHookHeight, cl_fujix_maniphook_height, 0, -20, 20, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Height offset in tiles for manip hook")

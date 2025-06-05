@@ -296,12 +296,15 @@ void CBinds::SetDefaults()
 	Bind(KEY_F3, "vote yes");
 	Bind(KEY_F4, "vote no");
 
-	Bind(KEY_K, "kill");
-	Bind(KEY_Q, "say /spec");
-	Bind(KEY_P, "say /pause");
+        Bind(KEY_K, "kill");
+        Bind(KEY_Q, "say /spec");
+        Bind(KEY_P, "say /pause");
+       Bind(KEY_F11, "toggle cl_fujix_maniphook 0 1");
+       Bind(KEY_F6, "fujix_maniphook_down");
+       Bind(KEY_F7, "fujix_maniphook_up");
 
-	g_Config.m_ClDDRaceBindsSet = 0;
-	SetDDRaceBinds(false);
+        g_Config.m_ClDDRaceBindsSet = 0;
+        SetDDRaceBinds(false);
 }
 
 void CBinds::OnConsoleInit()

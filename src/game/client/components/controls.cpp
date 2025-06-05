@@ -107,9 +107,19 @@ static void ConKeyInputSet(IConsole::IResult *pResult, void *pUserData)
 
 static void ConKeyInputNextPrevWeapon(IConsole::IResult *pResult, void *pUserData)
 {
-	CInputSet *pSet = (CInputSet *)pUserData;
-	ConKeyInputCounter(pResult, pSet);
-	pSet->m_pControls->m_aInputData[g_Config.m_ClDummy].m_WantedWeapon = 0;
+        CInputSet *pSet = (CInputSet *)pUserData;
+        ConKeyInputCounter(pResult, pSet);
+        pSet->m_pControls->m_aInputData[g_Config.m_ClDummy].m_WantedWeapon = 0;
+}
+
+static void ConFujixHeightUp(IConsole::IResult *pResult, void *pUserData)
+{
+       g_Config.m_ClFujixManipHookHeight = clamp(g_Config.m_ClFujixManipHookHeight + 1, -20, 20);
+}
+
+static void ConFujixHeightDown(IConsole::IResult *pResult, void *pUserData)
+{
+       g_Config.m_ClFujixManipHookHeight = clamp(g_Config.m_ClFujixManipHookHeight - 1, -20, 20);
 }
 
 void CControls::OnConsoleInit()
@@ -165,10 +175,13 @@ void CControls::OnConsoleInit()
 		static CInputSet s_Set = {this, {&m_aInputData[0].m_NextWeapon, &m_aInputData[1].m_NextWeapon}, 0};
 		Console()->Register("+nextweapon", "", CFGFLAG_CLIENT, ConKeyInputNextPrevWeapon, &s_Set, "Switch to next weapon");
 	}
-	{
-		static CInputSet s_Set = {this, {&m_aInputData[0].m_PrevWeapon, &m_aInputData[1].m_PrevWeapon}, 0};
-		Console()->Register("+prevweapon", "", CFGFLAG_CLIENT, ConKeyInputNextPrevWeapon, &s_Set, "Switch to previous weapon");
-	}
+        {
+                static CInputSet s_Set = {this, {&m_aInputData[0].m_PrevWeapon, &m_aInputData[1].m_PrevWeapon}, 0};
+                Console()->Register("+prevweapon", "", CFGFLAG_CLIENT, ConKeyInputNextPrevWeapon, &s_Set, "Switch to previous weapon");
+        }
+
+       Console()->Register("fujix_maniphook_up", "", CFGFLAG_CLIENT, ConFujixHeightUp, this, "Increase manip hook height");
+       Console()->Register("fujix_maniphook_down", "", CFGFLAG_CLIENT, ConFujixHeightDown, this, "Decrease manip hook height");
 }
 
 void CControls::OnMessage(int Msg, void *pRawMsg)
@@ -365,28 +378,29 @@ void CControls::OnRender()
                m_aTargetPos[g_Config.m_ClDummy] = m_aMousePos[g_Config.m_ClDummy];
        }
 
-       if(g_Config.m_ClFujixSafeFreeze && m_pClient->m_Snap.m_pLocalCharacter)
+       if((g_Config.m_ClFujixSafeFreeze || g_Config.m_ClFujixManipHook) && m_pClient->m_Snap.m_pLocalCharacter)
        {
                vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
                vec2 Vel = GameClient()->m_PredictedChar.m_Vel;
 
-               bool FallingIntoFreeze = Vel.y > 0.0f;
-               if(FallingIntoFreeze)
+               int FreezeDist = -1;
+               if(Vel.y > 0.0f)
                {
-                       FallingIntoFreeze = false;
                        for(int i = 1; i <= g_Config.m_ClFujixSafeFreezeTicks; i++)
                        {
                                vec2 CheckPos = Pos + vec2(0.0f, i * 32.0f);
                                int Tile = Collision()->GetTileIndex(Collision()->GetPureMapIndex(CheckPos));
                                if(Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE)
                                {
-                                       FallingIntoFreeze = true;
+                                       FreezeDist = i;
                                        break;
                                }
                        }
                }
 
-               if(FallingIntoFreeze && !m_SafeFreezeActive)
+               bool FallingIntoFreeze = FreezeDist > 0 && FreezeDist <= g_Config.m_ClFujixSafeFreezeTrigger;
+
+               if((FallingIntoFreeze || g_Config.m_ClFujixManipHook) && !m_SafeFreezeActive)
                        m_SafeFreezeActive = true;
 
                if(m_SafeFreezeActive)
@@ -400,9 +414,14 @@ void CControls::OnRender()
                                        if(!Collision()->CheckPoint(Candidate))
                                                continue;
                                        int Tile = Collision()->GetTileIndex(Collision()->GetPureMapIndex(Candidate));
-                                       if(Tile != TILE_FREEZE && Tile != TILE_DFREEZE && Tile != TILE_LFREEZE && Tile != TILE_NOHOOK)
+                                       bool IsFreeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE;
+                                       if((!IsFreeze && Tile != TILE_NOHOOK) || IsFreeze)
                                        {
-                                               HookTarget = Candidate;
+                                               if(IsFreeze)
+                                                       HookTarget = Candidate + vec2((Pos.x > Candidate.x ? -16.0f : 16.0f), 16.0f);
+                                               else
+                                                       HookTarget = Candidate + vec2(0.0f, 16.0f);
+                                               HookTarget.y -= g_Config.m_ClFujixManipHookHeight * 32.0f;
                                                y = g_Config.m_ClFujixSafeFreezeTicks * 2 + 1;
                                                break;
                                        }
@@ -424,7 +443,7 @@ void CControls::OnRender()
                                        break;
                                }
                        }
-                       if(CancelHook || !FallingIntoFreeze)
+                       if(CancelHook || (!FallingIntoFreeze && !g_Config.m_ClFujixManipHook))
                        {
                                m_SafeFreezeActive = false;
                                m_aInputData[g_Config.m_ClDummy].m_Hook = 0;
