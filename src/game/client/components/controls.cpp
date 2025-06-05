@@ -370,21 +370,22 @@ void CControls::OnRender()
                vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
                vec2 Vel = GameClient()->m_PredictedChar.m_Vel;
 
-               bool FallingIntoFreeze = Vel.y > 0.0f;
-               if(FallingIntoFreeze)
+               int FreezeDist = -1;
+               if(Vel.y > 0.0f)
                {
-                       FallingIntoFreeze = false;
                        for(int i = 1; i <= g_Config.m_ClFujixSafeFreezeTicks; i++)
                        {
                                vec2 CheckPos = Pos + vec2(0.0f, i * 32.0f);
                                int Tile = Collision()->GetTileIndex(Collision()->GetPureMapIndex(CheckPos));
                                if(Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE)
                                {
-                                       FallingIntoFreeze = true;
+                                       FreezeDist = i;
                                        break;
                                }
                        }
                }
+
+               bool FallingIntoFreeze = FreezeDist > 0 && FreezeDist <= g_Config.m_ClFujixSafeFreezeTrigger;
 
                if(FallingIntoFreeze && !m_SafeFreezeActive)
                        m_SafeFreezeActive = true;
@@ -402,7 +403,7 @@ void CControls::OnRender()
                                        int Tile = Collision()->GetTileIndex(Collision()->GetPureMapIndex(Candidate));
                                        if(Tile != TILE_FREEZE && Tile != TILE_DFREEZE && Tile != TILE_LFREEZE && Tile != TILE_NOHOOK)
                                        {
-                                               HookTarget = Candidate;
+                                               HookTarget = Candidate + vec2(0.0f, 16.0f);
                                                y = g_Config.m_ClFujixSafeFreezeTicks * 2 + 1;
                                                break;
                                        }

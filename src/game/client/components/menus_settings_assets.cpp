@@ -428,6 +428,8 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
                        g_Config.m_ClFujixSafeFreeze ^= 1;
                MainView.HSplitTop(20.0f, &Row, &MainView);
                Ui()->DoScrollbarOption(&g_Config.m_ClFujixSafeFreezeTicks, &g_Config.m_ClFujixSafeFreezeTicks, &Row, "Ticks", 1, 20, &CUi::ms_LinearScrollbarScale);
+               MainView.HSplitTop(20.0f, &Row, &MainView);
+               Ui()->DoScrollbarOption(&g_Config.m_ClFujixSafeFreezeTrigger, &g_Config.m_ClFujixSafeFreezeTrigger, &Row, "Trigger", 1, 20, &CUi::ms_LinearScrollbarScale);
                return;
        }
 
