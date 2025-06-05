@@ -910,7 +910,8 @@ static CKeyInfo gs_aKeys[] =
 
 		{Localizable("Toggle dummy"), "toggle cl_dummy 0 1", 0, 0},
 		{Localizable("Dummy copy"), "toggle cl_dummy_copy_moves 0 1", 0, 0},
-		{Localizable("Hammerfly dummy"), "toggle cl_dummy_hammer 0 1", 0, 0},
+               {Localizable("Hammerfly dummy"), "toggle cl_dummy_hammer 0 1", 0, 0},
+               {Localizable("Toggle safe freeze"), "toggle cl_fujix_safefreeze 0 1", 0, 0},
 
 		{Localizable("Emoticon"), "+emote", 0, 0},
 		{Localizable("Spectator mode"), "+spectate", 0, 0},

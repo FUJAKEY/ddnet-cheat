@@ -768,3 +768,5 @@ MACRO_CONFIG_INT(ClVideoRecorderFPS, cl_video_recorder_fps, 60, 1, 1000, CFGFLAG
 /*
  * Add config variables for mods below this comment to avoid merge conflicts.
  */
+MACRO_CONFIG_INT(ClFujixSafeFreeze, cl_fujix_safefreeze, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable safe freeze")
+MACRO_CONFIG_INT(ClFujixSafeFreezeTicks, cl_fujix_safefreeze_ticks, 5, 1, 20, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Prediction ticks for safe freeze")
