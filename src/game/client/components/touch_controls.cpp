@@ -847,10 +847,15 @@ void CTouchControls::InitVisibilityFunctions()
 	m_aVisibilityFunctions[(int)EButtonVisibility::EXTRA_MENU_4].m_Function = [&]() {
 		return m_aExtraMenuActive[3];
 	};
-	m_aVisibilityFunctions[(int)EButtonVisibility::EXTRA_MENU_5].m_pId = "extra-menu-5";
-	m_aVisibilityFunctions[(int)EButtonVisibility::EXTRA_MENU_5].m_Function = [&]() {
-		return m_aExtraMenuActive[4];
-	};
+        m_aVisibilityFunctions[(int)EButtonVisibility::EXTRA_MENU_5].m_pId = "extra-menu-5";
+        m_aVisibilityFunctions[(int)EButtonVisibility::EXTRA_MENU_5].m_Function = [&]() {
+                return m_aExtraMenuActive[4];
+        };
+
+        m_aVisibilityFunctions[(int)EButtonVisibility::FUJIX_PLAYING].m_pId = "fujix-playing";
+        m_aVisibilityFunctions[(int)EButtonVisibility::FUJIX_PLAYING].m_Function = [&]() {
+                return GameClient()->m_FujixRecorder.IsPlaying();
+        };
 }
 
 int CTouchControls::NextActiveAction(int Action) const
@@ -1021,11 +1026,11 @@ void CTouchControls::UpdateButtons(const std::vector<IInput::CTouchFingerState> 
 				// Remember fingers responsible for buttons that were deactivated due to becoming invisible,
 				// to ensure that these fingers will not activate direct touch input or touch buttons.
 				m_vStaleFingers.push_back(TouchButton.m_pBehavior->m_Finger);
-				const auto ActiveFinger = std::find_if(vRemainingTouchFingerStates.begin(), vRemainingTouchFingerStates.end(), [&](const IInput::CTouchFingerState &TouchFingerState) {
-					return TouchFingerState.m_Finger == TouchButton.m_pBehavior->m_Finger;
-				});
-				dbg_assert(ActiveFinger != vRemainingTouchFingerStates.end(), "Active button finger not found");
-				vRemainingTouchFingerStates.erase(ActiveFinger);
+                               const auto ActiveFinger = std::find_if(vRemainingTouchFingerStates.begin(), vRemainingTouchFingerStates.end(), [&](const IInput::CTouchFingerState &TouchFingerState) {
+                                       return TouchFingerState.m_Finger == TouchButton.m_pBehavior->m_Finger;
+                               });
+                               if(ActiveFinger != vRemainingTouchFingerStates.end())
+                                       vRemainingTouchFingerStates.erase(ActiveFinger);
 			}
 			TouchButton.m_pBehavior->SetInactive();
 			continue;
@@ -1058,8 +1063,8 @@ void CTouchControls::UpdateButtons(const std::vector<IInput::CTouchFingerState> 
 		const auto ActiveFinger = std::find_if(vRemainingTouchFingerStates.begin(), vRemainingTouchFingerStates.end(), [&](const IInput::CTouchFingerState &TouchFingerState) {
 			return TouchFingerState.m_Finger == TouchButton.m_pBehavior->m_Finger;
 		});
-		dbg_assert(ActiveFinger != vRemainingTouchFingerStates.end(), "Active button finger not found");
-		vRemainingTouchFingerStates.erase(ActiveFinger);
+               if(ActiveFinger != vRemainingTouchFingerStates.end())
+                       vRemainingTouchFingerStates.erase(ActiveFinger);
 	}
 
 	// TODO: Support standard gesture to zoom (enabled separately for ingame and spectator)

@@ -296,51 +296,54 @@
                         }
                 },
                 {
+                        "x": 550000,
+                        "y": 16667,
+                        "w": 100000,
+                        "h": 100000,
+                        "shape": "rect",
+                        "visibilities": [
+                                "extra-menu",
+                                "-fujix-playing"
+                        ],
+                        "behavior": {
+                                "type": "bind",
+                                "label": "Play",
+                                "label-type": "localized",
+                                "command": "fujix_play"
+                        }
+                },
+                {
                         "x": 650000,
                         "y": 16667,
                         "w": 100000,
                         "h": 100000,
                         "shape": "rect",
                         "visibilities": [
-                                "extra-menu"
+                                "extra-menu",
+                                "-fujix-playing"
                         ],
                         "behavior": {
                                 "type": "bind",
-                                "label": "Manip hook",
+                                "label": "Recording",
                                 "label-type": "localized",
-                                "command": "toggle cl_fujix_maniphook 0 1"
+                                "command": "fujix_record"
                         }
                 },
                 {
-                        "x": 650000,
-                        "y": 133333,
+                        "x": 750000,
+                        "y": 16667,
                         "w": 100000,
                         "h": 100000,
                         "shape": "rect",
                         "visibilities": [
-                                "extra-menu"
+                                "extra-menu",
+                                "fujix-playing"
                         ],
                         "behavior": {
                                 "type": "bind",
-                                "label": "Height +",
+                                "label": "Stop",
                                 "label-type": "localized",
-                                "command": "fujix_maniphook_up"
-                        }
-                },
-                {
-                        "x": 650000,
-                        "y": 233333,
-                        "w": 100000,
-                        "h": 100000,
-                        "shape": "rect",
-                        "visibilities": [
-                                "extra-menu"
-                        ],
-                        "behavior": {
-                                "type": "bind",
-                                "label": "Height -",
-                                "label-type": "localized",
-                                "command": "fujix_maniphook_down"
+                                "command": "fujix_play"
                         }
                 },
                 {
@@ -348,14 +351,14 @@
                         "y": 580000,
                         "w": 225000,
                         "h": 400000,
-			"shape": "circle",
-			"visibilities": [
-				"ingame"
-			],
-			"behavior": {
-				"type": "predefined",
-				"id": "joystick-action"
-			}
-		}
-	]
+                        "shape": "circle",
+                        "visibilities": [
+                                "ingame"
+                        ],
+                        "behavior": {
+                                "type": "predefined",
+                                "id": "joystick-action"
+                        }
+                }
+        ]
 }
