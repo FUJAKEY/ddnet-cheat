@@ -60,6 +60,33 @@ void CControls::OnPlayerDeath()
        m_SafeFreezeActive = false;
 }
 
+vec2 CControls::FindSafeFreezeHook(const vec2 &Pos) const
+{
+       for(int y = 1; y <= g_Config.m_ClFujixSafeFreezeTicks * 2; ++y)
+       {
+               for(int x = -2; x <= 2; ++x)
+               {
+                       vec2 Candidate = Pos + vec2(x * 32.0f, -y * 32.0f);
+                       if(!Collision()->CheckPoint(Candidate))
+                               continue;
+                       int Tile = Collision()->GetTileIndex(Collision()->GetPureMapIndex(Candidate));
+                       bool IsFreeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE;
+                       if((!IsFreeze && Tile != TILE_NOHOOK) || IsFreeze)
+                       {
+                               vec2 HookTarget = Candidate + vec2(IsFreeze ? (Pos.x > Candidate.x ? -16.0f : 16.0f) : 0.0f, 16.0f);
+                               int TileAbove = Collision()->GetTileIndex(Collision()->GetPureMapIndex(Candidate + vec2(0.0f, -32.0f)));
+                               int TileBelow = Collision()->GetTileIndex(Collision()->GetPureMapIndex(Candidate + vec2(0.0f, 32.0f)));
+                               bool AboveFreeze = TileAbove == TILE_FREEZE || TileAbove == TILE_DFREEZE || TileAbove == TILE_LFREEZE;
+                               bool BelowFreeze = TileBelow == TILE_FREEZE || TileBelow == TILE_DFREEZE || TileBelow == TILE_LFREEZE;
+                               if(AboveFreeze && BelowFreeze)
+                                       HookTarget = Candidate;
+                               return HookTarget;
+                       }
+               }
+       }
+       return Pos;
+}
+
 struct CInputState
 {
 	CControls *m_pControls;
@@ -112,15 +139,6 @@ static void ConKeyInputNextPrevWeapon(IConsole::IResult *pResult, void *pUserDat
         pSet->m_pControls->m_aInputData[g_Config.m_ClDummy].m_WantedWeapon = 0;
 }
 
-static void ConFujixHeightUp(IConsole::IResult *pResult, void *pUserData)
-{
-       g_Config.m_ClFujixManipHookHeight = clamp(g_Config.m_ClFujixManipHookHeight + 1, -20, 20);
-}
-
-static void ConFujixHeightDown(IConsole::IResult *pResult, void *pUserData)
-{
-       g_Config.m_ClFujixManipHookHeight = clamp(g_Config.m_ClFujixManipHookHeight - 1, -20, 20);
-}
 
 void CControls::OnConsoleInit()
 {
@@ -180,8 +198,6 @@ void CControls::OnConsoleInit()
                 Console()->Register("+prevweapon", "", CFGFLAG_CLIENT, ConKeyInputNextPrevWeapon, &s_Set, "Switch to previous weapon");
         }
 
-       Console()->Register("fujix_maniphook_up", "", CFGFLAG_CLIENT, ConFujixHeightUp, this, "Increase manip hook height");
-       Console()->Register("fujix_maniphook_down", "", CFGFLAG_CLIENT, ConFujixHeightDown, this, "Decrease manip hook height");
 }
 
 void CControls::OnMessage(int Msg, void *pRawMsg)
@@ -378,7 +394,7 @@ void CControls::OnRender()
                m_aTargetPos[g_Config.m_ClDummy] = m_aMousePos[g_Config.m_ClDummy];
        }
 
-       if((g_Config.m_ClFujixSafeFreeze || g_Config.m_ClFujixManipHook) && m_pClient->m_Snap.m_pLocalCharacter)
+       if(g_Config.m_ClFujixSafeFreeze && m_pClient->m_Snap.m_pLocalCharacter)
        {
                vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
                vec2 Vel = GameClient()->m_PredictedChar.m_Vel;
@@ -400,33 +416,12 @@ void CControls::OnRender()
 
                bool FallingIntoFreeze = FreezeDist > 0 && FreezeDist <= g_Config.m_ClFujixSafeFreezeTrigger;
 
-               if((FallingIntoFreeze || g_Config.m_ClFujixManipHook) && !m_SafeFreezeActive)
+               if(FallingIntoFreeze && !m_SafeFreezeActive)
                        m_SafeFreezeActive = true;
 
                if(m_SafeFreezeActive)
                {
-                       vec2 HookTarget = Pos;
-                       for(int y = 1; y <= g_Config.m_ClFujixSafeFreezeTicks * 2; ++y)
-                       {
-                               for(int x = -2; x <= 2; ++x)
-                               {
-                                       vec2 Candidate = Pos + vec2(x * 32.0f, -y * 32.0f);
-                                       if(!Collision()->CheckPoint(Candidate))
-                                               continue;
-                                       int Tile = Collision()->GetTileIndex(Collision()->GetPureMapIndex(Candidate));
-                                       bool IsFreeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE;
-                                       if((!IsFreeze && Tile != TILE_NOHOOK) || IsFreeze)
-                                       {
-                                               if(IsFreeze)
-                                                       HookTarget = Candidate + vec2((Pos.x > Candidate.x ? -16.0f : 16.0f), 16.0f);
-                                               else
-                                                       HookTarget = Candidate + vec2(0.0f, 16.0f);
-                                               HookTarget.y -= g_Config.m_ClFujixManipHookHeight * 32.0f;
-                                               y = g_Config.m_ClFujixSafeFreezeTicks * 2 + 1;
-                                               break;
-                                       }
-                               }
-                       }
+                       vec2 HookTarget = FindSafeFreezeHook(Pos);
 
                        m_aInputData[g_Config.m_ClDummy].m_Hook = 1;
                        m_aMousePos[g_Config.m_ClDummy] = HookTarget - GameClient()->m_LocalCharacterPos;
@@ -443,7 +438,7 @@ void CControls::OnRender()
                                        break;
                                }
                        }
-                       if(CancelHook || (!FallingIntoFreeze && !g_Config.m_ClFujixManipHook))
+                       if(CancelHook || !FallingIntoFreeze)
                        {
                                m_SafeFreezeActive = false;
                                m_aInputData[g_Config.m_ClDummy].m_Hook = 0;

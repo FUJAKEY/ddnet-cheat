@@ -306,41 +306,9 @@
                         ],
                         "behavior": {
                                 "type": "bind",
-                                "label": "Manip hook",
+                                "label": "Autoplay",
                                 "label-type": "localized",
-                                "command": "toggle cl_fujix_maniphook 0 1"
-                        }
-                },
-                {
-                        "x": 650000,
-                        "y": 133333,
-                        "w": 100000,
-                        "h": 100000,
-                        "shape": "rect",
-                        "visibilities": [
-                                "extra-menu"
-                        ],
-                        "behavior": {
-                                "type": "bind",
-                                "label": "Height +",
-                                "label-type": "localized",
-                                "command": "fujix_maniphook_up"
-                        }
-                },
-                {
-                        "x": 650000,
-                        "y": 233333,
-                        "w": 100000,
-                        "h": 100000,
-                        "shape": "rect",
-                        "visibilities": [
-                                "extra-menu"
-                        ],
-                        "behavior": {
-                                "type": "bind",
-                                "label": "Height -",
-                                "label-type": "localized",
-                                "command": "fujix_maniphook_down"
+                                "command": "toggle cl_fujix_autoplay 0 1"
                         }
                 },
                 {
