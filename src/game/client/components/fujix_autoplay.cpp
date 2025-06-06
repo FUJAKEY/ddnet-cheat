@@ -8,6 +8,7 @@
 #include <queue>
 #include <algorithm>
 #include <limits>
+#include <game/gamecore.h>
 
 int CFujixAutoplay::Heuristic(int Index, int FinishIndex) const
 {
@@ -112,12 +113,42 @@ std::vector<int> CFujixAutoplay::FindPath(int StartIndex, int FinishIndex)
     return Path;
 }
 
+bool CFujixAutoplay::IsHookPathSafe(vec2 Pos, vec2 Vel, vec2 HookPos) const
+{
+    auto IsFreeze = [&](const vec2 &P) {
+        int T = Collision()->GetTileIndex(Collision()->GetPureMapIndex(P));
+        return T == TILE_FREEZE || T == TILE_DFREEZE || T == TILE_LFREEZE;
+    };
+
+    CTuningParams Tuning = GameClient()->m_PredictedChar.m_Tuning;
+    vec2 Dir = normalize(HookPos - Pos);
+
+    for(int i = 0; i < 10; i++)
+    {
+        vec2 HookVel = Dir * Tuning.m_HookDragAccel;
+        if(HookVel.y > 0)
+            HookVel.y *= 0.3f;
+        Vel += HookVel;
+        if(length(Vel) > Tuning.m_HookDragSpeed)
+            Vel = normalize(Vel) * Tuning.m_HookDragSpeed;
+        Vel.y += Tuning.m_Gravity;
+        Pos += Vel;
+
+        if(IsFreeze(Pos) || Collision()->CheckPoint(Pos))
+            return false;
+        if(distance(Pos, HookPos) < 32.0f)
+            break;
+    }
+    return true;
+}
+
 void CFujixAutoplay::OnMapLoad()
 {
     m_Path.clear();
     m_Current = 0;
     m_Hooking = false;
     m_HookTicks = 0;
+    m_HookTarget = vec2(0, 0);
     m_LastPathTick = 0;
     int Width = Collision()->GetWidth();
     int Height = Collision()->GetHeight();
@@ -207,6 +238,12 @@ void CFujixAutoplay::OnUpdate()
     bool Clear = Collision()->IntersectLineTeleHook(Pos, Target, nullptr, nullptr) == 0;
     if(!m_Hooking && Clear && (Obstructed || distance(Pos, Target) > 64.0f))
     {
+        vec2 Candidate = Target;
+        vec2 Vel = GameClient()->m_PredictedChar.m_Vel;
+        if(!IsHookPathSafe(Pos, Vel, Candidate))
+            Candidate = GameClient()->m_Controls.FindSafeFreezeHook(Pos);
+
+        m_HookTarget = Candidate;
         m_Hooking = true;
         m_HookTicks = 0;
     }
@@ -214,8 +251,9 @@ void CFujixAutoplay::OnUpdate()
     if(m_Hooking)
     {
         Input.m_Hook = 1;
+        GameClient()->m_Controls.m_aMousePos[g_Config.m_ClDummy] = m_HookTarget - GameClient()->m_LocalCharacterPos;
         m_HookTicks++;
-        if(m_HookTicks > 60 || distance(Pos, Target) < 24.0f)
+        if(m_HookTicks > 60 || distance(Pos, m_HookTarget) < 24.0f)
             m_Hooking = false;
     }
     else

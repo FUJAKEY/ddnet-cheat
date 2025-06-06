@@ -17,11 +17,13 @@ private:
     vec2 m_FinishPos;
     bool m_Hooking;
     int m_HookTicks;
+    vec2 m_HookTarget;
     bool m_HaveFinish;
     int m_LastPathTick;
 
     std::vector<int> FindPath(int StartIndex, int FinishIndex);
     int Heuristic(int Index, int FinishIndex) const;
+    bool IsHookPathSafe(vec2 Pos, vec2 Vel, vec2 HookPos) const;
 };
 
 #endif // GAME_CLIENT_COMPONENTS_FUJIX_AUTOPLAY_H
