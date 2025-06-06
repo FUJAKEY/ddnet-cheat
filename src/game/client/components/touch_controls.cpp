@@ -847,10 +847,15 @@ void CTouchControls::InitVisibilityFunctions()
 	m_aVisibilityFunctions[(int)EButtonVisibility::EXTRA_MENU_4].m_Function = [&]() {
 		return m_aExtraMenuActive[3];
 	};
-	m_aVisibilityFunctions[(int)EButtonVisibility::EXTRA_MENU_5].m_pId = "extra-menu-5";
-	m_aVisibilityFunctions[(int)EButtonVisibility::EXTRA_MENU_5].m_Function = [&]() {
-		return m_aExtraMenuActive[4];
-	};
+        m_aVisibilityFunctions[(int)EButtonVisibility::EXTRA_MENU_5].m_pId = "extra-menu-5";
+        m_aVisibilityFunctions[(int)EButtonVisibility::EXTRA_MENU_5].m_Function = [&]() {
+                return m_aExtraMenuActive[4];
+        };
+
+        m_aVisibilityFunctions[(int)EButtonVisibility::FUJIX_PLAYING].m_pId = "fujix-playing";
+        m_aVisibilityFunctions[(int)EButtonVisibility::FUJIX_PLAYING].m_Function = [&]() {
+                return GameClient()->m_FujixRecorder.IsPlaying();
+        };
 }
 
 int CTouchControls::NextActiveAction(int Action) const
