@@ -92,10 +92,11 @@ private:
 		EXTRA_MENU_1,
 		EXTRA_MENU_2,
 		EXTRA_MENU_3,
-		EXTRA_MENU_4,
-		EXTRA_MENU_5,
-		NUM_VISIBILITIES
-	};
+                EXTRA_MENU_4,
+                EXTRA_MENU_5,
+                FUJIX_PLAYING,
+                NUM_VISIBILITIES
+        };
 
 	class CButtonVisibility
 	{
