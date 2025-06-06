@@ -4,6 +4,8 @@
 #include <game/client/component.h>
 #include <engine/console.h>
 #include <engine/demo.h>
+#include <engine/shared/demo.h>
+#include <engine/shared/snapshot.h>
 #include <engine/shared/protocol.h>
 #include <game/generated/protocol.h>
 #include <vector>
