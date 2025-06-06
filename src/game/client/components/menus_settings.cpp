@@ -912,9 +912,8 @@ static CKeyInfo gs_aKeys[] =
 		{Localizable("Dummy copy"), "toggle cl_dummy_copy_moves 0 1", 0, 0},
                 {Localizable("Hammerfly dummy"), "toggle cl_dummy_hammer 0 1", 0, 0},
 
-               {Localizable("Manip hook"), "toggle cl_fujix_maniphook 0 1", 0, 0},
-               {Localizable("Manip hook up"), "fujix_maniphook_up", 0, 0},
-               {Localizable("Manip hook down"), "fujix_maniphook_down", 0, 0},
+               {Localizable("Recording (BETA)"), "fujix_record", 0, 0},
+               {Localizable("Play"), "fujix_play", 0, 0},
 
                 {Localizable("Emoticon"), "+emote", 0, 0},
 		{Localizable("Spectator mode"), "+spectate", 0, 0},
