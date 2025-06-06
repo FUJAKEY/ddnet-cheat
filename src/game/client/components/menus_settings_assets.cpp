@@ -431,10 +431,8 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
                MainView.HSplitTop(20.0f, &Row, &MainView);
                Ui()->DoScrollbarOption(&g_Config.m_ClFujixSafeFreezeTrigger, &g_Config.m_ClFujixSafeFreezeTrigger, &Row, "Trigger", 1, 20, &CUi::ms_LinearScrollbarScale);
                MainView.HSplitTop(20.0f, &Row, &MainView);
-               if(DoButton_CheckBox(&g_Config.m_ClFujixManipHook, "Manip hook", g_Config.m_ClFujixManipHook, &Row))
-                       g_Config.m_ClFujixManipHook ^= 1;
-               MainView.HSplitTop(20.0f, &Row, &MainView);
-               Ui()->DoScrollbarOption(&g_Config.m_ClFujixManipHookHeight, &g_Config.m_ClFujixManipHookHeight, &Row, "Height", -20, 20, &CUi::ms_LinearScrollbarScale);
+               if(DoButton_CheckBox(&g_Config.m_ClFujixAutoplay, "Autoplay", g_Config.m_ClFujixAutoplay, &Row))
+                       g_Config.m_ClFujixAutoplay ^= 1;
                return;
        }
 
