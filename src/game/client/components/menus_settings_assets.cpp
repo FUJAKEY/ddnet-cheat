@@ -424,17 +424,20 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
        {
                CUIRect Row;
                MainView.HSplitTop(20.0f, &Row, &MainView);
-               if(DoButton_CheckBox(&g_Config.m_ClFujixSafeFreeze, "Safe freeze", g_Config.m_ClFujixSafeFreeze, &Row))
-                       g_Config.m_ClFujixSafeFreeze ^= 1;
+               TextRender()->TextColor(ColorRGBA(0, 0, 0, 1));
+               Ui()->DoLabel(&Row, Localize("Safe freeze"), Row.h, TEXTALIGN_ML);
                MainView.HSplitTop(20.0f, &Row, &MainView);
-               Ui()->DoScrollbarOption(&g_Config.m_ClFujixSafeFreezeTicks, &g_Config.m_ClFujixSafeFreezeTicks, &Row, "Ticks", 1, 20, &CUi::ms_LinearScrollbarScale);
+               Ui()->DoLabel(&Row, Localize("Ticks"), Row.h, TEXTALIGN_ML);
                MainView.HSplitTop(20.0f, &Row, &MainView);
-               Ui()->DoScrollbarOption(&g_Config.m_ClFujixSafeFreezeTrigger, &g_Config.m_ClFujixSafeFreezeTrigger, &Row, "Trigger", 1, 20, &CUi::ms_LinearScrollbarScale);
+               Ui()->DoLabel(&Row, Localize("Trigger"), Row.h, TEXTALIGN_ML);
+               TextRender()->TextColor(TextRender()->DefaultTextColor());
+               static CButtonContainer s_PlayBtn;
                MainView.HSplitTop(20.0f, &Row, &MainView);
-               if(DoButton_CheckBox(&g_Config.m_ClFujixManipHook, "Manip hook", g_Config.m_ClFujixManipHook, &Row))
-                       g_Config.m_ClFujixManipHook ^= 1;
+               if(DoButton_CheckBox(&g_Config.m_ClFujixRecord, "Recording (BETA)", g_Config.m_ClFujixRecord, &Row))
+                       Console()->ExecuteLine("fujix_record");
                MainView.HSplitTop(20.0f, &Row, &MainView);
-               Ui()->DoScrollbarOption(&g_Config.m_ClFujixManipHookHeight, &g_Config.m_ClFujixManipHookHeight, &Row, "Height", -20, 20, &CUi::ms_LinearScrollbarScale);
+               if(DoButton_Menu(&s_PlayBtn, Localize("Play"), 0, &Row))
+                       Console()->ExecuteLine("fujix_play");
                return;
        }
 

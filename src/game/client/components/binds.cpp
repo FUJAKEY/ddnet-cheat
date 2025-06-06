@@ -299,9 +299,8 @@ void CBinds::SetDefaults()
         Bind(KEY_K, "kill");
         Bind(KEY_Q, "say /spec");
         Bind(KEY_P, "say /pause");
-       Bind(KEY_F11, "toggle cl_fujix_maniphook 0 1");
-       Bind(KEY_F6, "fujix_maniphook_down");
-       Bind(KEY_F7, "fujix_maniphook_up");
+       Bind(KEY_F9, "fujix_record");
+       Bind(KEY_F8, "fujix_play");
 
         g_Config.m_ClDDRaceBindsSet = 0;
         SetDDRaceBinds(false);
