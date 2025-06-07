@@ -303,11 +303,18 @@ int CControls::SnapInput(int *pData)
 		}
 
 		// set direction
-		m_aInputData[g_Config.m_ClDummy].m_Direction = 0;
-		if(m_aInputDirectionLeft[g_Config.m_ClDummy] && !m_aInputDirectionRight[g_Config.m_ClDummy])
-			m_aInputData[g_Config.m_ClDummy].m_Direction = -1;
-		if(!m_aInputDirectionLeft[g_Config.m_ClDummy] && m_aInputDirectionRight[g_Config.m_ClDummy])
-			m_aInputData[g_Config.m_ClDummy].m_Direction = 1;
+               m_aInputData[g_Config.m_ClDummy].m_Direction = 0;
+               if(m_aInputDirectionLeft[g_Config.m_ClDummy] && !m_aInputDirectionRight[g_Config.m_ClDummy])
+                       m_aInputData[g_Config.m_ClDummy].m_Direction = -1;
+               if(!m_aInputDirectionLeft[g_Config.m_ClDummy] && m_aInputDirectionRight[g_Config.m_ClDummy])
+                       m_aInputData[g_Config.m_ClDummy].m_Direction = 1;
+
+               if(g_Config.m_ClTouchHammerSpam)
+               {
+                       m_aInputData[g_Config.m_ClDummy].m_Fire++;
+                       m_aInputData[g_Config.m_ClDummy].m_Fire |= 1;
+                       m_aInputData[g_Config.m_ClDummy].m_Fire &= INPUT_STATE_MASK;
+               }
 
 		// dummy copy moves
 		if(g_Config.m_ClDummyCopyMoves)
