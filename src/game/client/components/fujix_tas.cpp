@@ -53,7 +53,8 @@ void CFujixTas::SaveState()
 {
     if(m_pClient->m_Snap.m_pLocalCharacter)
     {
-        m_SavedCore = m_pClient->m_PredictedChar.m_Core;
+        // +++ ИСПРАВЛЕНИЕ: Копируем весь объект предсказанного персонажа целиком +++
+        m_SavedCharState = m_pClient->m_PredictedChar;
         m_StateSaved = true;
         Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix_tas", "State saved.");
     }
@@ -69,9 +70,8 @@ void CFujixTas::LoadState()
     {
         if(m_pClient->m_Snap.m_pLocalCharacter)
         {
-            // +++ ИСПРАВЛЕНИЕ: Перезаписываем только ядро предсказанного персонажа.
-            // Этого достаточно и это безопасно.
-            m_pClient->m_PredictedChar.m_Core = m_SavedCore;
+            // +++ ИСПРАВЛЕНИЕ: Восстанавливаем состояние, копируя сохраненный объект обратно +++
+            m_pClient->m_PredictedChar = m_SavedCharState;
             Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix_tas", "State loaded.");
         }
         else
