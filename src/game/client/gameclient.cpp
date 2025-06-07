@@ -125,15 +125,16 @@ void CGameClient::OnConsoleInit()
 					      &m_Sounds,
 					      &m_Voting,
 					      &m_Particles, // doesn't render anything, just updates all the particles
-					      &m_RaceDemo,
-					      &m_MapSounds,
-					      &m_Background, // render instead of m_MapLayersBackground when g_Config.m_ClOverlayEntities == 100
-					      &m_MapLayersBackground, // first to render
-					      &m_Particles.m_RenderTrail,
-					      &m_Particles.m_RenderTrailExtra,
-					      &m_Items,
-					      &m_Ghost,
-					      &m_Players,
+                                              &m_RaceDemo,
+                                              &m_MapSounds,
+                                              &m_Background, // render instead of m_MapLayersBackground when g_Config.m_ClOverlayEntities == 100
+                                              &m_MapLayersBackground, // first to render
+                                              &m_Particles.m_RenderTrail,
+                                              &m_Particles.m_RenderTrailExtra,
+                                              &m_Items,
+                                              &m_Ghost,
+                                             &m_FujixTas,
+                                              &m_Players,
 					      &m_MapLayersForeground,
 					      &m_Particles.m_RenderExplosions,
 					      &m_NamePlates,
@@ -511,10 +512,20 @@ void CGameClient::OnDummySwap()
 
 int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 {
-	if(!Dummy)
-	{
-		return m_Controls.SnapInput(pData);
-	}
+       if(!Dummy)
+       {
+               CNetObj_PlayerInput TasInput;
+               if(m_FujixTas.FetchPlaybackInput(&TasInput))
+               {
+                       mem_copy(pData, &TasInput, sizeof(TasInput));
+                       return sizeof(TasInput);
+               }
+
+               int Size = m_Controls.SnapInput(pData);
+               if(Size > 0)
+                       m_FujixTas.RecordInput((const CNetObj_PlayerInput *)pData, Client()->PredGameTick(g_Config.m_ClDummy));
+               return Size;
+       }
 	if(m_aLocalIds[!g_Config.m_ClDummy] < 0)
 	{
 		return 0;
