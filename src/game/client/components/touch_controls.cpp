@@ -599,7 +599,28 @@ int CTouchControls::CJoystickFireTouchButtonBehavior::SelectedAction() const
 // Joystick that always uses hook.
 int CTouchControls::CJoystickHookTouchButtonBehavior::SelectedAction() const
 {
-	return ACTION_HOOK;
+        return ACTION_HOOK;
+}
+
+// Button that toggles hammer spam on hold.
+CTouchControls::CButtonLabel CTouchControls::CHammerSpamTouchButtonBehavior::GetLabel() const
+{
+       return {CButtonLabel::EType::ICON, "\xE2\x9A\x92"};
+}
+
+void CTouchControls::CHammerSpamTouchButtonBehavior::OnActivate()
+{
+       g_Config.m_ClTouchHammerSpam = 1;
+}
+
+void CTouchControls::CHammerSpamTouchButtonBehavior::OnDeactivate()
+{
+       g_Config.m_ClTouchHammerSpam = 0;
+}
+
+void CTouchControls::CHammerSpamTouchButtonBehavior::WriteToConfiguration(CJsonWriter *pWriter)
+{
+       CPredefinedTouchButtonBehavior::WriteToConfiguration(pWriter);
 }
 
 // Bind button behavior that executes a command like a bind.
@@ -1484,8 +1505,9 @@ std::unique_ptr<CTouchControls::CPredefinedTouchButtonBehavior> CTouchControls::
 		{CUseActionTouchButtonBehavior::BEHAVIOR_ID, [](const json_value *pBehavior) { return std::make_unique<CUseActionTouchButtonBehavior>(); }},
 		{CJoystickActionTouchButtonBehavior::BEHAVIOR_ID, [](const json_value *pBehavior) { return std::make_unique<CJoystickActionTouchButtonBehavior>(); }},
 		{CJoystickAimTouchButtonBehavior::BEHAVIOR_ID, [](const json_value *pBehavior) { return std::make_unique<CJoystickAimTouchButtonBehavior>(); }},
-		{CJoystickFireTouchButtonBehavior::BEHAVIOR_ID, [](const json_value *pBehavior) { return std::make_unique<CJoystickFireTouchButtonBehavior>(); }},
-		{CJoystickHookTouchButtonBehavior::BEHAVIOR_ID, [](const json_value *pBehavior) { return std::make_unique<CJoystickHookTouchButtonBehavior>(); }}};
+               {CJoystickFireTouchButtonBehavior::BEHAVIOR_ID, [](const json_value *pBehavior) { return std::make_unique<CJoystickFireTouchButtonBehavior>(); }},
+               {CJoystickHookTouchButtonBehavior::BEHAVIOR_ID, [](const json_value *pBehavior) { return std::make_unique<CJoystickHookTouchButtonBehavior>(); }},
+               {CHammerSpamTouchButtonBehavior::BEHAVIOR_ID, [](const json_value *pBehavior) { return std::make_unique<CHammerSpamTouchButtonBehavior>(); }}};
 	for(const CBehaviorFactory &BehaviorFactory : BEHAVIOR_FACTORIES)
 	{
 		if(str_comp(PredefinedId.u.string.ptr, BehaviorFactory.m_pId) == 0)

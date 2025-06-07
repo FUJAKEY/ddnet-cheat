@@ -3,11 +3,11 @@
 
 #include <game/client/component.h>
 #include <engine/console.h>
-#include <engine/demo.h>
+#include <base/system.h>
+#include <engine/storage.h>
 #include <engine/shared/protocol.h>
 #include <game/generated/protocol.h>
 #include <vector>
-#include <memory>
 
 class CFujixRecorder : public CComponent
 {
@@ -20,8 +20,19 @@ public:
 private:
     bool m_Recording = false;
     bool m_Playing = false;
-    bool m_Loading = false;
     int m_PlayIndex = 0;
+
+    struct CKjmHeader
+    {
+        char m_aMarker[4]; // "KJM1"
+        int m_NumTicks;
+    };
+
+    struct CKjmTick
+    {
+        unsigned char m_Action;
+        CNetObj_PlayerInput m_Input;
+    };
 
     struct CInputFrame
     {
@@ -29,24 +40,23 @@ private:
     };
     std::vector<CInputFrame> m_vInputs;
 
-    struct CInputListener : public CDemoPlayer::IListener
-    {
-        CFujixRecorder *m_pRecorder = nullptr;
-        void OnDemoPlayerSnapshot(void *, int) override {}
-        void OnDemoPlayerMessage(void *pData, int Size) override;
-    } m_Listener;
+    CNetObj_PlayerInput m_LastPlayInput{};
+    bool m_HaveLastPlayInput = false;
 
-    std::unique_ptr<CSnapshotDelta> m_pDelta;
-    std::unique_ptr<CDemoPlayer> m_pPlayer;
+    IOHANDLE m_pFile = nullptr;
+    int m_NumTicks = 0;
+    int m_LastRecordedTick = -1;
 
     static void ConRecord(IConsole::IResult *pResult, void *pUserData);
     static void ConPlay(IConsole::IResult *pResult, void *pUserData);
 
     void ToggleRecord();
     void StartPlay();
-    bool BeginLoad(const char *pFilename);
+    bool LoadRecording(const char *pFilename);
 
 public:
+    int SnapInput(int *pData);
+    void RecordInput(int Tick, const CNetObj_PlayerInput &Input);
     bool IsRecording() const { return m_Recording; }
     bool IsPlaying() const { return m_Playing; }
 };
