@@ -7,8 +7,9 @@
 #include <game/generated/protocol.h>
 #include <vector>
 
-// +++ ИСПРАВЛЕНИЕ: Используем правильный путь для подключения файла из той же директории +++
-#include "characters.h"
+// +++ ИСПРАВЛЕНИЕ: Используем предварительное объявление вместо #include +++
+// Это говорит компилятору, что класс CCharacter существует, не раскрывая его деталей.
+class CCharacter;
 
 class CFujixTas : public CComponent
 {
@@ -34,7 +35,9 @@ private:
 
     // --- Переменная для сохранения состояния ---
     bool m_StateSaved;
-    CCharacter m_SavedCharState;
+    // +++ ИСПРАВЛЕНИЕ: Храним указатель на состояние, а не сам объект,
+    // чтобы избежать необходимости знать его полный размер здесь.
+    CCharacter *m_pSavedCharState;
 
     void GetPath(char *pBuf, int Size) const;
     void RecordEntry(const CNetObj_PlayerInput *pInput, int Tick);
@@ -48,6 +51,8 @@ private:
 
 public:
     CFujixTas();
+    // +++ ИСПРАВЛЕНИЕ: Добавляем деструктор для очистки памяти +++
+    virtual ~CFujixTas();
     virtual int Sizeof() const override { return sizeof(*this); }
 
     virtual void OnConsoleInit() override;
