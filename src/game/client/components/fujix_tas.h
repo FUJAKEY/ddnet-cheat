@@ -6,7 +6,9 @@
 #include <engine/console.h>
 #include <game/generated/protocol.h>
 #include <vector>
-#include <game/collision.h> // Необходимо для CCharacterCore
+
+// +++ ИСПРАВЛЕНИЕ: Добавляем необходимый заголовок для CCharacterCore +++
+#include <game/gamecore.h>
 
 class CFujixTas : public CComponent
 {
@@ -30,10 +32,9 @@ private:
     std::vector<SEntry> m_vEntries;
     int m_PlayIndex;
 
-    // +++ НОВОЕ: Переменные для сохранения состояния +++
+    // --- Переменные для сохранения состояния ---
     bool m_StateSaved;
-    CCharacterCore m_SavedCore;
-    // ---
+    CCharacterCore m_SavedCore; // Теперь этот тип известен компилятору
 
     void GetPath(char *pBuf, int Size) const;
     void RecordEntry(const CNetObj_PlayerInput *pInput, int Tick);
@@ -42,8 +43,6 @@ private:
     // --- Консольные команды ---
     static void ConRecord(IConsole::IResult *pResult, void *pUserData);
     static void ConPlay(IConsole::IResult *pResult, void *pUserData);
-    
-    // +++ НОВЫЕ консольные команды для состояния +++
     static void ConSaveState(IConsole::IResult *pResult, void *pUserData);
     static void ConLoadState(IConsole::IResult *pResult, void *pUserData);
 
@@ -64,10 +63,9 @@ public:
     bool FetchPlaybackInput(CNetObj_PlayerInput *pInput);
     void RecordInput(const CNetObj_PlayerInput *pInput, int Tick);
 
-    // +++ НОВЫЕ функции для работы с состоянием +++
+    // --- Функции для работы с состоянием ---
     void SaveState();
     void LoadState();
-    // ---
 };
 
 #endif // GAME_CLIENT_COMPONENTS_FUJIX_TAS_H
