@@ -6,8 +6,8 @@
 #include <engine/client.h>
 #include <game/client/gameclient.h>
 
-// +++ ИСПРАВЛЕНИЕ: Полный заголовок включается здесь, в .cpp файле +++
-#include "characters.h"
+// +++ ИСПРАВЛЕНИЕ: Включаем заголовок, используя полный путь от корня 'src' +++
+#include <game/client/components/characters.h>
 
 const char *CFujixTas::ms_pFujixDir = "fujix";
 
@@ -21,11 +21,9 @@ CFujixTas::CFujixTas()
     m_PlayIndex = 0;
     m_aFilename[0] = '\0';
     m_StateSaved = false;
-    // Инициализируем указатель как нулевой
     m_pSavedCharState = nullptr;
 }
 
-// +++ ИСПРАВЛЕНИЕ: Реализуем деструктор для освобождения памяти +++
 CFujixTas::~CFujixTas()
 {
     delete m_pSavedCharState;
@@ -65,9 +63,7 @@ void CFujixTas::SaveState()
 {
     if(m_pClient->m_Snap.m_pLocalCharacter)
     {
-        // Освобождаем старую память, если она была выделена
         delete m_pSavedCharState;
-        // Выделяем новую память и копируем туда состояние
         m_pSavedCharState = new CCharacter();
         *m_pSavedCharState = m_pClient->m_PredictedChar;
 
@@ -220,9 +216,9 @@ void CFujixTas::OnConsoleInit()
 
 void CFujixTas::OnMapLoad()
 {
+    // +++ ИСПРАВЛЕНИЕ: Убрана опечатка в имени переменной +++
     Storage()->CreateFolder(ms_pFujixDir, IStorage::TYPE_SAVE);
     
-    // Освобождаем память при смене карты
     delete m_pSavedCharState;
     m_pSavedCharState = nullptr;
     m_StateSaved = false;
