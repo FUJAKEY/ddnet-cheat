@@ -6,8 +6,8 @@
 #include <engine/client.h>
 #include <game/client/gameclient.h>
 
-// +++ ИСПРАВЛЕНИЕ: Включаем заголовок, используя полный путь от корня 'src' +++
-#include <game/client/components/characters.h>
+// +++ ИСПРАВЛЕНИЕ: МЫ ПОЛНОСТЬЮ УБИРАЕМ ЛИШНИЙ INCLUDE. +++
+// Определение CCharacter уже доступно через <game/client/gameclient.h>
 
 const char *CFujixTas::ms_pFujixDir = "fujix";
 
@@ -64,6 +64,7 @@ void CFujixTas::SaveState()
     if(m_pClient->m_Snap.m_pLocalCharacter)
     {
         delete m_pSavedCharState;
+        // Так как CCharacter уже полностью определен, эта строка скомпилируется
         m_pSavedCharState = new CCharacter();
         *m_pSavedCharState = m_pClient->m_PredictedChar;
 
@@ -216,7 +217,6 @@ void CFujixTas::OnConsoleInit()
 
 void CFujixTas::OnMapLoad()
 {
-    // +++ ИСПРАВЛЕНИЕ: Убрана опечатка в имени переменной +++
     Storage()->CreateFolder(ms_pFujixDir, IStorage::TYPE_SAVE);
     
     delete m_pSavedCharState;
