@@ -7,8 +7,8 @@
 #include <game/generated/protocol.h>
 #include <vector>
 
-// +++ ИСПРАВЛЕНИЕ: Включаем полный заголовок для CCharacter, а не только для его ядра +++
-#include <game/client/components/characters.h>
+// +++ ИСПРАВЛЕНИЕ: Используем правильный путь для подключения файла из той же директории +++
+#include "characters.h"
 
 class CFujixTas : public CComponent
 {
@@ -32,9 +32,9 @@ private:
     std::vector<SEntry> m_vEntries;
     int m_PlayIndex;
 
-    // +++ ИСПРАВЛЕНИЕ: Сохраняем весь объект CCharacter, а не только CCharacterCore +++
+    // --- Переменная для сохранения состояния ---
     bool m_StateSaved;
-    CCharacter m_SavedCharState; // Переменная для хранения полного состояния персонажа
+    CCharacter m_SavedCharState;
 
     void GetPath(char *pBuf, int Size) const;
     void RecordEntry(const CNetObj_PlayerInput *pInput, int Tick);
