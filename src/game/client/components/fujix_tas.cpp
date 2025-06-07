@@ -6,6 +6,9 @@
 #include <engine/client.h>
 #include <game/client/gameclient.h>
 
+// +++ ИСПРАВЛЕНИЕ: Полный заголовок включается здесь, в .cpp файле +++
+#include "characters.h"
+
 const char *CFujixTas::ms_pFujixDir = "fujix";
 
 CFujixTas::CFujixTas()
@@ -18,7 +21,16 @@ CFujixTas::CFujixTas()
     m_PlayIndex = 0;
     m_aFilename[0] = '\0';
     m_StateSaved = false;
+    // Инициализируем указатель как нулевой
+    m_pSavedCharState = nullptr;
 }
+
+// +++ ИСПРАВЛЕНИЕ: Реализуем деструктор для освобождения памяти +++
+CFujixTas::~CFujixTas()
+{
+    delete m_pSavedCharState;
+}
+
 
 void CFujixTas::GetPath(char *pBuf, int Size) const
 {
@@ -53,8 +65,12 @@ void CFujixTas::SaveState()
 {
     if(m_pClient->m_Snap.m_pLocalCharacter)
     {
-        // +++ ИСПРАВЛЕНИЕ: Копируем весь объект предсказанного персонажа целиком +++
-        m_SavedCharState = m_pClient->m_PredictedChar;
+        // Освобождаем старую память, если она была выделена
+        delete m_pSavedCharState;
+        // Выделяем новую память и копируем туда состояние
+        m_pSavedCharState = new CCharacter();
+        *m_pSavedCharState = m_pClient->m_PredictedChar;
+
         m_StateSaved = true;
         Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix_tas", "State saved.");
     }
@@ -66,12 +82,11 @@ void CFujixTas::SaveState()
 
 void CFujixTas::LoadState()
 {
-    if(m_StateSaved)
+    if(m_StateSaved && m_pSavedCharState)
     {
         if(m_pClient->m_Snap.m_pLocalCharacter)
         {
-            // +++ ИСПРАВЛЕНИЕ: Восстанавливаем состояние, копируя сохраненный объект обратно +++
-            m_pClient->m_PredictedChar = m_SavedCharState;
+            m_pClient->m_PredictedChar = *m_pSavedCharState;
             Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix_tas", "State loaded.");
         }
         else
@@ -206,5 +221,9 @@ void CFujixTas::OnConsoleInit()
 void CFujixTas::OnMapLoad()
 {
     Storage()->CreateFolder(ms_pFujixDir, IStorage::TYPE_SAVE);
+    
+    // Освобождаем память при смене карты
+    delete m_pSavedCharState;
+    m_pSavedCharState = nullptr;
     m_StateSaved = false;
 }
