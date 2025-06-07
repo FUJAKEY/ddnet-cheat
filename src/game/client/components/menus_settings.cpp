@@ -1961,9 +1961,10 @@ void CMenus::RenderSettings(CUIRect MainView)
 		Localize("Appearance"),
 		Localize("Controls"),
 		Localize("Graphics"),
-		Localize("Sound"),
-		Localize("DDNet"),
-		Localize("Assets")};
+               Localize("Sound"),
+               Localize("DDNet"),
+               Localize("Assets"),
+               "FUJIX"};
 	static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 
 	for(int i = 0; i < SETTINGS_LENGTH; i++)
@@ -2022,12 +2023,17 @@ void CMenus::RenderSettings(CUIRect MainView)
 		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_DDNET);
 		RenderSettingsDDNet(MainView);
 	}
-	else if(g_Config.m_UiSettingsPage == SETTINGS_ASSETS)
-	{
-		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
-		RenderSettingsCustom(MainView);
-	}
-	else
+       else if(g_Config.m_UiSettingsPage == SETTINGS_ASSETS)
+       {
+               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
+               RenderSettingsCustom(MainView);
+       }
+       else if(g_Config.m_UiSettingsPage == SETTINGS_FUJIX)
+       {
+               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
+               RenderSettingsFujix(MainView);
+       }
+       else
 	{
 		dbg_assert(false, "ui_settings_page invalid");
 	}
@@ -3453,6 +3459,24 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 #endif
+}
+
+void CMenus::RenderSettingsFujix(CUIRect MainView)
+{
+       CUIRect RecordButton, PlayButton;
+       MainView.HSplitTop(10.0f, nullptr, &MainView);
+       MainView.HSplitTop(ms_ButtonHeight, &RecordButton, &MainView);
+       MainView.HSplitTop(5.0f, nullptr, &MainView);
+       MainView.HSplitTop(ms_ButtonHeight, &PlayButton, &MainView);
+
+       static CButtonContainer s_RecordBtn, s_PlayBtn;
+       const char *pRecLabel = GameClient()->m_FujixTas.IsRecording() ? Localize("Stop") : Localize("Record");
+       const char *pPlayLabel = GameClient()->m_FujixTas.IsPlaying() ? Localize("Stop") : Localize("Play");
+
+       if(DoButton_Menu(&s_RecordBtn, pRecLabel, 0, &RecordButton))
+               Console()->ExecuteLine("fujix_record");
+       if(DoButton_Menu(&s_PlayBtn, pPlayLabel, 0, &PlayButton))
+               Console()->ExecuteLine("fujix_play");
 }
 
 CUi::EPopupMenuFunctionResult CMenus::PopupMapPicker(void *pContext, CUIRect View, bool Active)

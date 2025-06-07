@@ -724,10 +724,11 @@ public:
 		SETTINGS_CONTROLS,
 		SETTINGS_GRAPHICS,
 		SETTINGS_SOUND,
-		SETTINGS_DDNET,
-		SETTINGS_ASSETS,
+               SETTINGS_DDNET,
+               SETTINGS_ASSETS,
+               SETTINGS_FUJIX,
 
-		SETTINGS_LENGTH,
+               SETTINGS_LENGTH,
 
 		BIG_TAB_NEWS = 0,
 		BIG_TAB_INTERNET,
@@ -851,8 +852,9 @@ private:
 	void RenderGhost(CUIRect MainView);
 
 	// found in menus_settings.cpp
-	void RenderSettingsDDNet(CUIRect MainView);
-	void RenderSettingsAppearance(CUIRect MainView);
+        void RenderSettingsDDNet(CUIRect MainView);
+       void RenderSettingsFujix(CUIRect MainView);
+        void RenderSettingsAppearance(CUIRect MainView);
 	bool RenderHslaScrollbars(CUIRect *pRect, unsigned int *pColor, bool Alpha, float DarkestLight);
 
 	CServerProcess m_ServerProcess;
