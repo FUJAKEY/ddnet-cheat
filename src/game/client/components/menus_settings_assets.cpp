@@ -29,10 +29,11 @@ enum
 	ASSETS_TAB_ENTITIES = 0,
 	ASSETS_TAB_GAME = 1,
 	ASSETS_TAB_EMOTICONS = 2,
-	ASSETS_TAB_PARTICLES = 3,
-	ASSETS_TAB_HUD = 4,
-	ASSETS_TAB_EXTRAS = 5,
-	NUMBER_OF_ASSETS_TABS = 6,
+        ASSETS_TAB_PARTICLES = 3,
+        ASSETS_TAB_HUD = 4,
+        ASSETS_TAB_EXTRAS = 5,
+        ASSETS_TAB_FUJIX = 6,
+        NUMBER_OF_ASSETS_TABS = 7,
 };
 
 void CMenus::LoadEntities(SCustomEntities *pEntitiesItem, void *pUser)
@@ -217,11 +218,11 @@ static std::vector<const CMenus::SCustomHud *> gs_vpSearchHudList;
 static std::vector<const CMenus::SCustomExtras *> gs_vpSearchExtrasList;
 
 static bool gs_aInitCustomList[NUMBER_OF_ASSETS_TABS] = {
-	true,
+       true, false, false, false, false, false, false,
 };
 
 static size_t gs_aCustomListSize[NUMBER_OF_ASSETS_TABS] = {
-	0,
+       0, 0, 0, 0, 0, 0, 0,
 };
 
 static CLineInputBuffered<64> s_aFilterInputs[NUMBER_OF_ASSETS_TABS];
@@ -238,12 +239,14 @@ static const CMenus::SCustomItem *GetCustomItem(int CurTab, size_t Index)
 		return gs_vpSearchEmoticonsList[Index];
 	else if(CurTab == ASSETS_TAB_PARTICLES)
 		return gs_vpSearchParticlesList[Index];
-	else if(CurTab == ASSETS_TAB_HUD)
-		return gs_vpSearchHudList[Index];
-	else if(CurTab == ASSETS_TAB_EXTRAS)
-		return gs_vpSearchExtrasList[Index];
+        else if(CurTab == ASSETS_TAB_HUD)
+                return gs_vpSearchHudList[Index];
+        else if(CurTab == ASSETS_TAB_EXTRAS)
+                return gs_vpSearchExtrasList[Index];
+        else if(CurTab == ASSETS_TAB_FUJIX)
+                return nullptr;
 
-	return nullptr;
+        return nullptr;
 }
 
 template<typename TName>
@@ -356,10 +359,11 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	const char *apTabNames[NUMBER_OF_ASSETS_TABS] = {
 		Localize("Entities"),
 		Localize("Game"),
-		Localize("Emoticons"),
-		Localize("Particles"),
-		Localize("HUD"),
-		Localize("Extras")};
+               Localize("Emoticons"),
+               Localize("Particles"),
+               Localize("HUD"),
+               Localize("Extras"),
+               "FUJIX"};
 
 	for(int Tab = ASSETS_TAB_ENTITIES; Tab < NUMBER_OF_ASSETS_TABS; ++Tab)
 	{
@@ -411,10 +415,14 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	{
 		InitAssetList(m_vHudList, "assets/hud", "hud", HudScan, Graphics(), Storage(), &User);
 	}
-	else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
-	{
-		InitAssetList(m_vExtrasList, "assets/extras", "extras", ExtrasScan, Graphics(), Storage(), &User);
-	}
+        else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+        {
+                InitAssetList(m_vExtrasList, "assets/extras", "extras", ExtrasScan, Graphics(), Storage(), &User);
+        }
+        else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+        {
+                // no assets to load
+        }
 
 	MainView.HSplitTop(10.0f, nullptr, &MainView);
 
@@ -454,11 +462,15 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		{
 			ListSize = InitSearchList(gs_vpSearchHudList, m_vHudList);
 		}
-		else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
-		{
-			ListSize = InitSearchList(gs_vpSearchExtrasList, m_vExtrasList);
-		}
-		gs_aInitCustomList[s_CurCustomTab] = false;
+               else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+               {
+                       ListSize = InitSearchList(gs_vpSearchExtrasList, m_vExtrasList);
+               }
+               else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+               {
+                        ListSize = 0;
+               }
+               gs_aInitCustomList[s_CurCustomTab] = false;
 		gs_aCustomListSize[s_CurCustomTab] = ListSize;
 	}
 
@@ -490,15 +502,20 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	{
 		SearchListSize = gs_vpSearchHudList.size();
 	}
-	else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
-	{
-		SearchListSize = gs_vpSearchExtrasList.size();
-	}
+       else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+       {
+               SearchListSize = gs_vpSearchExtrasList.size();
+       }
+       else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+       {
+               SearchListSize = 0;
+       }
 
-	static CListBox s_ListBox;
-	s_ListBox.DoStart(TextureHeight + 15.0f + 10.0f + Margin, SearchListSize, CustomList.w / (Margin + TextureWidth), 1, OldSelected, &CustomList, false);
-	for(size_t i = 0; i < SearchListSize; ++i)
-	{
+       static CListBox s_ListBox;
+       if(s_CurCustomTab != ASSETS_TAB_FUJIX)
+               s_ListBox.DoStart(TextureHeight + 15.0f + 10.0f + Margin, SearchListSize, CustomList.w / (Margin + TextureWidth), 1, OldSelected, &CustomList, false);
+       for(size_t i = 0; i < SearchListSize && s_CurCustomTab != ASSETS_TAB_FUJIX; ++i)
+       {
 		const SCustomItem *pItem = GetCustomItem(s_CurCustomTab, i);
 		if(pItem == nullptr)
 			continue;
@@ -557,9 +574,9 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		}
 	}
 
-	const int NewSelected = s_ListBox.DoEnd();
-	if(OldSelected != NewSelected)
-	{
+       const int NewSelected = s_CurCustomTab != ASSETS_TAB_FUJIX ? s_ListBox.DoEnd() : -1;
+       if(s_CurCustomTab != ASSETS_TAB_FUJIX && OldSelected != NewSelected)
+       {
 		if(GetCustomItem(s_CurCustomTab, NewSelected)->m_aName[0] != '\0')
 		{
 			if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
@@ -595,24 +612,26 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		}
 	}
 
-	// Quick search
-	MainView.HSplitBottom(ms_ButtonHeight, &MainView, &QuickSearch);
-	QuickSearch.VSplitLeft(220.0f, &QuickSearch, &DirectoryButton);
-	QuickSearch.HSplitTop(5.0f, nullptr, &QuickSearch);
-	if(Ui()->DoEditBox_Search(&s_aFilterInputs[s_CurCustomTab], &QuickSearch, 14.0f, !Ui()->IsPopupOpen() && !m_pClient->m_GameConsole.IsActive()))
-	{
-		gs_aInitCustomList[s_CurCustomTab] = true;
-	}
+       if(s_CurCustomTab != ASSETS_TAB_FUJIX)
+       {
+               // Quick search
+               MainView.HSplitBottom(ms_ButtonHeight, &MainView, &QuickSearch);
+               QuickSearch.VSplitLeft(220.0f, &QuickSearch, &DirectoryButton);
+               QuickSearch.HSplitTop(5.0f, nullptr, &QuickSearch);
+               if(Ui()->DoEditBox_Search(&s_aFilterInputs[s_CurCustomTab], &QuickSearch, 14.0f, !Ui()->IsPopupOpen() && !m_pClient->m_GameConsole.IsActive()))
+               {
+                       gs_aInitCustomList[s_CurCustomTab] = true;
+               }
 
-	DirectoryButton.HSplitTop(5.0f, nullptr, &DirectoryButton);
-	DirectoryButton.VSplitRight(175.0f, nullptr, &DirectoryButton);
-	DirectoryButton.VSplitRight(25.0f, &DirectoryButton, &ReloadButton);
-	DirectoryButton.VSplitRight(10.0f, &DirectoryButton, nullptr);
-	static CButtonContainer s_AssetsDirId;
-	if(DoButton_Menu(&s_AssetsDirId, Localize("Assets directory"), 0, &DirectoryButton))
-	{
-		char aBuf[IO_MAX_PATH_LENGTH];
-		char aBufFull[IO_MAX_PATH_LENGTH + 7];
+               DirectoryButton.HSplitTop(5.0f, nullptr, &DirectoryButton);
+               DirectoryButton.VSplitRight(175.0f, nullptr, &DirectoryButton);
+               DirectoryButton.VSplitRight(25.0f, &DirectoryButton, &ReloadButton);
+               DirectoryButton.VSplitRight(10.0f, &DirectoryButton, nullptr);
+               static CButtonContainer s_AssetsDirId;
+               if(DoButton_Menu(&s_AssetsDirId, Localize("Assets directory"), 0, &DirectoryButton))
+               {
+                       char aBuf[IO_MAX_PATH_LENGTH];
+                       char aBufFull[IO_MAX_PATH_LENGTH + 7];
 		if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
 			str_copy(aBufFull, "assets/entities");
 		else if(s_CurCustomTab == ASSETS_TAB_GAME)
@@ -639,8 +658,21 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	{
 		ClearCustomItems(s_CurCustomTab);
 	}
-	TextRender()->SetRenderFlags(0);
-	TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+               TextRender()->SetRenderFlags(0);
+               TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+       }
+       else
+       {
+               CUIRect RecordButton, PlayButton;
+               MainView.HSplitBottom(ms_ButtonHeight * 2 + 5.0f, &MainView, &PlayButton);
+               MainView.HSplitBottom(ms_ButtonHeight, &MainView, &RecordButton);
+               static CButtonContainer s_RecordBtn, s_PlayBtn;
+               const char *pRecLabel = GameClient()->m_FujixTas.m_Recording ? Localize("Stop") : Localize("Record");
+               if(DoButton_Menu(&s_RecordBtn, pRecLabel, 0, &RecordButton))
+                       Console()->ExecuteLine("fujix_record");
+               if(DoButton_Menu(&s_PlayBtn, Localize("Play"), 0, &PlayButton))
+                       Console()->ExecuteLine("fujix_play");
+       }
 }
 
 void CMenus::ConchainAssetsEntities(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)

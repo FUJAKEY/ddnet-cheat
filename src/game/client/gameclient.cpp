@@ -125,15 +125,16 @@ void CGameClient::OnConsoleInit()
 					      &m_Sounds,
 					      &m_Voting,
 					      &m_Particles, // doesn't render anything, just updates all the particles
-					      &m_RaceDemo,
-					      &m_MapSounds,
-					      &m_Background, // render instead of m_MapLayersBackground when g_Config.m_ClOverlayEntities == 100
-					      &m_MapLayersBackground, // first to render
-					      &m_Particles.m_RenderTrail,
-					      &m_Particles.m_RenderTrailExtra,
-					      &m_Items,
-					      &m_Ghost,
-					      &m_Players,
+                                              &m_RaceDemo,
+                                              &m_MapSounds,
+                                              &m_Background, // render instead of m_MapLayersBackground when g_Config.m_ClOverlayEntities == 100
+                                              &m_MapLayersBackground, // first to render
+                                              &m_Particles.m_RenderTrail,
+                                              &m_Particles.m_RenderTrailExtra,
+                                              &m_Items,
+                                              &m_Ghost,
+                                             &m_FujixTas,
+                                              &m_Players,
 					      &m_MapLayersForeground,
 					      &m_Particles.m_RenderExplosions,
 					      &m_NamePlates,
