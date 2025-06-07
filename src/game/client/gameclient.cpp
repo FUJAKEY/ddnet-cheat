@@ -512,10 +512,17 @@ void CGameClient::OnDummySwap()
 
 int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 {
-	if(!Dummy)
-	{
-		return m_Controls.SnapInput(pData);
-	}
+    if(!Dummy)
+    {
+        if(m_FujixRecorder.IsPlaying())
+            return m_FujixRecorder.SnapInput(pData);
+
+        int Size = m_Controls.SnapInput(pData);
+        const CNetObj_PlayerInput *pInput = reinterpret_cast<CNetObj_PlayerInput *>(pData);
+        if(m_FujixRecorder.IsRecording())
+            m_FujixRecorder.RecordInput(Client()->GameTick(g_Config.m_ClDummy), *pInput);
+        return Size;
+    }
 	if(m_aLocalIds[!g_Config.m_ClDummy] < 0)
 	{
 		return 0;

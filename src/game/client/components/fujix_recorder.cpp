@@ -1,11 +1,8 @@
 #include "fujix_recorder.h"
-#include <game/client/gameclient.h>
-#include <engine/demo.h>
-#include <engine/storage.h>
-#include <engine/shared/protocol.h>
-#include <engine/shared/protocol_ex.h>
+
 #include <base/math.h>
-#include <memory>
+#include <engine/storage.h>
+#include <game/client/gameclient.h>
 
 void CFujixRecorder::ConRecord(IConsole::IResult *pResult, void *pUserData)
 {
@@ -19,46 +16,61 @@ void CFujixRecorder::ConPlay(IConsole::IResult *pResult, void *pUserData)
 
 void CFujixRecorder::OnConsoleInit()
 {
-    Console()->Register("fujix_record", "", CFGFLAG_CLIENT, ConRecord, this, "Toggle Fujix demo recording");
-    Console()->Register("fujix_play", "", CFGFLAG_CLIENT, ConPlay, this, "Play Fujix demo");
+    Console()->Register("fujix_record", "", CFGFLAG_CLIENT, ConRecord, this, "Toggle Fujix recording");
+    Console()->Register("fujix_play", "", CFGFLAG_CLIENT, ConPlay, this, "Play Fujix recording");
 }
 
 void CFujixRecorder::OnMapLoad()
 {
     m_Recording = false;
     m_Playing = false;
-    m_Loading = false;
-    m_pPlayer.reset();
-    m_pDelta.reset();
+    m_NumTicks = 0;
+    m_LastRecordedTick = -1;
+    if(m_pFile)
+    {
+        io_close(m_pFile);
+        m_pFile = nullptr;
+    }
     g_Config.m_ClFujixRecord = 0;
+}
+
+void CFujixRecorder::RecordInput(int GameTick, const CNetObj_PlayerInput &Input)
+{
+    if(!m_Recording)
+        return;
+
+    if(m_LastRecordedTick < 0)
+        m_LastRecordedTick = GameTick - 1;
+
+    while(m_LastRecordedTick < GameTick - 1)
+    {
+        CKjmTick Repeat{};
+        Repeat.m_Input = m_vInputs.empty() ? Input : m_vInputs.back().m_Input;
+        Repeat.m_Action = 0;
+        io_write(m_pFile, &Repeat, sizeof(Repeat));
+
+        m_vInputs.push_back({Repeat.m_Input});
+        m_NumTicks++;
+        m_LastRecordedTick++;
+    }
+
+    CKjmTick Record{};
+    Record.m_Input = Input;
+    Record.m_Action = (Input.m_Direction || Input.m_Jump || Input.m_Fire || Input.m_Hook ||
+                       Input.m_WantedWeapon || Input.m_NextWeapon || Input.m_PrevWeapon) ? 1 : 0;
+
+    io_write(m_pFile, &Record, sizeof(Record));
+
+    CInputFrame Frame{};
+    Frame.m_Input = Input;
+    m_vInputs.push_back(Frame);
+    m_NumTicks++;
+    m_LastRecordedTick = GameTick;
 }
 
 void CFujixRecorder::OnUpdate()
 {
-    if(m_Loading && m_pPlayer)
-    {
-        for(int i = 0; i < 100 && m_pPlayer->IsPlaying(); i++)
-            m_pPlayer->Update(false);
-
-        if(!m_pPlayer->IsPlaying())
-        {
-            m_pPlayer->Stop();
-            m_pPlayer.reset();
-            m_pDelta.reset();
-            m_Loading = false;
-            if(!m_vInputs.empty())
-            {
-                m_PlayIndex = 0;
-                m_Playing = true;
-                Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "playback started");
-            }
-            else
-            {
-                Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "no inputs found");
-            }
-        }
-        return;
-    }
+    // recording handled during input snapshot
 
     if(!m_Playing)
         return;
@@ -67,40 +79,92 @@ void CFujixRecorder::OnUpdate()
     {
         m_Playing = false;
         Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "playback finished");
-        return;
     }
-
-    GameClient()->m_Controls.m_aInputData[g_Config.m_ClDummy] = m_vInputs[m_PlayIndex].m_Input;
-    GameClient()->m_Controls.m_aLastData[g_Config.m_ClDummy] = m_vInputs[m_PlayIndex].m_Input;
-    m_PlayIndex++;
 }
 
 void CFujixRecorder::ToggleRecord()
 {
     char aPath[IO_MAX_PATH_LENGTH];
-    str_format(aPath, sizeof(aPath), "fujix/%s", Client()->GetCurrentMap());
+    str_format(aPath, sizeof(aPath), "demos/fujix/%s.kjm", Client()->GetCurrentMap());
 
     if(m_Recording)
     {
-        Client()->DemoRecorder(RECORDER_MANUAL)->Stop(IDemoRecorder::EStopMode::KEEP_FILE);
+        // finalize header
+        io_seek(m_pFile, offsetof(CKjmHeader, m_NumTicks), IOSEEK_START);
+        io_write(m_pFile, &m_NumTicks, sizeof(m_NumTicks));
+        io_close(m_pFile);
+        m_pFile = nullptr;
         m_Recording = false;
         g_Config.m_ClFujixRecord = 0;
-        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "demo saved");
+        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "record saved");
     }
     else
     {
         Storage()->CreateFolder("demos/fujix", IStorage::TYPE_SAVE);
-        Client()->DemoRecorder_Start(aPath, false, RECORDER_MANUAL, true);
+        m_pFile = Storage()->OpenFile(aPath, IOFLAG_WRITE, IStorage::TYPE_SAVE);
+        if(!m_pFile)
+        {
+            Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "failed to open file");
+            return;
+        }
+        CKjmHeader Header{};
+        Header.m_aMarker[0] = 'K';
+        Header.m_aMarker[1] = 'J';
+        Header.m_aMarker[2] = 'M';
+        Header.m_aMarker[3] = '1';
+        Header.m_NumTicks = 0;
+        io_write(m_pFile, &Header, sizeof(Header));
+
+        m_NumTicks = 0;
+        m_LastRecordedTick = -1;
+        m_vInputs.clear();
         m_Recording = true;
         g_Config.m_ClFujixRecord = 1;
-        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "demo recording started");
+        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "recording started");
     }
+}
+
+bool CFujixRecorder::LoadRecording(const char *pFilename)
+{
+    IOHANDLE File = Storage()->OpenFile(pFilename, IOFLAG_READ, IStorage::TYPE_SAVE);
+    if(!File)
+    {
+        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "could not open recording");
+        return false;
+    }
+
+    CKjmHeader Header;
+    if(io_read(File, &Header, sizeof(Header)) != sizeof(Header) ||
+       Header.m_aMarker[0] != 'K' || Header.m_aMarker[1] != 'J' ||
+       Header.m_aMarker[2] != 'M' || Header.m_aMarker[3] != '1')
+    {
+        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "invalid recording file");
+        io_close(File);
+        return false;
+    }
+
+    m_vInputs.clear();
+    for(int i = 0; i < Header.m_NumTicks; i++)
+    {
+        CKjmTick Tick;
+        if(io_read(File, &Tick, sizeof(Tick)) != sizeof(Tick))
+        {
+            Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "error reading recording");
+            io_close(File);
+            return false;
+        }
+        CInputFrame Frame{};
+        Frame.m_Input = Tick.m_Input;
+        m_vInputs.push_back(Frame);
+    }
+    io_close(File);
+    return true;
 }
 
 void CFujixRecorder::StartPlay()
 {
     char aPath[IO_MAX_PATH_LENGTH];
-    str_format(aPath, sizeof(aPath), "demos/fujix/%s.demo", Client()->GetCurrentMap());
+    str_format(aPath, sizeof(aPath), "demos/fujix/%s.kjm", Client()->GetCurrentMap());
 
     if(m_Playing)
     {
@@ -109,62 +173,34 @@ void CFujixRecorder::StartPlay()
         return;
     }
 
-    if(m_Loading)
-    {
-        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "already loading demo");
-        return;
-    }
-
     if(m_Recording)
         ToggleRecord();
 
-    if(!BeginLoad(aPath))
+    if(!LoadRecording(aPath))
         return;
 
-    Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "loading demo...");
+    m_PlayIndex = 0;
+    m_Playing = true;
+    Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "playback started");
 }
 
-
-bool CFujixRecorder::BeginLoad(const char *pFilename)
+int CFujixRecorder::SnapInput(int *pData)
 {
-    m_vInputs.clear();
+    if(!m_Playing)
+        return 0;
 
-    m_pDelta = std::make_unique<CSnapshotDelta>();
-    m_pPlayer = std::make_unique<CDemoPlayer>(m_pDelta.get(), false);
-
-    if(m_pPlayer->Load(Storage(), Console(), pFilename, IStorage::TYPE_SAVE))
+    if(m_PlayIndex >= (int)m_vInputs.size())
     {
-        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", m_pPlayer->ErrorMessage());
-        m_pPlayer.reset();
-        m_pDelta.reset();
-        return false;
+        m_Playing = false;
+        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "playback finished");
+        return 0;
     }
 
-    m_Listener.m_pRecorder = this;
-    m_pPlayer->SetListener(&m_Listener);
-    m_pPlayer->Play();
-    m_Loading = true;
-    return true;
+    const CNetObj_PlayerInput &Input = m_vInputs[m_PlayIndex].m_Input;
+    GameClient()->m_Controls.m_aInputData[g_Config.m_ClDummy] = Input;
+    GameClient()->m_Controls.m_aLastData[g_Config.m_ClDummy] = Input;
+    mem_copy(pData, &Input, sizeof(Input));
+    m_PlayIndex++;
+    return sizeof(Input);
 }
 
-void CFujixRecorder::CInputListener::OnDemoPlayerMessage(void *pData, int Size)
-{
-    CUnpacker Unpacker;
-    Unpacker.Reset(pData, Size);
-    CMsgPacker Packer(NETMSG_EX, true);
-    int Msg; bool Sys; CUuid Uuid;
-    int Result = UnpackMessageId(&Msg, &Sys, &Uuid, &Unpacker, &Packer);
-    if(Result != UNPACKMESSAGE_OK || Sys || Msg != NETMSG_INPUT)
-        return;
-
-    Unpacker.GetInt(); // AckTick
-    Unpacker.GetInt(); // Tick
-    int DataSize = Unpacker.GetInt();
-    CInputFrame Frame{};
-    int Ints = minimum(DataSize / 4, (int)(sizeof(CNetObj_PlayerInput) / sizeof(int)));
-    int *pDest = (int *)&Frame.m_Input;
-    for(int i = 0; i < Ints; i++)
-        pDest[i] = Unpacker.GetInt();
-    if(!Unpacker.Error() && m_pRecorder)
-        m_pRecorder->m_vInputs.push_back(Frame);
-}
