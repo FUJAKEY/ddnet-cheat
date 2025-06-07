@@ -52,6 +52,7 @@
 #include "components/particles.h"
 #include "components/players.h"
 #include "components/race_demo.h"
+#include "components/fujix_tas.h"
 #include "components/scoreboard.h"
 #include "components/skins.h"
 #include "components/skins7.h"
@@ -169,10 +170,11 @@ public:
 
 	CMapSounds m_MapSounds;
 
-	CRaceDemo m_RaceDemo;
-	CGhost m_Ghost;
+        CRaceDemo m_RaceDemo;
+        CGhost m_Ghost;
+       CFujixTas m_FujixTas;
 
-	CTooltips m_Tooltips;
+        CTooltips m_Tooltips;
 
 private:
 	std::vector<class CComponent *> m_vpAll;
