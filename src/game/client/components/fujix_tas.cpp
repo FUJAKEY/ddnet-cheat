@@ -17,8 +17,6 @@ CFujixTas::CFujixTas()
     m_File = nullptr;
     m_PlayIndex = 0;
     m_aFilename[0] = '\0';
-
-    // Инициализируем новые переменные
     m_StateSaved = false;
 }
 
@@ -55,7 +53,6 @@ void CFujixTas::SaveState()
 {
     if(m_pClient->m_Snap.m_pLocalCharacter)
     {
-        // Копируем "ядро" предсказанного персонажа, содержащее всю физику
         m_SavedCore = m_pClient->m_PredictedChar.m_Core;
         m_StateSaved = true;
         Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix_tas", "State saved.");
@@ -72,10 +69,9 @@ void CFujixTas::LoadState()
     {
         if(m_pClient->m_Snap.m_pLocalCharacter)
         {
-            // Принудительно перезаписываем состояние персонажа сохраненными данными
+            // +++ ИСПРАВЛЕНИЕ: Перезаписываем только ядро предсказанного персонажа.
+            // Этого достаточно и это безопасно.
             m_pClient->m_PredictedChar.m_Core = m_SavedCore;
-            m_pClient->m_LocalCharacter->m_Core = m_SavedCore;
-            m_pClient->m_PredictedEvents.clear(); // Очищаем старые предсказанные события
             Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix_tas", "State loaded.");
         }
         else
@@ -91,13 +87,11 @@ void CFujixTas::LoadState()
 
 void CFujixTas::StartRecord()
 {
-    // ГЛАВНОЕ ИЗМЕНЕНИЕ: Запрещаем запись без предварительного сохранения
     if(!m_StateSaved)
     {
         Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix_tas", "You must save a state with 'fujix_save' before recording.");
         return;
     }
-
     if(m_Recording)
         return;
 
@@ -128,13 +122,12 @@ void CFujixTas::StartPlay()
     if(m_Playing)
         StopPlay();
 
-    // ГЛАВНОЕ ИЗМЕНЕНИЕ: Загружаем состояние ПЕРЕД началом воспроизведения
     if(!m_StateSaved)
     {
         Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix_tas", "No state saved. Cannot play.");
         return;
     }
-    LoadState(); // <--- Ключевой шаг для идеального воспроизведения
+    LoadState();
 
     char aPath[IO_MAX_PATH_LENGTH];
     GetPath(aPath, sizeof(aPath));
@@ -152,7 +145,6 @@ void CFujixTas::StartPlay()
     io_close(File);
 
     m_PlayIndex = 0;
-    // Начинаем воспроизведение с текущего предсказанного тика
     m_PlayStartTick = Client()->PredGameTick(g_Config.m_ClDummy);
     m_Playing = !m_vEntries.empty();
 }
@@ -193,7 +185,6 @@ void CFujixTas::ConPlay(IConsole::IResult *pResult, void *pUserData)
         pSelf->StartPlay();
 }
 
-// Новые функции для обработки консольных команд
 void CFujixTas::ConSaveState(IConsole::IResult *pResult, void *pUserData)
 {
     static_cast<CFujixTas *>(pUserData)->SaveState();
@@ -208,8 +199,6 @@ void CFujixTas::OnConsoleInit()
 {
     Console()->Register("fujix_record", "", CFGFLAG_CLIENT, ConRecord, this, "Start/stop FUJIX TAS recording");
     Console()->Register("fujix_play", "", CFGFLAG_CLIENT, ConPlay, this, "Play FUJIX TAS for current map");
-
-    // Регистрируем новые команды
     Console()->Register("fujix_save", "", CFGFLAG_CLIENT, ConSaveState, this, "Save current player state for TAS");
     Console()->Register("fujix_load", "", CFGFLAG_CLIENT, ConLoadState, this, "Load saved player state");
 }
@@ -217,6 +206,5 @@ void CFujixTas::OnConsoleInit()
 void CFujixTas::OnMapLoad()
 {
     Storage()->CreateFolder(ms_pFujixDir, IStorage::TYPE_SAVE);
-    // Сбрасываем состояние при загрузке новой карты, чтобы избежать проблем
     m_StateSaved = false;
 }
