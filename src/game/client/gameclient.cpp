@@ -512,10 +512,12 @@ void CGameClient::OnDummySwap()
 
 int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 {
-	if(!Dummy)
-	{
-		return m_Controls.SnapInput(pData);
-	}
+    if(!Dummy)
+    {
+        if(m_FujixRecorder.IsPlaying())
+            return m_FujixRecorder.SnapInput(pData);
+        return m_Controls.SnapInput(pData);
+    }
 	if(m_aLocalIds[!g_Config.m_ClDummy] < 0)
 	{
 		return 0;

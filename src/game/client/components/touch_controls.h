@@ -388,16 +388,30 @@ private:
 		int SelectedAction() const override;
 	};
 
-	class CJoystickHookTouchButtonBehavior : public CJoystickTouchButtonBehavior
-	{
-	public:
-		static constexpr const char *const BEHAVIOR_ID = "joystick-hook";
+        class CJoystickHookTouchButtonBehavior : public CJoystickTouchButtonBehavior
+        {
+        public:
+                static constexpr const char *const BEHAVIOR_ID = "joystick-hook";
 
-		CJoystickHookTouchButtonBehavior() :
-			CJoystickTouchButtonBehavior(BEHAVIOR_ID) {}
+                CJoystickHookTouchButtonBehavior() :
+                        CJoystickTouchButtonBehavior(BEHAVIOR_ID) {}
 
-		int SelectedAction() const override;
-	};
+                int SelectedAction() const override;
+        };
+
+        class CHammerSpamTouchButtonBehavior : public CPredefinedTouchButtonBehavior
+        {
+        public:
+                static constexpr const char *const BEHAVIOR_ID = "hammer-spam";
+
+                CHammerSpamTouchButtonBehavior() :
+                        CPredefinedTouchButtonBehavior(BEHAVIOR_ID) {}
+
+                CButtonLabel GetLabel() const override;
+                void OnActivate() override;
+                void OnDeactivate() override;
+                void WriteToConfiguration(CJsonWriter *pWriter) override;
+        };
 
 	/**
 	 * Generic behavior implementation that executes a console command like a bind.
