@@ -2382,6 +2382,8 @@ if(CLIENT)
     components/players.h
     components/race_demo.cpp
     components/race_demo.h
+    components/fujix_tas.cpp
+    components/fujix_tas.h
     components/scoreboard.cpp
     components/scoreboard.h
     components/skins.cpp
