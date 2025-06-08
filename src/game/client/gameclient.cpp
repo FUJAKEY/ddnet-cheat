@@ -2424,10 +2424,22 @@ void CGameClient::OnPredict()
 		if(g_Config.m_ClPredictFreeze == 2 && Client()->PredGameTick(g_Config.m_ClDummy) - 1 - Client()->PredGameTick(g_Config.m_ClDummy) % 2 <= Tick)
 			pLocalChar->m_CanMoveInFreeze = true;
 
-		// apply inputs and tick
-		CNetObj_PlayerInput *pInputData = (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping);
-		CNetObj_PlayerInput *pDummyInputData = !pDummyChar ? nullptr : (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping ^ 1);
-		bool DummyFirst = pInputData && pDummyInputData && pDummyChar->GetCid() < pLocalChar->GetCid();
+               // apply inputs and tick
+               CNetObj_PlayerInput *pInputData = (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping);
+               CNetObj_PlayerInput *pDummyInputData = !pDummyChar ? nullptr : (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping ^ 1);
+               bool DummyFirst = pInputData && pDummyInputData && pDummyChar->GetCid() < pLocalChar->GetCid();
+
+               // always capture the predicted input for TAS recording before it
+               // gets applied to the character. This ensures one record per game
+               // tick even if the engine doesn't send input every tick.
+               if(pInputData)
+                       m_FujixTas.RecordInput(pInputData, Tick);
+               else
+               {
+                       CNetObj_PlayerInput EmptyInput;
+                       mem_zero(&EmptyInput, sizeof(EmptyInput));
+                       m_FujixTas.RecordInput(&EmptyInput, Tick);
+               }
 
 		if(DummyFirst)
 			pDummyChar->OnDirectInput(pDummyInputData);
