@@ -521,10 +521,36 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                        return sizeof(TasInput);
                }
 
-               int Size = m_Controls.SnapInput(pData);
+               CNetObj_PlayerInput LocalInput;
+               int Size = m_Controls.SnapInput((int *)&LocalInput);
+               int Tick = Client()->PredGameTick(g_Config.m_ClDummy);
+
                if(Size > 0)
-                       m_FujixTas.RecordInput((const CNetObj_PlayerInput *)pData, Client()->PredGameTick(g_Config.m_ClDummy));
-               return Size;
+               {
+                       if(m_FujixTas.IsRecording())
+                       {
+                               m_FujixTas.RecordInput(&LocalInput, Tick);
+                               m_FujixTas.UpdatePhantomInput(&LocalInput);
+                               CNetObj_PlayerInput NullInput;
+                               mem_zero(&NullInput, sizeof(NullInput));
+                               mem_copy(pData, &NullInput, sizeof(NullInput));
+                               return sizeof(NullInput);
+                       }
+
+                       m_FujixTas.RecordInput(&LocalInput, Tick);
+                       mem_copy(pData, &LocalInput, sizeof(LocalInput));
+                       return Size;
+               }
+
+               if(m_FujixTas.IsRecording())
+               {
+                       CNetObj_PlayerInput NullInput;
+                       mem_zero(&NullInput, sizeof(NullInput));
+                       mem_copy(pData, &NullInput, sizeof(NullInput));
+                       return sizeof(NullInput);
+               }
+
+               return 0;
        }
 	if(m_aLocalIds[!g_Config.m_ClDummy] < 0)
 	{
