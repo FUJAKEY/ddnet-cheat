@@ -120,6 +120,9 @@ void CFujixTas::StartRecord()
         m_PhantomRenderInfo = GameClient()->m_aClients[GameClient()->m_Snap.m_LocalClientId].m_RenderInfo;
     }
     m_PhantomTick = Client()->PredGameTick(g_Config.m_ClDummy);
+    // Convert the configured tick rate into a simulation step. Higher values
+    // yield more precise phantom movement. With the new default of 50 TPS this
+    // results in a step of 1 game tick.
     m_PhantomStep = maximum(1, Client()->GameTickSpeed() / g_Config.m_ClFujixTasPhantomTps);
     m_LastPredTick = m_PhantomTick;
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
