@@ -27,10 +27,12 @@ private:
     IOHANDLE m_File;
     std::vector<SEntry> m_vEntries;
     int m_PlayIndex;
+    CNetObj_PlayerInput m_CurrentInput;
 
     void GetPath(char *pBuf, int Size) const;
     void RecordEntry(const CNetObj_PlayerInput *pInput, int Tick);
     bool FetchEntry(CNetObj_PlayerInput *pInput);
+    void UpdatePlaybackInput();
 
     static void ConRecord(IConsole::IResult *pResult, void *pUserData);
     static void ConPlay(IConsole::IResult *pResult, void *pUserData);

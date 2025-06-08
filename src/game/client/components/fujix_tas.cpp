@@ -5,6 +5,7 @@
 #include <engine/console.h>
 #include <engine/client.h>
 #include <game/client/gameclient.h>
+#include <base/system.h>
 
 const char *CFujixTas::ms_pFujixDir = "fujix";
 
@@ -17,6 +18,7 @@ CFujixTas::CFujixTas()
     m_File = nullptr;
     m_PlayIndex = 0;
     m_aFilename[0] = '\0';
+    mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
 }
 
 void CFujixTas::GetPath(char *pBuf, int Size) const
@@ -33,19 +35,35 @@ void CFujixTas::RecordEntry(const CNetObj_PlayerInput *pInput, int Tick)
     io_write(m_File, &e, sizeof(e));
 }
 
+
 bool CFujixTas::FetchEntry(CNetObj_PlayerInput *pInput)
 {
-    if(!m_Playing || m_PlayIndex >= (int)m_vEntries.size())
-        return false;
-    int PredTick = Client()->PredGameTick(g_Config.m_ClDummy);
-    if(m_PlayStartTick + m_vEntries[m_PlayIndex].m_Tick > PredTick)
+    if(!m_Playing)
         return false;
 
-    *pInput = m_vEntries[m_PlayIndex].m_Input;
-    m_PlayIndex++;
-    if(m_PlayIndex >= (int)m_vEntries.size())
-        m_Playing = false;
+    UpdatePlaybackInput();
+    *pInput = m_CurrentInput;
     return true;
+}
+
+void CFujixTas::UpdatePlaybackInput()
+{
+    if(!m_Playing)
+        return;
+
+    int PredTick = Client()->PredGameTick(g_Config.m_ClDummy);
+    while(m_PlayIndex < (int)m_vEntries.size() &&
+          m_PlayStartTick + m_vEntries[m_PlayIndex].m_Tick <= PredTick)
+    {
+        m_CurrentInput = m_vEntries[m_PlayIndex].m_Input;
+        m_PlayIndex++;
+    }
+
+    if(m_PlayIndex >= (int)m_vEntries.size() &&
+       PredTick >= m_PlayStartTick + m_vEntries.back().m_Tick)
+    {
+        m_Playing = false;
+    }
 }
 
 void CFujixTas::StartRecord()
@@ -101,6 +119,8 @@ void CFujixTas::StartPlay()
     // first stored input is applied exactly when OnSnapInput runs
     m_PlayStartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
     m_Playing = !m_vEntries.empty();
+    if(m_Playing)
+        m_CurrentInput = m_vEntries[0].m_Input;
 }
 
 void CFujixTas::StopPlay()
@@ -109,6 +129,7 @@ void CFujixTas::StopPlay()
     m_vEntries.clear();
     m_PlayIndex = 0;
     m_PlayStartTick = 0;
+    mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
 }
 
 bool CFujixTas::FetchPlaybackInput(CNetObj_PlayerInput *pInput)
