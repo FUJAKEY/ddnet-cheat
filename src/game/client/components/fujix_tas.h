@@ -5,6 +5,8 @@
 #include <engine/storage.h>
 #include <engine/console.h>
 #include <game/generated/protocol.h>
+#include <game/gamecore.h>
+#include <game/client/render.h>
 #include <vector>
 
 class CFujixTas : public CComponent
@@ -27,10 +29,22 @@ private:
     IOHANDLE m_File;
     std::vector<SEntry> m_vEntries;
     int m_PlayIndex;
+    CNetObj_PlayerInput m_CurrentInput;
+
+    bool m_PhantomActive;
+    int m_PhantomTick;
+    CNetObj_PlayerInput m_PhantomInput;
+    CCharacterCore m_PhantomCore;
+    CCharacterCore m_PhantomPrevCore;
+    CTeeRenderInfo m_PhantomRenderInfo;
 
     void GetPath(char *pBuf, int Size) const;
     void RecordEntry(const CNetObj_PlayerInput *pInput, int Tick);
     bool FetchEntry(CNetObj_PlayerInput *pInput);
+    void UpdatePlaybackInput();
+    void UpdatePhantomInput(const CNetObj_PlayerInput *pInput);
+    void TickPhantom();
+    void CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *pChar);
 
     static void ConRecord(IConsole::IResult *pResult, void *pUserData);
     static void ConPlay(IConsole::IResult *pResult, void *pUserData);
@@ -41,6 +55,8 @@ public:
 
     virtual void OnConsoleInit() override;
     virtual void OnMapLoad() override;
+    virtual void OnUpdate() override;
+    virtual void OnRender() override;
 
     void StartRecord();
     void StopRecord();
