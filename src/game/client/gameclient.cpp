@@ -521,10 +521,38 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                        return sizeof(TasInput);
                }
 
-               int Size = m_Controls.SnapInput(pData);
+               CNetObj_PlayerInput LocalInput;
+               int Size = m_Controls.SnapInput((int *)&LocalInput);
+               int Tick = Client()->PredGameTick(g_Config.m_ClDummy);
+
                if(Size > 0)
-                       m_FujixTas.RecordInput((const CNetObj_PlayerInput *)pData, Client()->PredGameTick(g_Config.m_ClDummy));
-               return Size;
+               {
+                     if(m_FujixTas.IsRecording())
+                     {
+                             m_FujixTas.RecordInput(&LocalInput, Tick);
+                             m_FujixTas.MaybeFinishRecord();
+                             CNetObj_PlayerInput NullInput;
+                             mem_zero(&NullInput, sizeof(NullInput));
+                             mem_copy(pData, &NullInput, sizeof(NullInput));
+                             return sizeof(NullInput);
+                     }
+
+                       m_FujixTas.RecordInput(&LocalInput, Tick);
+                       m_FujixTas.MaybeFinishRecord();
+                       mem_copy(pData, &LocalInput, sizeof(LocalInput));
+                       return Size;
+               }
+
+               if(m_FujixTas.IsRecording())
+               {
+                       CNetObj_PlayerInput NullInput;
+                       mem_zero(&NullInput, sizeof(NullInput));
+                       mem_copy(pData, &NullInput, sizeof(NullInput));
+                       m_FujixTas.MaybeFinishRecord();
+                       return sizeof(NullInput);
+               }
+
+               return 0;
        }
 	if(m_aLocalIds[!g_Config.m_ClDummy] < 0)
 	{
@@ -722,9 +750,12 @@ void CGameClient::OnReset()
 
 void CGameClient::UpdatePositions()
 {
-	// local character position
-	if(g_Config.m_ClPredict && Client()->State() != IClient::STATE_DEMOPLAYBACK)
-	{
+       if(m_FujixTas.IsPhantomActive())
+       {
+               m_LocalCharacterPos = m_FujixTas.PhantomPos();
+       }
+       else if(g_Config.m_ClPredict && Client()->State() != IClient::STATE_DEMOPLAYBACK)
+       {
 		if(!AntiPingPlayers())
 		{
 			if(!m_Snap.m_pLocalCharacter || (m_Snap.m_pGameInfoObj && m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_GAMEOVER))
@@ -3480,8 +3511,8 @@ void CGameClient::UpdateRenderedCharacters()
 		}
 		m_Snap.m_aCharacters[i].m_Position = Pos;
 		m_aClients[i].m_RenderPos = Pos;
-		if(Predict() && i == m_Snap.m_LocalClientId)
-			m_LocalCharacterPos = Pos;
+               if(Predict() && i == m_Snap.m_LocalClientId && !m_FujixTas.IsPhantomActive())
+                       m_LocalCharacterPos = Pos;
 	}
 }
 
