@@ -5,6 +5,10 @@
 #include <engine/console.h>
 #include <engine/client.h>
 #include <game/client/gameclient.h>
+#include <game/client/render.h>
+#include <game/client/animstate.h>
+#include <game/gamecore.h>
+#include <base/system.h>
 
 const char *CFujixTas::ms_pFujixDir = "fujix";
 
@@ -17,6 +21,10 @@ CFujixTas::CFujixTas()
     m_File = nullptr;
     m_PlayIndex = 0;
     m_aFilename[0] = '\0';
+    mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
+    m_PhantomActive = false;
+    m_PhantomTick = 0;
+    mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
 }
 
 void CFujixTas::GetPath(char *pBuf, int Size) const
@@ -33,19 +41,35 @@ void CFujixTas::RecordEntry(const CNetObj_PlayerInput *pInput, int Tick)
     io_write(m_File, &e, sizeof(e));
 }
 
+
 bool CFujixTas::FetchEntry(CNetObj_PlayerInput *pInput)
 {
-    if(!m_Playing || m_PlayIndex >= (int)m_vEntries.size())
-        return false;
-    int PredTick = Client()->PredGameTick(g_Config.m_ClDummy);
-    if(m_PlayStartTick + m_vEntries[m_PlayIndex].m_Tick > PredTick)
+    if(!m_Playing)
         return false;
 
-    *pInput = m_vEntries[m_PlayIndex].m_Input;
-    m_PlayIndex++;
-    if(m_PlayIndex >= (int)m_vEntries.size())
-        m_Playing = false;
+    UpdatePlaybackInput();
+    *pInput = m_CurrentInput;
     return true;
+}
+
+void CFujixTas::UpdatePlaybackInput()
+{
+    if(!m_Playing)
+        return;
+
+    int PredTick = Client()->PredGameTick(g_Config.m_ClDummy);
+    while(m_PlayIndex < (int)m_vEntries.size() &&
+          m_PlayStartTick + m_vEntries[m_PlayIndex].m_Tick <= PredTick)
+    {
+        m_CurrentInput = m_vEntries[m_PlayIndex].m_Input;
+        m_PlayIndex++;
+    }
+
+    if(m_PlayIndex >= (int)m_vEntries.size() &&
+       PredTick >= m_PlayStartTick + m_vEntries.back().m_Tick)
+    {
+        m_Playing = false;
+    }
 }
 
 void CFujixTas::StartRecord()
@@ -64,6 +88,17 @@ void CFujixTas::StartRecord()
     // the upcoming OnSnapInput call
     m_StartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
     m_Recording = true;
+
+    // init phantom
+    if(GameClient()->m_Snap.m_LocalClientId >= 0)
+    {
+        m_PhantomCore = GameClient()->m_PredictedChar;
+        m_PhantomCore.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
+        m_PhantomRenderInfo = GameClient()->m_aClients[GameClient()->m_Snap.m_LocalClientId].m_RenderInfo;
+    }
+    m_PhantomTick = Client()->PredGameTick(g_Config.m_ClDummy);
+    mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
+    m_PhantomActive = true;
 }
 
 void CFujixTas::StopRecord()
@@ -74,6 +109,7 @@ void CFujixTas::StopRecord()
         io_close(m_File);
     m_File = nullptr;
     m_Recording = false;
+    m_PhantomActive = false;
 }
 
 void CFujixTas::StartPlay()
@@ -101,6 +137,8 @@ void CFujixTas::StartPlay()
     // first stored input is applied exactly when OnSnapInput runs
     m_PlayStartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
     m_Playing = !m_vEntries.empty();
+    if(m_Playing)
+        m_CurrentInput = m_vEntries[0].m_Input;
 }
 
 void CFujixTas::StopPlay()
@@ -109,6 +147,7 @@ void CFujixTas::StopPlay()
     m_vEntries.clear();
     m_PlayIndex = 0;
     m_PlayStartTick = 0;
+    mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
 }
 
 bool CFujixTas::FetchPlaybackInput(CNetObj_PlayerInput *pInput)
@@ -148,5 +187,51 @@ void CFujixTas::OnConsoleInit()
 void CFujixTas::OnMapLoad()
 {
     Storage()->CreateFolder(ms_pFujixDir, IStorage::TYPE_SAVE);
+}
+
+void CFujixTas::UpdatePhantomInput(const CNetObj_PlayerInput *pInput)
+{
+    if(m_PhantomActive)
+        m_PhantomInput = *pInput;
+}
+
+void CFujixTas::TickPhantom()
+{
+    if(!m_PhantomActive)
+        return;
+
+    int PredTick = Client()->PredGameTick(g_Config.m_ClDummy);
+    while(m_PhantomTick < PredTick)
+    {
+        m_PhantomCore.m_Input = m_PhantomInput;
+        m_PhantomCore.Tick(true);
+        m_PhantomCore.Move();
+        m_PhantomCore.Quantize();
+        ++m_PhantomTick;
+    }
+}
+
+void CFujixTas::OnUpdate()
+{
+    if(g_Config.m_ClFujixTasRecord && !m_Recording)
+        StartRecord();
+    else if(!g_Config.m_ClFujixTasRecord && m_Recording)
+        StopRecord();
+
+    if(g_Config.m_ClFujixTasPlay && !m_Playing)
+        StartPlay();
+    else if(!g_Config.m_ClFujixTasPlay && m_Playing)
+        StopPlay();
+
+    TickPhantom();
+}
+
+void CFujixTas::OnRender()
+{
+    if(!m_PhantomActive)
+        return;
+
+    const CAnimState *pIdle = CAnimState::GetIdle();
+    RenderTools()->RenderTee(pIdle, &m_PhantomRenderInfo, EMOTE_NORMAL, vec2(1,0), m_PhantomCore.m_Pos, 0.5f);
 }
 
