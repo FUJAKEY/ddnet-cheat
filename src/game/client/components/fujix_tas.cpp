@@ -23,7 +23,7 @@ CFujixTas::CFujixTas()
 	m_File = nullptr;
 	m_PlayIndex = 0;
 	m_LastRecordTick = -1;
-	// m_RecordAccum больше не используется
+	m_RecordAccum = 0; // Оставляем, так как он используется в оригинальной логике, но новая RecordInput его обойдет
 	m_aFilename[0] = '\0';
 	mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
 	m_StopPending = false;
@@ -60,7 +60,7 @@ bool CFujixTas::FetchEntry(CNetObj_PlayerInput *pInput)
 	UpdatePlaybackInput();
 	*pInput = m_CurrentInput;
 
-	// также обновляем локальное состояние, чтобы предсказание использовало TAS-ввод
+	// also update the local control state so prediction uses the TAS input
 	GameClient()->m_Controls.m_aInputData[g_Config.m_ClDummy] = m_CurrentInput;
 	GameClient()->m_Controls.m_aLastData[g_Config.m_ClDummy] = m_CurrentInput;
 
@@ -74,15 +74,15 @@ void CFujixTas::UpdatePlaybackInput()
 
 	int PredTick = Client()->PredGameTick(g_Config.m_ClDummy);
 	while(m_PlayIndex < (int)m_vEntries.size() &&
-		  m_PlayStartTick + m_vEntries[m_PlayIndex].m_Tick <= PredTick)
+		m_PlayStartTick + m_vEntries[m_PlayIndex].m_Tick <= PredTick)
 	{
 		m_CurrentInput = m_vEntries[m_PlayIndex].m_Input;
 		m_PlayIndex++;
 	}
 
 	if(m_PlayIndex >= (int)m_vEntries.size() &&
-	   !m_vEntries.empty() && // Проверка на пустой вектор
-	   PredTick >= m_PlayStartTick + m_vEntries.back().m_Tick)
+		!m_vEntries.empty() &&
+		PredTick >= m_PlayStartTick + m_vEntries.back().m_Tick)
 	{
 		m_Playing = false;
 		g_Config.m_ClFujixTasPlay = 0;
@@ -101,11 +101,11 @@ void CFujixTas::StartRecord()
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "failed to open file for recording");
 		return;
 	}
-	
-	// Начинаем запись с текущего тика для точной синхронизации
-	m_StartTick = Client()->PredGameTick(g_Config.m_ClDummy);
+	// start recording on the next predicted tick to align with
+	// the upcoming OnSnapInput call
+	m_StartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
 	m_LastRecordTick = m_StartTick - 1;
-	// m_RecordAccum больше не нужен
+	m_RecordAccum = Client()->GameTickSpeed();
 	m_Recording = true;
 	g_Config.m_ClFujixTasRecord = 1;
 	m_vEntries.clear();
@@ -140,7 +140,7 @@ void CFujixTas::FinishRecord()
 	m_PhantomActive = false;
 	m_PendingInputs.clear();
 	m_LastRecordTick = -1;
-	// m_RecordAccum больше не нужен
+	m_RecordAccum = 0;
 	m_StopPending = false;
 	m_StopTick = -1;
 }
@@ -180,7 +180,8 @@ void CFujixTas::StartPlay()
 	io_close(File);
 
 	m_PlayIndex = 0;
-	// Начинаем воспроизведение со следующего тика
+	// similar to recording, start playback on the next tick so the
+	// first stored input is applied exactly when OnSnapInput runs
 	m_PlayStartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
 	m_Playing = !m_vEntries.empty();
 	if(m_Playing)
@@ -205,23 +206,21 @@ bool CFujixTas::FetchPlaybackInput(CNetObj_PlayerInput *pInput)
 	return FetchEntry(pInput);
 }
 
-// ГЛАВНОЕ ИЗМЕНЕНИЕ ЗДЕСЬ
+// ИЗМЕНЕНИЕ №1: ЗАМЕНА ФУНКЦИИ RECORDINPUT
 void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
 {
-	// Предотвращаем двойную запись на одном и том же тике
 	if(Tick == m_LastRecordTick)
 		return;
 	m_LastRecordTick = Tick;
 
 	if(m_Recording)
 	{
-		// Убрана логика с m_RecordAccum. Запись происходит на каждом тике.
-		// m_PendingInputs больше не используется для записи, только для фантома.
+		// Записываем каждый input без ограничений частоты
+		// m_PendingInputs все еще нужно для фантома, поэтому оставляем
 		m_PendingInputs.push_back({Tick, *pInput});
 		RecordEntry(pInput, Tick);
 	}
 }
-
 
 void CFujixTas::ConRecord(IConsole::IResult *pResult, void *pUserData)
 {
@@ -258,7 +257,7 @@ void CFujixTas::RewriteFile()
 		return;
 	io_close(m_File);
 	m_File = Storage()->OpenFile(m_aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
-	if(!m_File) return; // Добавлена проверка
+	if (!m_File) return;
 	for(const auto &e : m_vEntries)
 		io_write(m_File, &e, sizeof(e));
 }
@@ -326,8 +325,6 @@ bool CFujixTas::HandlePhantomTiles(int MapIndex)
 	int FTile = Collision()->GetFrontTileIndex(MapIndex);
 	int SwitchType = Collision()->GetSwitchType(MapIndex);
 
-	// Опциональный откат можно реализовать добавлением конфиг-переменной
-	// например, if(m_Recording && g_Config.m_ClFujixTasRewindOnTeleport)
 	int Tele = Collision()->IsTeleport(MapIndex);
 	if(Tele && !Collision()->TeleOuts(Tele - 1).empty())
 	{
@@ -446,7 +443,8 @@ void CFujixTas::TickPhantom()
 		m_PhantomCore.Quantize();
 		m_PhantomTick += 1;
 		m_PhantomHistory.push_back({m_PhantomTick, m_PhantomCore, m_PhantomPrevCore, m_PhantomInput, m_PhantomFreezeTime});
-		if(m_PhantomHistory.size() > (unsigned)g_Config.m_ClTickrate * 5) // Ограничение истории, например, на 5 секунд
+		// ИЗМЕНЕНИЕ №2: ИСПРАВЛЕНИЕ РАЗМЕРА ИСТОРИИ ФАНТОМА
+		if(m_PhantomHistory.size() > 60)
 			m_PhantomHistory.pop_front();
 	}
 }
@@ -472,7 +470,8 @@ void CFujixTas::CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *p
 	pChar->m_HookedPlayer = CCore.m_HookedPlayer;
 	pChar->m_Jumped = CCore.m_Jumped;
 	pChar->m_Tick = Tick;
-	pChar->m_AttackTick = Core.m_AttackTick; // Исправлено на правильное поле
+	// ИЗМЕНЕНИЕ №3: ИСПРАВЛЕНИЕ РАСЧЕТА ATTACKTICK
+	pChar->m_AttackTick = Core.m_HookTick + (Client()->GameTick(g_Config.m_ClDummy) - Tick);
 }
 
 void CFujixTas::OnUpdate()
@@ -488,12 +487,13 @@ void CFujixTas::OnUpdate()
 		StopPlay();
 
 	TickPhantom();
-	MaybeFinishRecord(); // Добавлен вызов для остановки записи
+	MaybeFinishRecord();
 }
 
 void CFujixTas::OnRender()
 {
-	if(!m_PhantomActive || !g_Config.m_ClFujixTasShowGhost) // Добавил проверку на конфиг для отображения
+	// ИЗМЕНЕНИЕ №4: УБРАНА ПРОВЕРКА НЕИЗВЕСТНОЙ КОНФИГУРАЦИИ
+	if(!m_PhantomActive)
 		return;
 
 	CNetObj_Character Prev, Curr;
