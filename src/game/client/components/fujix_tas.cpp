@@ -23,6 +23,7 @@ CFujixTas::CFujixTas()
     m_File = nullptr;
     m_PlayIndex = 0;
     m_LastRecordTick = -1;
+    mem_zero(&m_LastInput, sizeof(m_LastInput));
     m_aFilename[0] = '\0';
     mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
     m_StopPending = false;
@@ -47,9 +48,11 @@ void CFujixTas::RecordEntry(const CNetObj_PlayerInput *pInput, int Tick)
 {
     if(!m_Recording || !m_File)
         return;
-    SEntry e{Tick - m_StartTick, *pInput};
+    bool Active = mem_comp(pInput, &m_LastInput, sizeof(*pInput)) != 0;
+    SEntry e{Tick - m_StartTick, *pInput, Active};
     io_write(m_File, &e, sizeof(e));
     m_vEntries.push_back(e);
+    m_LastInput = *pInput;
 }
 
 
@@ -105,6 +108,7 @@ void CFujixTas::StartRecord()
     // the upcoming OnSnapInput call
     m_StartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
     m_LastRecordTick = m_StartTick - 1;
+    mem_zero(&m_LastInput, sizeof(m_LastInput));
     m_Recording = true;
     g_Config.m_ClFujixTasRecord = 1;
     m_vEntries.clear();
@@ -120,6 +124,9 @@ void CFujixTas::StartRecord()
         m_PhantomRenderInfo = GameClient()->m_aClients[GameClient()->m_Snap.m_LocalClientId].m_RenderInfo;
     }
     m_PhantomTick = Client()->PredGameTick(g_Config.m_ClDummy);
+    // Convert the configured tick rate into a simulation step. Higher values
+    // yield more precise phantom movement. With the new default of 50 TPS this
+    // results in a step of 1 game tick.
     m_PhantomStep = maximum(1, Client()->GameTickSpeed() / g_Config.m_ClFujixTasPhantomTps);
     m_LastPredTick = m_PhantomTick;
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
@@ -211,13 +218,12 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
         return;
     m_LastRecordTick = Tick;
 
+    bool StepTick = ((Tick - m_StartTick) % m_PhantomStep) == 0;
     if(m_Recording)
     {
-        if((Tick - m_StartTick) % m_PhantomStep == 0)
-        {
+        if(StepTick)
             m_PendingInputs.push_back({Tick, *pInput});
-            RecordEntry(pInput, Tick);
-        }
+        RecordEntry(pInput, Tick);
     }
     else
     {
