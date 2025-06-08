@@ -3477,6 +3477,29 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
                Console()->ExecuteLine("fujix_record");
        if(DoButton_Menu(&s_PlayBtn, pPlayLabel, 0, &PlayButton))
                Console()->ExecuteLine("fujix_play");
+
+       CUIRect RewindBox, TicksBox;
+       MainView.HSplitTop(5.0f, nullptr, &MainView);
+       MainView.HSplitTop(ms_ButtonHeight, &RewindBox, &MainView);
+       static int s_RewindChk = 0;
+       if(DoButton_CheckBox(&s_RewindChk, Localize("Rollback on tiles"), g_Config.m_ClFujixTasRewind, &RewindBox))
+               g_Config.m_ClFujixTasRewind ^= 1;
+
+       if(g_Config.m_ClFujixTasRewind)
+       {
+               MainView.HSplitTop(5.0f, nullptr, &MainView);
+               MainView.HSplitTop(ms_ButtonHeight, &TicksBox, &MainView);
+               char aBuf[64];
+               str_format(aBuf, sizeof(aBuf), Localize("Rollback ticks: %d"), g_Config.m_ClFujixTasRewindTicks);
+               Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasRewindTicks, &g_Config.m_ClFujixTasRewindTicks, &TicksBox, aBuf, 5, 50);
+       }
+
+       CUIRect TpsBox;
+       MainView.HSplitTop(5.0f, nullptr, &MainView);
+       MainView.HSplitTop(ms_ButtonHeight, &TpsBox, &MainView);
+       char aTpsBuf[64];
+       str_format(aTpsBuf, sizeof(aTpsBuf), Localize("Phantom tick rate: %d"), g_Config.m_ClFujixTasPhantomTps);
+       Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasPhantomTps, &g_Config.m_ClFujixTasPhantomTps, &TpsBox, aTpsBuf, 1, 20);
 }
 
 CUi::EPopupMenuFunctionResult CMenus::PopupMapPicker(void *pContext, CUIRect View, bool Active)
