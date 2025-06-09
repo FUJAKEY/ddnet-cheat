@@ -3508,6 +3508,20 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
        char aPreviewBuf[64];
        str_format(aPreviewBuf, sizeof(aPreviewBuf), Localize("Preview ticks: %d"), g_Config.m_ClFujixTasPreviewTicks);
        Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasPreviewTicks, &g_Config.m_ClFujixTasPreviewTicks, &PreviewBox, aPreviewBuf, 0, 200);
+
+       CUIRect ShowPlayersBox;
+       MainView.HSplitTop(5.0f, nullptr, &MainView);
+       MainView.HSplitTop(ms_ButtonHeight, &ShowPlayersBox, &MainView);
+       static int s_ShowPlayersChk = 0;
+       if(DoButton_CheckBox(&s_ShowPlayersChk, Localize("Show players"), g_Config.m_ClFujixTasShowPlayers, &ShowPlayersBox))
+               g_Config.m_ClFujixTasShowPlayers ^= 1;
+
+       CUIRect RouteBox;
+       MainView.HSplitTop(5.0f, nullptr, &MainView);
+       MainView.HSplitTop(ms_ButtonHeight, &RouteBox, &MainView);
+       char aRouteBuf[64];
+       str_format(aRouteBuf, sizeof(aRouteBuf), Localize("Route ticks: %d"), g_Config.m_ClFujixTasRouteTicks);
+       Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasRouteTicks, &g_Config.m_ClFujixTasRouteTicks, &RouteBox, aRouteBuf, 0, 200);
 }
 
 CUi::EPopupMenuFunctionResult CMenus::PopupMapPicker(void *pContext, CUIRect View, bool Active)
