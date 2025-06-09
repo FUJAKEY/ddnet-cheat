@@ -23,6 +23,7 @@ CFujixTas::CFujixTas()
     m_File = nullptr;
     m_PlayIndex = 0;
     m_LastRecordTick = -1;
+    mem_zero(&m_LastInput, sizeof(m_LastInput));
     m_aFilename[0] = '\0';
     mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
     m_StopPending = false;
@@ -47,9 +48,11 @@ void CFujixTas::RecordEntry(const CNetObj_PlayerInput *pInput, int Tick)
 {
     if(!m_Recording || !m_File)
         return;
-    SEntry e{Tick - m_StartTick, *pInput};
+    bool Active = mem_comp(pInput, &m_LastInput, sizeof(*pInput)) != 0;
+    SEntry e{Tick - m_StartTick, *pInput, Active};
     io_write(m_File, &e, sizeof(e));
     m_vEntries.push_back(e);
+    m_LastInput = *pInput;
 }
 
 
@@ -105,6 +108,7 @@ void CFujixTas::StartRecord()
     // the upcoming OnSnapInput call
     m_StartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
     m_LastRecordTick = m_StartTick - 1;
+    mem_zero(&m_LastInput, sizeof(m_LastInput));
     m_Recording = true;
     g_Config.m_ClFujixTasRecord = 1;
     m_vEntries.clear();
@@ -120,6 +124,9 @@ void CFujixTas::StartRecord()
         m_PhantomRenderInfo = GameClient()->m_aClients[GameClient()->m_Snap.m_LocalClientId].m_RenderInfo;
     }
     m_PhantomTick = Client()->PredGameTick(g_Config.m_ClDummy);
+    // Convert the configured tick rate into a simulation step. Higher values
+    // yield more precise phantom movement. With the new default of 50 TPS this
+    // results in a step of 1 game tick.
     m_PhantomStep = maximum(1, Client()->GameTickSpeed() / g_Config.m_ClFujixTasPhantomTps);
     m_LastPredTick = m_PhantomTick;
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
@@ -187,6 +194,36 @@ void CFujixTas::StartPlay()
     {
         g_Config.m_ClFujixTasPlay = 1;
         m_CurrentInput = m_vEntries[0].m_Input;
+
+        // Initialize phantom from current predicted state so we can render
+        // a preview of the upcoming path while playing the TAS.
+        m_PhantomHistory.clear();
+        m_PendingInputs.clear();
+        if(GameClient()->m_Snap.m_LocalClientId >= 0)
+        {
+            m_PhantomCore = GameClient()->m_PredictedChar;
+            m_PhantomPrevCore = m_PhantomCore;
+            m_PhantomCore.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core,
+                                       Collision(),
+                                       GameClient()->m_PredictedWorld.Teams());
+            m_PhantomRenderInfo =
+                GameClient()->m_aClients[GameClient()->m_Snap.m_LocalClientId]
+                    .m_RenderInfo;
+        }
+        m_PhantomTick = Client()->PredGameTick(g_Config.m_ClDummy);
+        m_PhantomStep =
+            maximum(1, Client()->GameTickSpeed() / g_Config.m_ClFujixTasPhantomTps);
+        m_LastPredTick = m_PhantomTick;
+        mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
+        m_PhantomFreezeTime = 0;
+        m_PhantomActive = true;
+        m_PhantomHistory.push_back({m_PhantomTick, m_PhantomCore, m_PhantomPrevCore,
+                                    m_PhantomInput, m_PhantomFreezeTime});
+
+        // Preload all playback inputs so TickPhantomUpTo can simulate ahead.
+        for(const auto &Entry : m_vEntries)
+            m_PendingInputs.push_back({m_PlayStartTick + Entry.m_Tick,
+                                       Entry.m_Input});
     }
 }
 
@@ -198,6 +235,8 @@ void CFujixTas::StopPlay()
     m_PlayIndex = 0;
     m_PlayStartTick = 0;
     mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
+    m_PhantomActive = false;
+    m_PendingInputs.clear();
 }
 
 bool CFujixTas::FetchPlaybackInput(CNetObj_PlayerInput *pInput)
@@ -211,17 +250,12 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
         return;
     m_LastRecordTick = Tick;
 
+    RecordEntry(pInput, Tick);
+
     if(m_Recording)
     {
-        if((Tick - m_StartTick) % m_PhantomStep == 0)
-        {
-            m_PendingInputs.push_back({Tick, *pInput});
-            RecordEntry(pInput, Tick);
-        }
-    }
-    else
-    {
-        RecordEntry(pInput, Tick);
+        m_PendingInputs.push_back({Tick, *pInput});
+        TickPhantomUpTo(Tick);
     }
 }
 
@@ -408,13 +442,12 @@ bool CFujixTas::HandlePhantomTiles(int MapIndex)
     return Rewound;
 }
 
-void CFujixTas::TickPhantom()
+void CFujixTas::TickPhantomUpTo(int TargetTick)
 {
     if(!m_PhantomActive)
         return;
 
-    int PredTick = Client()->PredGameTick(g_Config.m_ClDummy);
-    while(m_PhantomTick + m_PhantomStep <= PredTick)
+    while(m_PhantomTick + m_PhantomStep <= TargetTick)
     {
         m_PhantomPrevCore = m_PhantomCore;
         while(!m_PendingInputs.empty() && m_PendingInputs.front().m_Tick <= m_PhantomTick + m_PhantomStep)
@@ -444,6 +477,12 @@ void CFujixTas::TickPhantom()
         if(m_PhantomHistory.size() > 60)
             m_PhantomHistory.pop_front();
     }
+}
+
+void CFujixTas::TickPhantom()
+{
+    int PredTick = Client()->PredGameTick(g_Config.m_ClDummy);
+    TickPhantomUpTo(PredTick);
 }
 
 void CFujixTas::CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *pChar, int Tick)
@@ -497,5 +536,38 @@ void CFujixTas::OnRender()
     GameClient()->m_Players.RenderHook(&Prev, &Curr, &m_PhantomRenderInfo, -2);
     GameClient()->m_Players.RenderHookCollLine(&Prev, &Curr, -2);
     GameClient()->m_Players.RenderPlayer(&Prev, &Curr, &m_PhantomRenderInfo, -2);
+
+    RenderFuturePath(g_Config.m_ClFujixTasPreviewTicks);
+}
+
+void CFujixTas::RenderFuturePath(int TicksAhead)
+{
+    if(TicksAhead <= 0 || !m_PhantomActive)
+        return;
+
+    CFujixTas Tmp = *this;
+    std::vector<vec2> Points;
+    Points.reserve(TicksAhead + 1);
+    Points.push_back(Tmp.m_PhantomCore.m_Pos);
+
+    int TargetTick = m_PhantomTick + TicksAhead;
+    while(Tmp.m_PhantomTick < TargetTick)
+    {
+        int StepTarget = minimum(TargetTick, Tmp.m_PhantomTick + Tmp.m_PhantomStep);
+        Tmp.TickPhantomUpTo(StepTarget);
+        Points.push_back(Tmp.m_PhantomCore.m_Pos);
+    }
+
+    if(Points.size() <= 1)
+        return;
+
+    Graphics()->TextureClear();
+    Graphics()->LinesBegin();
+    for(size_t i = 1; i < Points.size(); i++)
+    {
+        IGraphics::CLineItem Line(Points[i - 1].x, Points[i - 1].y, Points[i].x, Points[i].y);
+        Graphics()->LinesDraw(&Line, 1);
+    }
+    Graphics()->LinesEnd();
 }
 
