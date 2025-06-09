@@ -3499,7 +3499,8 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
        MainView.HSplitTop(ms_ButtonHeight, &TpsBox, &MainView);
        char aTpsBuf[64];
        str_format(aTpsBuf, sizeof(aTpsBuf), Localize("Phantom tick rate: %d"), g_Config.m_ClFujixTasPhantomTps);
-       Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasPhantomTps, &g_Config.m_ClFujixTasPhantomTps, &TpsBox, aTpsBuf, 1, 20);
+       // Allow up to 50 TPS so the phantom can update every game tick if desired
+       Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasPhantomTps, &g_Config.m_ClFujixTasPhantomTps, &TpsBox, aTpsBuf, 1, 50);
 }
 
 CUi::EPopupMenuFunctionResult CMenus::PopupMapPicker(void *pContext, CUIRect View, bool Active)
