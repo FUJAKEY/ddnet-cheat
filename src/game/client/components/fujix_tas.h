@@ -20,6 +20,7 @@ private:
     {
         int m_Tick;
         CNetObj_PlayerInput m_Input;
+        bool m_Active; // true if any input changed this tick
     };
 
     bool m_Recording;
@@ -31,6 +32,7 @@ private:
     std::vector<SEntry> m_vEntries;
     int m_PlayIndex;
     int m_LastRecordTick;
+    CNetObj_PlayerInput m_LastInput;
     CNetObj_PlayerInput m_CurrentInput;
     bool m_StopPending;
     int m_StopTick;
