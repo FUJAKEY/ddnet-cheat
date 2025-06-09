@@ -658,6 +658,8 @@ MACRO_CONFIG_INT(ClFujixTasPhantomTps, cl_fujix_tas_phantom_tps, 50, 1, 50, CFGF
 // Number of future ticks to visualize while playing TAS. Allows estimating the
 // upcoming path of the phantom on the HUD.
 MACRO_CONFIG_INT(ClFujixTasPreviewTicks, cl_fujix_tas_preview_ticks, 40, 0, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks of phantom path preview")
+MACRO_CONFIG_INT(ClFujixTasShowPlayers, cl_fujix_tas_show_players, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show players while recording TAS")
+MACRO_CONFIG_INT(ClFujixTasRouteTicks, cl_fujix_tas_route_ticks, 0, 0, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks ahead for recommended route (0 to disable)")
 
 MACRO_CONFIG_INT(ClBackgroundShowTilesLayers, cl_background_show_tiles_layers, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Whether draw tiles layers when using custom background (entities)")
 MACRO_CONFIG_INT(SvShowOthers, sv_show_others, 1, 0, 1, CFGFLAG_SERVER, "Whether players can use the command showothers or not")

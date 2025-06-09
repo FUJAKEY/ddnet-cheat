@@ -36,12 +36,23 @@ CFujixTas::CFujixTas()
     m_LastPredTick = 0;
     m_PhantomHistory.clear();
     m_PendingInputs.clear();
+    m_OldShowOthers = g_Config.m_ClShowOthers;
+    m_HookEventIndex = 0;
+    m_HookEventFile = nullptr;
+    m_vHookEvents.clear();
+    m_LastHookState = HOOK_RETRACTED;
 }
 
 void CFujixTas::GetPath(char *pBuf, int Size) const
 {
     const char *pMap = Client()->GetCurrentMap();
     str_format(pBuf, Size, "%s/%s.fjx", ms_pFujixDir, pMap);
+}
+
+void CFujixTas::GetHookEventPath(char *pBuf, int Size) const
+{
+    const char *pMap = Client()->GetCurrentMap();
+    str_format(pBuf, Size, "%s/%s_hook.fjx", ms_pFujixDir, pMap);
 }
 
 void CFujixTas::RecordEntry(const CNetObj_PlayerInput *pInput, int Tick)
@@ -84,6 +95,20 @@ void CFujixTas::UpdatePlaybackInput()
         m_PlayIndex++;
     }
 
+    const int TickGrace = 1;
+    while(m_HookEventIndex < (int)m_vHookEvents.size())
+    {
+        const SHookEvent &Ev = m_vHookEvents[m_HookEventIndex];
+        int EventTick = m_PlayStartTick + Ev.m_Tick;
+        bool TickReached = PredTick >= EventTick;
+        bool PosReached = distance(GameClient()->m_PredictedChar.m_Pos, Ev.m_Pos) < 1.0f;
+        bool DoApply = Ev.m_Pressed ? TickReached : (TickReached || PosReached || PredTick >= EventTick + TickGrace);
+        if(!DoApply)
+            break;
+        m_CurrentInput.m_Hook = Ev.m_Pressed ? 1 : 0;
+        m_HookEventIndex++;
+    }
+
     if(m_PlayIndex >= (int)m_vEntries.size() &&
        PredTick >= m_PlayStartTick + m_vEntries.back().m_Tick)
     {
@@ -99,9 +124,18 @@ void CFujixTas::StartRecord()
     GetPath(m_aFilename, sizeof(m_aFilename));
     Storage()->CreateFolder(ms_pFujixDir, IStorage::TYPE_SAVE);
     m_File = Storage()->OpenFile(m_aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
-    if(!m_File)
+    char aHookPath[IO_MAX_PATH_LENGTH];
+    GetHookEventPath(aHookPath, sizeof(aHookPath));
+    m_HookEventFile = Storage()->OpenFile(aHookPath, IOFLAG_WRITE, IStorage::TYPE_SAVE);
+    if(!m_File || !m_HookEventFile)
     {
         Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "failed to open file for recording");
+        if(m_File)
+            io_close(m_File);
+        if(m_HookEventFile)
+            io_close(m_HookEventFile);
+        m_File = nullptr;
+        m_HookEventFile = nullptr;
         return;
     }
     // start recording on the next predicted tick to align with
@@ -132,7 +166,13 @@ void CFujixTas::StartRecord()
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
     m_PhantomFreezeTime = 0;
     m_PhantomActive = true;
+    m_PhantomCore.m_HookHitDisabled = true;
+    m_PhantomCore.m_CollisionDisabled = true;
     m_PhantomHistory.push_back({m_PhantomTick, m_PhantomCore, m_PhantomPrevCore, m_PhantomInput, m_PhantomFreezeTime});
+
+    m_OldShowOthers = g_Config.m_ClShowOthersAlpha;
+    if(!g_Config.m_ClFujixTasShowPlayers)
+        g_Config.m_ClShowOthersAlpha = 0;
 }
 
 void CFujixTas::FinishRecord()
@@ -141,7 +181,10 @@ void CFujixTas::FinishRecord()
         return;
     if(m_File)
         io_close(m_File);
+    if(m_HookEventFile)
+        io_close(m_HookEventFile);
     m_File = nullptr;
+    m_HookEventFile = nullptr;
     m_Recording = false;
     g_Config.m_ClFujixTasRecord = 0;
     m_PhantomActive = false;
@@ -149,6 +192,9 @@ void CFujixTas::FinishRecord()
     m_LastRecordTick = -1;
     m_StopPending = false;
     m_StopTick = -1;
+    m_HookEventIndex = 0;
+    m_vHookEvents.clear();
+    g_Config.m_ClShowOthersAlpha = m_OldShowOthers;
 }
 
 void CFujixTas::StopRecord()
@@ -179,11 +225,25 @@ void CFujixTas::StartPlay()
         return;
     }
 
+    char aHookPath[IO_MAX_PATH_LENGTH];
+    GetHookEventPath(aHookPath, sizeof(aHookPath));
+    IOHANDLE HookFile = Storage()->OpenFile(aHookPath, IOFLAG_READ, IStorage::TYPE_SAVE);
+
     m_vEntries.clear();
     SEntry e;
     while(io_read(File, &e, sizeof(e)) == sizeof(e))
         m_vEntries.push_back(e);
     io_close(File);
+
+    m_vHookEvents.clear();
+    if(HookFile)
+    {
+        SHookEvent Ev;
+        while(io_read(HookFile, &Ev, sizeof(Ev)) == sizeof(Ev))
+            m_vHookEvents.push_back(Ev);
+        io_close(HookFile);
+    }
+    m_HookEventIndex = 0;
 
     m_PlayIndex = 0;
     // similar to recording, start playback on the next tick so the
@@ -205,6 +265,8 @@ void CFujixTas::StopPlay()
     m_PlayIndex = 0;
     m_PlayStartTick = 0;
     mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
+    m_vHookEvents.clear();
+    m_HookEventIndex = 0;
 }
 
 bool CFujixTas::FetchPlaybackInput(CNetObj_PlayerInput *pInput)
@@ -217,6 +279,12 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
     if(Tick == m_LastRecordTick)
         return;
     m_LastRecordTick = Tick;
+
+    if(pInput->m_Hook != m_LastInput.m_Hook)
+    {
+        vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
+        RecordHookEvent(Tick, Pos, pInput->m_Hook != 0);
+    }
 
     RecordEntry(pInput, Tick);
 
@@ -264,6 +332,15 @@ void CFujixTas::RewriteFile()
     m_File = Storage()->OpenFile(m_aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
     for(const auto &e : m_vEntries)
         io_write(m_File, &e, sizeof(e));
+}
+
+void CFujixTas::RecordHookEvent(int Tick, vec2 Pos, bool Pressed)
+{
+    if(!m_HookEventFile)
+        return;
+    SHookEvent Ev{Tick - m_StartTick, Pos, Pressed};
+    io_write(m_HookEventFile, &Ev, sizeof(Ev));
+    m_vHookEvents.push_back(Ev);
 }
 
 void CFujixTas::RollbackPhantom(int Ticks)
@@ -506,6 +583,7 @@ void CFujixTas::OnRender()
     GameClient()->m_Players.RenderPlayer(&Prev, &Curr, &m_PhantomRenderInfo, -2);
 
     RenderFuturePath(g_Config.m_ClFujixTasPreviewTicks);
+    RenderRecommendedRoute(g_Config.m_ClFujixTasRouteTicks);
 }
 
 void CFujixTas::RenderFuturePath(int TicksAhead)
@@ -537,5 +615,49 @@ void CFujixTas::RenderFuturePath(int TicksAhead)
         Graphics()->LinesDraw(&Line, 1);
     }
     Graphics()->LinesEnd();
+}
+
+void CFujixTas::RenderRecommendedRoute(int TicksAhead)
+{
+    if(TicksAhead <= 0 || !m_PhantomActive)
+        return;
+
+    CFujixTas Tmp = *this;
+    Graphics()->TextureClear();
+    Graphics()->LinesBegin();
+    Graphics()->SetColor(0.0f, 1.0f, 0.0f, 1.0f);
+
+    std::vector<vec2> HookPos;
+
+    vec2 Prev = Tmp.m_PhantomCore.m_Pos;
+    int TargetTick = m_PhantomTick + TicksAhead;
+    while(Tmp.m_PhantomTick < TargetTick)
+    {
+        int StepTarget = minimum(TargetTick, Tmp.m_PhantomTick + Tmp.m_PhantomStep);
+        Tmp.TickPhantomUpTo(StepTarget);
+        vec2 Pos = Tmp.m_PhantomCore.m_Pos;
+        IGraphics::CLineItem Line(Prev.x, Prev.y, Pos.x, Pos.y);
+        Graphics()->LinesDraw(&Line, 1);
+
+        if(Tmp.m_PhantomInput.m_Hook)
+            HookPos.push_back(Pos);
+
+        Prev = Pos;
+    }
+
+    Graphics()->LinesEnd();
+
+    if(!HookPos.empty())
+    {
+        Graphics()->QuadsBegin();
+        for(const vec2 &Pos : HookPos)
+        {
+            IGraphics::CQuadItem Quad(Pos.x - 2.0f, Pos.y - 2.0f, 4.0f, 4.0f);
+            Graphics()->QuadsDraw(&Quad, 1);
+        }
+        Graphics()->QuadsEnd();
+    }
+
+    Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
