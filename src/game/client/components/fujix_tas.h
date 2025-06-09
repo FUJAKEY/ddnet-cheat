@@ -25,7 +25,9 @@ private:
 
     bool m_Recording;
     bool m_Playing;
+    bool m_Testing;
     int m_StartTick;
+    int m_TestStartTick;
     int m_PlayStartTick;
     char m_aFilename[IO_MAX_PATH_LENGTH];
     IOHANDLE m_File;
@@ -53,6 +55,8 @@ private:
     int m_PhantomStep;
     int m_LastPredTick;
 
+    int m_OldShowOthers;
+
     struct SPhantomState
     {
         int m_Tick;
@@ -62,6 +66,17 @@ private:
         int m_FreezeTime;
     };
     std::deque<SPhantomState> m_PhantomHistory;
+
+    struct SHookEvent
+    {
+        int m_Tick;
+        vec2 m_Pos;
+        bool m_Pressed;
+    };
+    std::vector<SHookEvent> m_vHookEvents;
+    int m_HookEventIndex;
+    IOHANDLE m_HookEventFile;
+    int m_LastHookState;
 
     void GetPath(char *pBuf, int Size) const;
     void RecordEntry(const CNetObj_PlayerInput *pInput, int Tick);
@@ -77,9 +92,13 @@ private:
     void RewriteFile();
     void CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *pChar, int Tick);
     void FinishRecord();
+    void RecordHookEvent(int Tick, vec2 Pos, bool Pressed);
+    void GetHookEventPath(char *pBuf, int Size) const;
+    void RenderRecommendedRoute(int TicksAhead);
 
     static void ConRecord(IConsole::IResult *pResult, void *pUserData);
     static void ConPlay(IConsole::IResult *pResult, void *pUserData);
+    static void ConTest(IConsole::IResult *pResult, void *pUserData);
 
 public:
     CFujixTas();
@@ -94,8 +113,11 @@ public:
     void StopRecord();
     void StartPlay();
     void StopPlay();
+    void StartTest();
+    void StopTest();
     bool IsRecording() const { return m_Recording; }
     bool IsPlaying() const { return m_Playing; }
+    bool IsTesting() const { return m_Testing; }
     bool IsPhantomActive() const { return m_PhantomActive; }
     vec2 PhantomPos() const { return m_PhantomCore.m_Pos; }
     bool FetchPlaybackInput(CNetObj_PlayerInput *pInput);
