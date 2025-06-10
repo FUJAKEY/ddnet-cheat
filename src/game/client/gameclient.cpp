@@ -539,6 +539,7 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 
                        m_FujixTas.RecordInput(&LocalInput, Tick);
                        m_FujixTas.MaybeFinishRecord();
+                       m_FujixTas.UpdateFreezeInput(&LocalInput);
                        mem_copy(pData, &LocalInput, sizeof(LocalInput));
                        return Size;
                }
