@@ -11,6 +11,7 @@
 #include <game/gamecore.h>
 #include <game/client/components/players.h>
 #include <base/system.h>
+#include <cmath>
 
 const char *CFujixTas::ms_pFujixDir = "fujix";
 
@@ -18,7 +19,9 @@ CFujixTas::CFujixTas()
 {
     m_Recording = false;
     m_Playing = false;
+    m_Testing = false;
     m_StartTick = 0;
+    m_TestStartTick = 0;
     m_PlayStartTick = 0;
     m_File = nullptr;
     m_PlayIndex = 0;
@@ -36,6 +39,7 @@ CFujixTas::CFujixTas()
     m_LastPredTick = 0;
     m_PhantomHistory.clear();
     m_PendingInputs.clear();
+    m_OldShowOthers = g_Config.m_ClShowOthersAlpha;
 }
 
 void CFujixTas::GetPath(char *pBuf, int Size) const
@@ -84,6 +88,7 @@ void CFujixTas::UpdatePlaybackInput()
         m_PlayIndex++;
     }
 
+
     if(m_PlayIndex >= (int)m_vEntries.size() &&
        PredTick >= m_PlayStartTick + m_vEntries.back().m_Tick)
     {
@@ -102,6 +107,9 @@ void CFujixTas::StartRecord()
     if(!m_File)
     {
         Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "failed to open file for recording");
+        if(m_File)
+            io_close(m_File);
+        m_File = nullptr;
         return;
     }
     // start recording on the next predicted tick to align with
@@ -132,7 +140,13 @@ void CFujixTas::StartRecord()
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
     m_PhantomFreezeTime = 0;
     m_PhantomActive = true;
+    m_PhantomCore.m_HookHitDisabled = true;
+    m_PhantomCore.m_CollisionDisabled = true;
     m_PhantomHistory.push_back({m_PhantomTick, m_PhantomCore, m_PhantomPrevCore, m_PhantomInput, m_PhantomFreezeTime});
+
+    m_OldShowOthers = g_Config.m_ClShowOthersAlpha;
+    if(!g_Config.m_ClFujixTasShowPlayers)
+        g_Config.m_ClShowOthersAlpha = 0;
 }
 
 void CFujixTas::FinishRecord()
@@ -149,6 +163,7 @@ void CFujixTas::FinishRecord()
     m_LastRecordTick = -1;
     m_StopPending = false;
     m_StopTick = -1;
+    g_Config.m_ClShowOthersAlpha = m_OldShowOthers;
 }
 
 void CFujixTas::StopRecord()
@@ -207,6 +222,65 @@ void CFujixTas::StopPlay()
     mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
 }
 
+void CFujixTas::StartTest()
+{
+    if(m_Testing)
+        StopTest();
+
+    char aPath[IO_MAX_PATH_LENGTH];
+    GetPath(aPath, sizeof(aPath));
+    IOHANDLE File = Storage()->OpenFile(aPath, IOFLAG_READ, IStorage::TYPE_SAVE);
+    if(!File)
+    {
+        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "failed to open file for test");
+        return;
+    }
+
+    m_vEntries.clear();
+    SEntry e;
+    while(io_read(File, &e, sizeof(e)) == sizeof(e))
+        m_vEntries.push_back(e);
+    io_close(File);
+
+    // init phantom at current position
+    if(GameClient()->m_Snap.m_LocalClientId >= 0)
+    {
+        m_PhantomCore = GameClient()->m_PredictedChar;
+        m_PhantomPrevCore = m_PhantomCore;
+        m_PhantomCore.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
+        m_PhantomRenderInfo = GameClient()->m_aClients[GameClient()->m_Snap.m_LocalClientId].m_RenderInfo;
+    }
+    m_PhantomTick = Client()->PredGameTick(g_Config.m_ClDummy);
+    m_PhantomStep = maximum(1, Client()->GameTickSpeed() / g_Config.m_ClFujixTasPhantomTps);
+    m_LastPredTick = m_PhantomTick;
+    mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
+    m_PhantomFreezeTime = 0;
+    m_PhantomActive = true;
+    m_PhantomCore.m_HookHitDisabled = true;
+    m_PhantomCore.m_CollisionDisabled = true;
+    m_PhantomHistory.clear();
+    m_PhantomHistory.push_back({m_PhantomTick, m_PhantomCore, m_PhantomPrevCore, m_PhantomInput, m_PhantomFreezeTime});
+
+    m_PendingInputs.clear();
+    m_TestStartTick = m_PhantomTick + 1;
+    for(const auto &Entry : m_vEntries)
+        m_PendingInputs.push_back({m_TestStartTick + Entry.m_Tick, Entry.m_Input});
+
+    m_Testing = !m_vEntries.empty();
+    if(m_Testing)
+        g_Config.m_ClFujixTasTest = 1;
+}
+
+void CFujixTas::StopTest()
+{
+    m_Testing = false;
+    g_Config.m_ClFujixTasTest = 0;
+    m_PhantomActive = false;
+    m_PendingInputs.clear();
+    m_PhantomHistory.clear();
+    m_vEntries.clear();
+}
+
 bool CFujixTas::FetchPlaybackInput(CNetObj_PlayerInput *pInput)
 {
     return FetchEntry(pInput);
@@ -217,6 +291,8 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
     if(Tick == m_LastRecordTick)
         return;
     m_LastRecordTick = Tick;
+
+    vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
 
     RecordEntry(pInput, Tick);
 
@@ -245,10 +321,20 @@ void CFujixTas::ConPlay(IConsole::IResult *pResult, void *pUserData)
         pSelf->StartPlay();
 }
 
+void CFujixTas::ConTest(IConsole::IResult *pResult, void *pUserData)
+{
+    CFujixTas *pSelf = static_cast<CFujixTas *>(pUserData);
+    if(pSelf->m_Testing)
+        pSelf->StopTest();
+    else
+        pSelf->StartTest();
+}
+
 void CFujixTas::OnConsoleInit()
 {
     Console()->Register("fujix_record", "", CFGFLAG_CLIENT, ConRecord, this, "Start/stop FUJIX TAS recording");
     Console()->Register("fujix_play", "", CFGFLAG_CLIENT, ConPlay, this, "Play FUJIX TAS for current map");
+    Console()->Register("fujix_test", "", CFGFLAG_CLIENT, ConTest, this, "Play FUJIX TAS as phantom");
 }
 
 void CFujixTas::OnMapLoad()
@@ -489,6 +575,11 @@ void CFujixTas::OnUpdate()
     else if(!g_Config.m_ClFujixTasPlay && m_Playing)
         StopPlay();
 
+    if(g_Config.m_ClFujixTasTest && !m_Testing)
+        StartTest();
+    else if(!g_Config.m_ClFujixTasTest && m_Testing)
+        StopTest();
+
     TickPhantom();
 }
 
@@ -506,6 +597,7 @@ void CFujixTas::OnRender()
     GameClient()->m_Players.RenderPlayer(&Prev, &Curr, &m_PhantomRenderInfo, -2);
 
     RenderFuturePath(g_Config.m_ClFujixTasPreviewTicks);
+    RenderRecommendedRoute(g_Config.m_ClFujixTasRouteTicks);
 }
 
 void CFujixTas::RenderFuturePath(int TicksAhead)
@@ -537,5 +629,49 @@ void CFujixTas::RenderFuturePath(int TicksAhead)
         Graphics()->LinesDraw(&Line, 1);
     }
     Graphics()->LinesEnd();
+}
+
+void CFujixTas::RenderRecommendedRoute(int TicksAhead)
+{
+    if(TicksAhead <= 0 || !m_PhantomActive)
+        return;
+
+    CFujixTas Tmp = *this;
+    Graphics()->TextureClear();
+    Graphics()->LinesBegin();
+    Graphics()->SetColor(0.0f, 1.0f, 0.0f, 1.0f);
+
+    std::vector<vec2> HookPos;
+
+    vec2 Prev = Tmp.m_PhantomCore.m_Pos;
+    int TargetTick = m_PhantomTick + TicksAhead;
+    while(Tmp.m_PhantomTick < TargetTick)
+    {
+        int StepTarget = minimum(TargetTick, Tmp.m_PhantomTick + Tmp.m_PhantomStep);
+        Tmp.TickPhantomUpTo(StepTarget);
+        vec2 Pos = Tmp.m_PhantomCore.m_Pos;
+        IGraphics::CLineItem Line(Prev.x, Prev.y, Pos.x, Pos.y);
+        Graphics()->LinesDraw(&Line, 1);
+
+        if(Tmp.m_PhantomInput.m_Hook)
+            HookPos.push_back(Pos);
+
+        Prev = Pos;
+    }
+
+    Graphics()->LinesEnd();
+
+    if(!HookPos.empty())
+    {
+        Graphics()->QuadsBegin();
+        for(const vec2 &Pos : HookPos)
+        {
+            IGraphics::CQuadItem Quad(Pos.x - 2.0f, Pos.y - 2.0f, 4.0f, 4.0f);
+            Graphics()->QuadsDraw(&Quad, 1);
+        }
+        Graphics()->QuadsEnd();
+    }
+
+    Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
