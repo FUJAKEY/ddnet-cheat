@@ -3463,20 +3463,25 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 
 void CMenus::RenderSettingsFujix(CUIRect MainView)
 {
-       CUIRect RecordButton, PlayButton;
+       CUIRect RecordButton, PlayButton, TestButton;
        MainView.HSplitTop(10.0f, nullptr, &MainView);
        MainView.HSplitTop(ms_ButtonHeight, &RecordButton, &MainView);
        MainView.HSplitTop(5.0f, nullptr, &MainView);
        MainView.HSplitTop(ms_ButtonHeight, &PlayButton, &MainView);
+       MainView.HSplitTop(5.0f, nullptr, &MainView);
+       MainView.HSplitTop(ms_ButtonHeight, &TestButton, &MainView);
 
-       static CButtonContainer s_RecordBtn, s_PlayBtn;
+       static CButtonContainer s_RecordBtn, s_PlayBtn, s_TestBtn;
        const char *pRecLabel = GameClient()->m_FujixTas.IsRecording() ? Localize("Stop") : Localize("Record");
        const char *pPlayLabel = GameClient()->m_FujixTas.IsPlaying() ? Localize("Stop") : Localize("Play");
+       const char *pTestLabel = GameClient()->m_FujixTas.IsTesting() ? Localize("Stop") : Localize("Play (test)");
 
        if(DoButton_Menu(&s_RecordBtn, pRecLabel, 0, &RecordButton))
                Console()->ExecuteLine("fujix_record");
        if(DoButton_Menu(&s_PlayBtn, pPlayLabel, 0, &PlayButton))
                Console()->ExecuteLine("fujix_play");
+       if(DoButton_Menu(&s_TestBtn, pTestLabel, 0, &TestButton))
+               Console()->ExecuteLine("fujix_test");
 
        CUIRect RewindBox, TicksBox;
        MainView.HSplitTop(5.0f, nullptr, &MainView);
@@ -3508,6 +3513,20 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
        char aPreviewBuf[64];
        str_format(aPreviewBuf, sizeof(aPreviewBuf), Localize("Preview ticks: %d"), g_Config.m_ClFujixTasPreviewTicks);
        Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasPreviewTicks, &g_Config.m_ClFujixTasPreviewTicks, &PreviewBox, aPreviewBuf, 0, 200);
+
+       CUIRect ShowPlayersBox;
+       MainView.HSplitTop(5.0f, nullptr, &MainView);
+       MainView.HSplitTop(ms_ButtonHeight, &ShowPlayersBox, &MainView);
+       static int s_ShowPlayersChk = 0;
+       if(DoButton_CheckBox(&s_ShowPlayersChk, Localize("Show players"), g_Config.m_ClFujixTasShowPlayers, &ShowPlayersBox))
+               g_Config.m_ClFujixTasShowPlayers ^= 1;
+
+       CUIRect RouteBox;
+       MainView.HSplitTop(5.0f, nullptr, &MainView);
+       MainView.HSplitTop(ms_ButtonHeight, &RouteBox, &MainView);
+       char aRouteBuf[64];
+       str_format(aRouteBuf, sizeof(aRouteBuf), Localize("Route ticks: %d"), g_Config.m_ClFujixTasRouteTicks);
+       Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasRouteTicks, &g_Config.m_ClFujixTasRouteTicks, &RouteBox, aRouteBuf, 0, 200);
 }
 
 CUi::EPopupMenuFunctionResult CMenus::PopupMapPicker(void *pContext, CUIRect View, bool Active)

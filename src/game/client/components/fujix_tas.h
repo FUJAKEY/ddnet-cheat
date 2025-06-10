@@ -25,7 +25,9 @@ private:
 
     bool m_Recording;
     bool m_Playing;
+    bool m_Testing;
     int m_StartTick;
+    int m_TestStartTick;
     int m_PlayStartTick;
     char m_aFilename[IO_MAX_PATH_LENGTH];
     IOHANDLE m_File;
@@ -33,6 +35,7 @@ private:
     int m_PlayIndex;
     int m_LastRecordTick;
     CNetObj_PlayerInput m_LastInput;
+    int m_LastHookState;
     CNetObj_PlayerInput m_CurrentInput;
     bool m_StopPending;
     int m_StopTick;
@@ -53,6 +56,8 @@ private:
     int m_PhantomStep;
     int m_LastPredTick;
 
+    int m_OldShowOthers;
+
     struct SPhantomState
     {
         int m_Tick;
@@ -62,6 +67,28 @@ private:
         int m_FreezeTime;
     };
     std::deque<SPhantomState> m_PhantomHistory;
+
+    enum EEventType
+    {
+        EVENT_HOOK,
+        EVENT_LEFT,
+        EVENT_RIGHT,
+        EVENT_JUMP,
+        EVENT_HOOK_ATTACH,
+        EVENT_HOOK_DETACH
+    };
+
+    struct SEvent
+    {
+        int m_Tick;
+        vec2 m_Pos;
+        EEventType m_Type;
+        bool m_Pressed; // used by hook/left/right, ignored for attach/detach
+    };
+
+    std::vector<SEvent> m_vEvents;
+    int m_EventIndex;
+    IOHANDLE m_EventFile;
 
     void GetPath(char *pBuf, int Size) const;
     void RecordEntry(const CNetObj_PlayerInput *pInput, int Tick);
@@ -77,9 +104,13 @@ private:
     void RewriteFile();
     void CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *pChar, int Tick);
     void FinishRecord();
+    void RecordEvent(int Tick, vec2 Pos, EEventType Type, bool Pressed);
+    void GetEventPath(char *pBuf, int Size) const;
+    void RenderRecommendedRoute(int TicksAhead);
 
     static void ConRecord(IConsole::IResult *pResult, void *pUserData);
     static void ConPlay(IConsole::IResult *pResult, void *pUserData);
+    static void ConTest(IConsole::IResult *pResult, void *pUserData);
 
 public:
     CFujixTas();
@@ -94,8 +125,11 @@ public:
     void StopRecord();
     void StartPlay();
     void StopPlay();
+    void StartTest();
+    void StopTest();
     bool IsRecording() const { return m_Recording; }
     bool IsPlaying() const { return m_Playing; }
+    bool IsTesting() const { return m_Testing; }
     bool IsPhantomActive() const { return m_PhantomActive; }
     vec2 PhantomPos() const { return m_PhantomCore.m_Pos; }
     bool FetchPlaybackInput(CNetObj_PlayerInput *pInput);
