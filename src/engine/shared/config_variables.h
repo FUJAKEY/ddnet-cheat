@@ -649,6 +649,7 @@ MACRO_CONFIG_INT(ClRotationSpeed, cl_rotation_speed, 40, 1, 120, CFGFLAG_CLIENT 
 MACRO_CONFIG_INT(ClCameraSpeed, cl_camera_speed, 5, 1, 40, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Menu camera speed")
 MACRO_CONFIG_INT(ClFujixTasRecord, cl_fujix_tas_record, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Record FUJIX TAS")
 MACRO_CONFIG_INT(ClFujixTasPlay, cl_fujix_tas_play, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Play FUJIX TAS")
+MACRO_CONFIG_INT(ClFujixTasTest, cl_fujix_tas_test, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Play FUJIX TAS as phantom")
 MACRO_CONFIG_INT(ClFujixTasRewind, cl_fujix_tas_rewind, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Rollback phantom on tiles")
 MACRO_CONFIG_INT(ClFujixTasRewindTicks, cl_fujix_tas_rewind_ticks, 10, 5, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks to rollback phantom")
 // Increased default and range to allow up to one phantom update per game tick
@@ -658,6 +659,8 @@ MACRO_CONFIG_INT(ClFujixTasPhantomTps, cl_fujix_tas_phantom_tps, 50, 1, 50, CFGF
 // Number of future ticks to visualize while playing TAS. Allows estimating the
 // upcoming path of the phantom on the HUD.
 MACRO_CONFIG_INT(ClFujixTasPreviewTicks, cl_fujix_tas_preview_ticks, 40, 0, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks of phantom path preview")
+MACRO_CONFIG_INT(ClFujixTasShowPlayers, cl_fujix_tas_show_players, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show players while recording TAS")
+MACRO_CONFIG_INT(ClFujixTasRouteTicks, cl_fujix_tas_route_ticks, 0, 0, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks ahead for recommended route (0 to disable)")
 
 MACRO_CONFIG_INT(ClBackgroundShowTilesLayers, cl_background_show_tiles_layers, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Whether draw tiles layers when using custom background (entities)")
 MACRO_CONFIG_INT(SvShowOthers, sv_show_others, 1, 0, 1, CFGFLAG_SERVER, "Whether players can use the command showothers or not")
