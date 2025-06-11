@@ -281,25 +281,57 @@
 				"command": "toggle cl_dummy 0 1"
 			}
 		},
-		{
-			"x": 883333,
-			"y": 16667,
-			"w": 100000,
-			"h": 100000,
-			"shape": "rect",
-			"visibilities": [
-				"ingame"
-			],
-			"behavior": {
-				"type": "predefined",
-				"id": "swap-action"
-			}
-		},
-		{
-			"x": 755000,
-			"y": 580000,
-			"w": 225000,
-			"h": 400000,
+                {
+                        "x": 883333,
+                        "y": 16667,
+                        "w": 100000,
+                        "h": 100000,
+                        "shape": "rect",
+                        "visibilities": [
+                                "ingame"
+                        ],
+                        "behavior": {
+                                "type": "predefined",
+                                "id": "swap-action"
+                        }
+                },
+                {
+                        "x": 600000,
+                        "y": 16667,
+                        "w": 83333,
+                        "h": 83333,
+                        "shape": "rect",
+                        "visibilities": [
+                                "extra-menu"
+                        ],
+                        "behavior": {
+                                "type": "bind",
+                                "label": "Freeze up",
+                                "label-type": "localized",
+                                "command": "fujix_freeze_up"
+                        }
+                },
+                {
+                        "x": 600000,
+                        "y": 100000,
+                        "w": 83333,
+                        "h": 83333,
+                        "shape": "rect",
+                        "visibilities": [
+                                "extra-menu"
+                        ],
+                        "behavior": {
+                                "type": "bind",
+                                "label": "Freeze down",
+                                "label-type": "localized",
+                                "command": "fujix_freeze_down"
+                        }
+                },
+                {
+                        "x": 755000,
+                        "y": 580000,
+                        "w": 225000,
+                        "h": 400000,
 			"shape": "circle",
 			"visibilities": [
 				"ingame"
