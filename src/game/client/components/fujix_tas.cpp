@@ -892,18 +892,31 @@ void CFujixTas::UpdateFreezeInput(CNetObj_PlayerInput *pInput)
         return;
     }
 
-    const int PredictTicks = 3;
+    const int PredictTicks = 20;
     float PosY = GameClient()->m_PredictedChar.m_Pos.y;
     float VelY = GameClient()->m_PredictedChar.m_Vel.y;
     float FutureY = PosY + VelY * PredictTicks + pTuning->m_Gravity * PredictTicks * PredictTicks / 2.0f;
 
     if(FutureY > m_FreezeLevel + 1.0f)
     {
+        int Hold = 1;
+        float SimPos = PosY;
+        float SimVel = VelY;
+        for(int t = 0; t < PredictTicks; t++)
+        {
+            SimVel += pTuning->m_Gravity - pTuning->m_HookDragAccel;
+            SimPos += SimVel;
+            if(SimPos <= m_FreezeLevel)
+            {
+                Hold = t + 1;
+                break;
+            }
+        }
         pInput->m_Hook = 1;
         pInput->m_TargetX = 0;
         pInput->m_TargetY = -256;
-        m_FreezeHookTicks = 1;
-        m_FreezeHookCooldown = 1;
+        m_FreezeHookTicks = Hold;
+        m_FreezeHookCooldown = 2;
     }
     else
     {
