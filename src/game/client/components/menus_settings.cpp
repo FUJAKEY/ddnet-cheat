@@ -3463,20 +3463,39 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 
 void CMenus::RenderSettingsFujix(CUIRect MainView)
 {
-       CUIRect RecordButton, PlayButton;
-       MainView.HSplitTop(10.0f, nullptr, &MainView);
-       MainView.HSplitTop(ms_ButtonHeight, &RecordButton, &MainView);
-       MainView.HSplitTop(5.0f, nullptr, &MainView);
-       MainView.HSplitTop(ms_ButtonHeight, &PlayButton, &MainView);
+       CUIRect TabBar, TasTab, FreezeTab;
+       MainView.HSplitTop(20.0f, &TabBar, &MainView);
+       TabBar.VSplitMid(&TasTab, &FreezeTab);
 
-       static CButtonContainer s_RecordBtn, s_PlayBtn;
+       static CButtonContainer s_TasBtn, s_FreezeBtn;
+       if(DoButton_MenuTab(&s_TasBtn, Localize("TAS"), m_FujixPage == 0, &TasTab, IGraphics::CORNER_L))
+               m_FujixPage = 0;
+       if(DoButton_MenuTab(&s_FreezeBtn, Localize("Freeze"), m_FujixPage == 1, &FreezeTab, IGraphics::CORNER_R))
+               m_FujixPage = 1;
+
+       g_Config.m_UiFujixPage = m_FujixPage;
+       MainView.HSplitTop(10.0f, nullptr, &MainView);
+
+       if(m_FujixPage == 0)
+       {
+               CUIRect RecordButton, PlayButton, TestButton;
+               MainView.HSplitTop(ms_ButtonHeight, &RecordButton, &MainView);
+               MainView.HSplitTop(5.0f, nullptr, &MainView);
+               MainView.HSplitTop(ms_ButtonHeight, &PlayButton, &MainView);
+               MainView.HSplitTop(5.0f, nullptr, &MainView);
+               MainView.HSplitTop(ms_ButtonHeight, &TestButton, &MainView);
+
+       static CButtonContainer s_RecordBtn, s_PlayBtn, s_TestBtn;
        const char *pRecLabel = GameClient()->m_FujixTas.IsRecording() ? Localize("Stop") : Localize("Record");
        const char *pPlayLabel = GameClient()->m_FujixTas.IsPlaying() ? Localize("Stop") : Localize("Play");
+       const char *pTestLabel = GameClient()->m_FujixTas.IsTesting() ? Localize("Stop") : Localize("Play (test)");
 
        if(DoButton_Menu(&s_RecordBtn, pRecLabel, 0, &RecordButton))
                Console()->ExecuteLine("fujix_record");
        if(DoButton_Menu(&s_PlayBtn, pPlayLabel, 0, &PlayButton))
                Console()->ExecuteLine("fujix_play");
+       if(DoButton_Menu(&s_TestBtn, pTestLabel, 0, &TestButton))
+               Console()->ExecuteLine("fujix_test");
 
        CUIRect RewindBox, TicksBox;
        MainView.HSplitTop(5.0f, nullptr, &MainView);
@@ -3508,6 +3527,44 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
        char aPreviewBuf[64];
        str_format(aPreviewBuf, sizeof(aPreviewBuf), Localize("Preview ticks: %d"), g_Config.m_ClFujixTasPreviewTicks);
        Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasPreviewTicks, &g_Config.m_ClFujixTasPreviewTicks, &PreviewBox, aPreviewBuf, 0, 200);
+
+       CUIRect ShowPlayersBox;
+       MainView.HSplitTop(5.0f, nullptr, &MainView);
+       MainView.HSplitTop(ms_ButtonHeight, &ShowPlayersBox, &MainView);
+       static int s_ShowPlayersChk = 0;
+       if(DoButton_CheckBox(&s_ShowPlayersChk, Localize("Show players"), g_Config.m_ClFujixTasShowPlayers, &ShowPlayersBox))
+               g_Config.m_ClFujixTasShowPlayers ^= 1;
+
+       CUIRect RouteBox;
+       MainView.HSplitTop(5.0f, nullptr, &MainView);
+       MainView.HSplitTop(ms_ButtonHeight, &RouteBox, &MainView);
+       char aRouteBuf[64];
+       str_format(aRouteBuf, sizeof(aRouteBuf), Localize("Route ticks: %d"), g_Config.m_ClFujixTasRouteTicks);
+       Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasRouteTicks, &g_Config.m_ClFujixTasRouteTicks, &RouteBox, aRouteBuf, 0, 200);
+       }
+       else
+       {
+               CUIRect EnableBox, LevelBox, AdjustBox, UpBtn, DownBtn;
+               MainView.HSplitTop(ms_ButtonHeight, &EnableBox, &MainView);
+               static int s_EnableChk = 0;
+               if(DoButton_CheckBox(&s_EnableChk, Localize("Enable freeze"), g_Config.m_ClFujixFreeze, &EnableBox))
+                       g_Config.m_ClFujixFreeze ^= 1;
+
+               MainView.HSplitTop(5.0f, nullptr, &MainView);
+               MainView.HSplitTop(ms_ButtonHeight, &LevelBox, &MainView);
+               char aLevBuf[64];
+               str_format(aLevBuf, sizeof(aLevBuf), Localize("Freeze level: %d"), g_Config.m_ClFujixFreezeLevel);
+               Ui()->DoScrollbarOption(&g_Config.m_ClFujixFreezeLevel, &g_Config.m_ClFujixFreezeLevel, &LevelBox, aLevBuf, -10000, 10000);
+
+               MainView.HSplitTop(5.0f, nullptr, &MainView);
+               MainView.HSplitTop(ms_ButtonHeight, &AdjustBox, &MainView);
+               AdjustBox.VSplitMid(&UpBtn, &DownBtn);
+               static CButtonContainer s_UpBtn, s_DownBtn;
+               if(DoButton_Menu(&s_UpBtn, Localize("Up"), 0, &UpBtn))
+                       g_Config.m_ClFujixFreezeLevel -= 32;
+               if(DoButton_Menu(&s_DownBtn, Localize("Down"), 0, &DownBtn))
+                       g_Config.m_ClFujixFreezeLevel += 32;
+       }
 }
 
 CUi::EPopupMenuFunctionResult CMenus::PopupMapPicker(void *pContext, CUIRect View, bool Active)
