@@ -187,8 +187,9 @@ void CGameClient::OnConsoleInit()
 
 	// register game commands to allow the client prediction to load settings from the map
 	Console()->Register("tune", "s[tuning] ?f[value]", CFGFLAG_GAME, ConTuneParam, this, "Tune variable to value");
-	Console()->Register("tune_zone", "i[zone] s[tuning] f[value]", CFGFLAG_GAME, ConTuneZone, this, "Tune in zone a variable to value");
-	Console()->Register("mapbug", "s[mapbug]", CFGFLAG_GAME, ConMapbug, this, "Enable map compatibility mode using the specified bug (example: grenade-doubleexplosion@ddnet.tw)");
+        Console()->Register("tune_zone", "i[zone] s[tuning] f[value]", CFGFLAG_GAME, ConTuneZone, this, "Tune in zone a variable to value");
+        Console()->Register("mapbug", "s[mapbug]", CFGFLAG_GAME, ConMapbug, this, "Enable map compatibility mode using the specified bug (example: grenade-doubleexplosion@ddnet.tw)");
+       Console()->Register("+click_d", "", CFGFLAG_CLIENT, ConDummyClick, this, "Dummy hammer toward player while held");
 
 	for(auto &pComponent : m_vpAll)
 		pComponent->m_pClient = this;
@@ -484,11 +485,29 @@ void CGameClient::OnUpdate()
 		}
 	});
 
-	if(g_Config.m_ClSubTickAiming && m_Binds.m_MouseOnAction)
-	{
-		m_Controls.m_aMousePosOnAction[g_Config.m_ClDummy] = m_Controls.m_aMousePos[g_Config.m_ClDummy];
-		m_Binds.m_MouseOnAction = false;
-	}
+        if(g_Config.m_ClSubTickAiming && m_Binds.m_MouseOnAction)
+        {
+                m_Controls.m_aMousePosOnAction[g_Config.m_ClDummy] = m_Controls.m_aMousePos[g_Config.m_ClDummy];
+                m_Binds.m_MouseOnAction = false;
+        }
+
+       if(g_Config.m_ClFujixDeepfly && Client()->DummyConnected())
+       {
+               vec2 DummyPos = m_aClients[m_aLocalIds[!g_Config.m_ClDummy]].m_Predicted.m_Pos;
+               bool HasAbove = false;
+               for(int i = 0; i < MAX_CLIENTS; i++)
+               {
+                       if(i == m_aLocalIds[!g_Config.m_ClDummy] || !m_aClients[i].m_Active)
+                               continue;
+                       vec2 Pos = m_aClients[i].m_Predicted.m_Pos;
+                       if(fabs(Pos.x - DummyPos.x) < 48 && Pos.y < DummyPos.y && DummyPos.y - Pos.y < 96)
+                       {
+                               HasAbove = true;
+                               break;
+                       }
+               }
+               g_Config.m_ClDummyHammer = HasAbove ? 1 : 0;
+       }
 
 	for(auto &pComponent : m_vpAll)
 	{
@@ -537,10 +556,113 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                              return sizeof(NullInput);
                      }
 
-                       m_FujixTas.RecordInput(&LocalInput, Tick);
-                       m_FujixTas.MaybeFinishRecord();
-                       mem_copy(pData, &LocalInput, sizeof(LocalInput));
-                       return Size;
+                      m_FujixTas.RecordInput(&LocalInput, Tick);
+                      m_FujixTas.MaybeFinishRecord();
+                      m_FujixTas.UpdateFreezeInput(&LocalInput);
+
+                   if(g_Config.m_ClFujixDeepfly && Client()->DummyConnected())
+                   {
+                           int DummyID = m_aLocalIds[!g_Config.m_ClDummy];
+                           vec2 DummyPos = m_aClients[DummyID].m_Predicted.m_Pos;
+                           const CTuningParams *pTuning = GetTuning(g_Config.m_ClDummy);
+
+                           bool Hooked = m_PredictedChar.m_HookState == HOOK_GRABBED &&
+                                         m_PredictedChar.HookedPlayer() == DummyID;
+
+                           if(Hooked)
+                           {
+                                   if(m_DeepflyTick++ > 20)
+                                   {
+                                           m_DeepflyCooldown = 2;
+                                           m_DeepflyTick = 0;
+                                   }
+                                   if(m_DeepflyCooldown == 0)
+                                           LocalInput.m_Hook = 1;
+                                   else
+                                           LocalInput.m_Hook = 0;
+                           }
+                           else if(m_DeepflyCooldown > 0)
+                           {
+                                   m_DeepflyCooldown--;
+                                   LocalInput.m_Hook = 0;
+                           }
+                           else if(DummyPos.y > m_LocalCharacterPos.y &&
+                                   fabs(DummyPos.x - m_LocalCharacterPos.x) < 48 &&
+                                   DummyPos.y - m_LocalCharacterPos.y < pTuning->m_HookLength)
+                           {
+                                   LocalInput.m_Hook = 1;
+                                   vec2 Dir = DummyPos - m_LocalCharacterPos;
+                                   if(length(Dir) > 0.0f)
+                                   {
+                                           Dir = normalize(Dir) * pTuning->m_HookLength;
+                                           LocalInput.m_TargetX = (int)(Dir.x * 256);
+                                           LocalInput.m_TargetY = (int)(Dir.y * 256);
+                                   }
+                           }
+                   }
+
+                     if(g_Config.m_ClFujixAimbot && LocalInput.m_Hook)
+                     {
+                             const CTuningParams *pTuning = GetTuning(g_Config.m_ClDummy);
+                             float BestDist = pTuning->m_HookLength;
+                             int BestID = -1;
+                             vec2 BestDir;
+
+                             vec2 AimDir = m_Controls.m_aMousePos[g_Config.m_ClDummy];
+                             if(length(AimDir) == 0.0f)
+                                     AimDir = vec2(1, 0);
+                             AimDir = normalize(AimDir);
+                             float AimAngle = angle(AimDir);
+                             float Limit = g_Config.m_ClFujixAimAngle * pi / 180.0f;
+
+                             for(int i = 0; i < MAX_CLIENTS; i++)
+                             {
+                                     if(!m_aClients[i].m_Active || i == m_Snap.m_LocalClientId)
+                                             continue;
+                                     vec2 Pos = m_aClients[i].m_Predicted.m_Pos;
+                                     vec2 Diff = Pos - m_LocalCharacterPos;
+                                     float Dist = length(Diff);
+                                     if(Dist > pTuning->m_HookLength)
+                                             continue;
+                                     float Ang = angle(normalize(Diff));
+                                     float Delta = absolute(AimAngle - Ang);
+                                     if(Delta > pi)
+                                             Delta = 2 * pi - Delta;
+                                     if(Delta <= Limit && Dist < BestDist)
+                                     {
+                                             BestDist = Dist;
+                                             BestID = i;
+                                             BestDir = Diff;
+                                     }
+                             }
+
+                             if(BestID < 0)
+                             {
+                                     for(int i = 0; i < MAX_CLIENTS; i++)
+                                     {
+                                             if(!m_aClients[i].m_Active || i == m_Snap.m_LocalClientId)
+                                                     continue;
+                                             vec2 Diff = m_aClients[i].m_Predicted.m_Pos - m_LocalCharacterPos;
+                                             float Dist = length(Diff);
+                                             if(Dist < BestDist)
+                                             {
+                                                     BestDist = Dist;
+                                                     BestID = i;
+                                                     BestDir = Diff;
+                                             }
+                                     }
+                             }
+
+                             if(BestID >= 0)
+                             {
+                                     vec2 Dir = normalize(BestDir) * pTuning->m_HookLength;
+                                     LocalInput.m_TargetX = (int)(Dir.x * 256);
+                                     LocalInput.m_TargetY = (int)(Dir.y * 256);
+                             }
+                     }
+
+                      mem_copy(pData, &LocalInput, sizeof(LocalInput));
+                      return Size;
                }
 
                if(m_FujixTas.IsRecording())
@@ -559,13 +681,36 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 		return 0;
 	}
 
-	if(!g_Config.m_ClDummyHammer)
-	{
-		if(m_DummyFire != 0)
-		{
-			m_DummyInput.m_Fire = (m_HammerInput.m_Fire + 1) & ~1;
-			m_DummyFire = 0;
-		}
+        if(!g_Config.m_ClDummyHammer)
+        {
+               if(m_DummyAutoClick)
+               {
+                        if(m_DummyAutoTick % 5 == 0)
+                                m_DummyInput.m_Fire = 1;
+                        else
+                                m_DummyInput.m_Fire = 0;
+                        m_DummyInput.m_WantedWeapon = WEAPON_HAMMER + 1;
+                        vec2 Dir = m_LocalCharacterPos - m_aClients[m_aLocalIds[!g_Config.m_ClDummy]].m_Predicted.m_Pos;
+                        if(length(Dir) > 0.0f)
+                        {
+                                Dir = normalize(Dir);
+                                Dir *= GetTuning(g_Config.m_ClDummy)->m_HookLength;
+                                m_DummyInput.m_TargetX = (int)(Dir.x * 256);
+                                m_DummyInput.m_TargetY = (int)(Dir.y * 256);
+                        }
+                        m_DummyAutoTick++;
+               }
+               else
+               {
+                        m_DummyAutoTick = 0;
+                        m_DummyInput.m_Fire = 0;
+               }
+
+                if(m_DummyFire != 0)
+                {
+                        m_DummyInput.m_Fire = (m_HammerInput.m_Fire + 1) & ~1;
+                        m_DummyFire = 0;
+                }
 
 		if(!Force && (!m_DummyInput.m_Direction && !m_DummyInput.m_Jump && !m_DummyInput.m_Hook))
 		{
@@ -700,10 +845,14 @@ void CGameClient::OnReset()
 
 	m_NextChangeInfo = 0;
 	std::fill(std::begin(m_aLocalIds), std::end(m_aLocalIds), -1);
-	m_DummyInput = {};
-	m_HammerInput = {};
-	m_DummyFire = 0;
-	m_ReceivedDDNetPlayer = false;
+       m_DummyInput = {};
+       m_HammerInput = {};
+       m_DummyFire = 0;
+       m_DummyAutoClick = false;
+       m_DummyAutoTick = 0;
+       m_DeepflyTick = 0;
+       m_DeepflyCooldown = 0;
+       m_ReceivedDDNetPlayer = false;
 
 	m_Teams.Reset();
 	m_GameWorld.Clear();
@@ -4435,6 +4584,14 @@ void CGameClient::ConMapbug(IConsole::IResult *pResult, void *pUserData)
 	default:
 		dbg_assert(false, "unreachable");
 	}
+}
+
+void CGameClient::ConDummyClick(IConsole::IResult *pResult, void *pUserData)
+{
+    CGameClient *pSelf = static_cast<CGameClient *>(pUserData);
+    pSelf->m_DummyAutoClick = pResult->GetInteger(0) != 0;
+    if(!pSelf->m_DummyAutoClick)
+        pSelf->m_DummyAutoTick = 0;
 }
 
 void CGameClient::ConchainMenuMap(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)

@@ -649,6 +649,7 @@ MACRO_CONFIG_INT(ClRotationSpeed, cl_rotation_speed, 40, 1, 120, CFGFLAG_CLIENT 
 MACRO_CONFIG_INT(ClCameraSpeed, cl_camera_speed, 5, 1, 40, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Menu camera speed")
 MACRO_CONFIG_INT(ClFujixTasRecord, cl_fujix_tas_record, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Record FUJIX TAS")
 MACRO_CONFIG_INT(ClFujixTasPlay, cl_fujix_tas_play, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Play FUJIX TAS")
+MACRO_CONFIG_INT(ClFujixTasTest, cl_fujix_tas_test, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Play FUJIX TAS as phantom")
 MACRO_CONFIG_INT(ClFujixTasRewind, cl_fujix_tas_rewind, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Rollback phantom on tiles")
 MACRO_CONFIG_INT(ClFujixTasRewindTicks, cl_fujix_tas_rewind_ticks, 10, 5, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks to rollback phantom")
 // Increased default and range to allow up to one phantom update per game tick
@@ -658,6 +659,16 @@ MACRO_CONFIG_INT(ClFujixTasPhantomTps, cl_fujix_tas_phantom_tps, 50, 1, 50, CFGF
 // Number of future ticks to visualize while playing TAS. Allows estimating the
 // upcoming path of the phantom on the HUD.
 MACRO_CONFIG_INT(ClFujixTasPreviewTicks, cl_fujix_tas_preview_ticks, 40, 0, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks of phantom path preview")
+MACRO_CONFIG_INT(ClFujixTasShowPlayers, cl_fujix_tas_show_players, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show players while recording TAS")
+MACRO_CONFIG_INT(ClFujixTasRouteTicks, cl_fujix_tas_route_ticks, 0, 0, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks ahead for recommended route (0 to disable)")
+MACRO_CONFIG_INT(ClFujixFreeze, cl_fujix_freeze, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Hold player at set level using hook")
+MACRO_CONFIG_INT(ClFujixFreezeLevel, cl_fujix_freeze_level, 0, -10000, 10000, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Vertical position for freeze mode")
+MACRO_CONFIG_INT(ClFujixDeepfly, cl_fujix_deepfly, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable automatic hammerfly for dummy")
+MACRO_CONFIG_INT(ClDummyAutoClick, cl_dummy_auto_click, 0, 0, 1, CFGFLAG_CLIENT, "Dummy hits repeatedly while held")
+MACRO_CONFIG_INT(ClFujixAimbot, cl_fujix_aimbot, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable hook aimbot")
+MACRO_CONFIG_INT(ClFujixAimAngle, cl_fujix_aim_angle, 45, 1, 180, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Aimbot search angle in degrees")
+MACRO_CONFIG_INT(ClFujixAimLines, cl_fujix_aim_lines, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show aimbot angle lines")
+MACRO_CONFIG_INT(UiFujixPage, ui_fujix_page, 0, 0, 2, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Fujix settings sub page")
 
 MACRO_CONFIG_INT(ClBackgroundShowTilesLayers, cl_background_show_tiles_layers, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Whether draw tiles layers when using custom background (entities)")
 MACRO_CONFIG_INT(SvShowOthers, sv_show_others, 1, 0, 1, CFGFLAG_SERVER, "Whether players can use the command showothers or not")
