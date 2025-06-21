@@ -767,7 +767,8 @@ public:
 	void DemolistPopulate();
 	void RefreshFilteredDemos();
 	void DemoSeekTick(IDemoPlayer::ETickOffset TickOffset);
-	bool m_Dummy;
+        bool m_Dummy;
+        int m_FujixPage;
 
 	const char *GetCurrentDemoFolder() const { return m_aCurrentDemoFolder; }
 
