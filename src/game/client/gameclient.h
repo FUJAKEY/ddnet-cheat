@@ -240,7 +240,8 @@ private:
 
 	static void ConTuneParam(IConsole::IResult *pResult, void *pUserData);
 	static void ConTuneZone(IConsole::IResult *pResult, void *pUserData);
-	static void ConMapbug(IConsole::IResult *pResult, void *pUserData);
+       static void ConMapbug(IConsole::IResult *pResult, void *pUserData);
+       static void ConDummyClick(IConsole::IResult *pResult, void *pUserData);
 
 	static void ConchainMenuMap(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 
@@ -641,9 +642,11 @@ public:
 
 	int m_aLocalIds[NUM_DUMMIES];
 	CNetObj_PlayerInput m_DummyInput;
-	CNetObj_PlayerInput m_HammerInput;
-	unsigned int m_DummyFire;
-	bool m_ReceivedDDNetPlayer;
+        CNetObj_PlayerInput m_HammerInput;
+        unsigned int m_DummyFire;
+       bool m_DummyAutoClick;
+       int m_DummyAutoTick;
+        bool m_ReceivedDDNetPlayer;
 
 	class CTeamsCore m_Teams;
 
