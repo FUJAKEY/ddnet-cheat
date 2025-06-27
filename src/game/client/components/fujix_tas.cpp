@@ -35,12 +35,22 @@ CFujixTas::CFujixTas()
     m_PhantomTick = 0;
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
     m_PhantomPlayIndex = 0;
+    m_HookFile = nullptr;
+    m_HookPlayIndex = 0;
+    m_LastHookState = HOOK_RETRACTED;
+    m_LastHookedPlayer = -1;
 }
 
 void CFujixTas::GetPath(char *pBuf, int Size) const
 {
     const char *pMap = Client()->GetCurrentMap();
     str_format(pBuf, Size, "%s/%s.fjx", ms_pFujixDir, pMap);
+}
+
+void CFujixTas::GetHookPath(char *pBuf, int Size) const
+{
+    const char *pMap = Client()->GetCurrentMap();
+    str_format(pBuf, Size, "%s/%s.hook", ms_pFujixDir, pMap);
 }
 
 void CFujixTas::UpdatePlaybackInput()
@@ -68,6 +78,7 @@ void CFujixTas::UpdatePlaybackInput()
         {
             StopPlay();
         }
+        ApplyHookEvents(PredTick, false);
     }
     else // m_Testing
     {
@@ -75,6 +86,45 @@ void CFujixTas::UpdatePlaybackInput()
         {
             StopTest();
         }
+        ApplyHookEvents(PredTick, true);
+    }
+}
+
+void CFujixTas::RecordHookState(int Tick)
+{
+    if(!m_Recording)
+        return;
+
+    const CCharacterCore &Core = GameClient()->m_PredictedChar;
+    if(Core.m_HookState != m_LastHookState || Core.HookedPlayer() != m_LastHookedPlayer)
+    {
+        SHookEvent Ev;
+        Ev.m_Tick = Tick - m_StartTick;
+        Ev.m_State = Core.m_HookState;
+        Ev.m_HookedPlayer = Core.HookedPlayer();
+        Ev.m_HookX = round_to_int(Core.m_HookPos.x);
+        Ev.m_HookY = round_to_int(Core.m_HookPos.y);
+        Ev.m_HookTick = Core.m_HookTick;
+        m_vHookEvents.push_back(Ev);
+        if(m_HookFile)
+            io_write(m_HookFile, &Ev, sizeof(Ev));
+        m_LastHookState = Core.m_HookState;
+        m_LastHookedPlayer = Core.HookedPlayer();
+    }
+}
+
+void CFujixTas::ApplyHookEvents(int PredTick, bool ToPhantom)
+{
+    int BaseTick = m_Playing ? m_PlayStartTick : m_TestStartTick;
+    while(m_HookPlayIndex < (int)m_vHookEvents.size() && BaseTick + m_vHookEvents[m_HookPlayIndex].m_Tick <= PredTick)
+    {
+        const SHookEvent &Ev = m_vHookEvents[m_HookPlayIndex];
+        CCharacterCore *pCore = ToPhantom ? &m_PhantomCore : &GameClient()->m_PredictedChar;
+        pCore->m_HookState = Ev.m_State;
+        pCore->m_HookTick = Ev.m_HookTick;
+        pCore->m_HookPos = vec2(Ev.m_HookX, Ev.m_HookY);
+        pCore->SetHookedPlayer(Ev.m_HookedPlayer);
+        m_HookPlayIndex++;
     }
 }
 
@@ -125,6 +175,7 @@ void CFujixTas::StartRecord()
         return;
 
     GetPath(m_aFilename, sizeof(m_aFilename));
+    GetHookPath(m_aHookFilename, sizeof(m_aHookFilename));
     Storage()->CreateFolder(ms_pFujixDir, IStorage::TYPE_SAVE);
     m_File = Storage()->OpenFile(m_aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
     if(!m_File)
@@ -132,6 +183,7 @@ void CFujixTas::StartRecord()
         Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "failed to open file for recording");
         return;
     }
+    m_HookFile = Storage()->OpenFile(m_aHookFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
 
     m_StartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
     m_LastRecordTick = m_StartTick - 1;
@@ -139,6 +191,10 @@ void CFujixTas::StartRecord()
     m_Recording = true;
     g_Config.m_ClFujixTasRecord = 1;
     m_vEntries.clear();
+    m_vHookEvents.clear();
+    m_HookPlayIndex = 0;
+    m_LastHookState = GameClient()->m_PredictedChar.m_HookState;
+    m_LastHookedPlayer = GameClient()->m_PredictedChar.HookedPlayer();
 
     // initialize phantom to visualize recording
     if(GameClient()->m_Snap.m_LocalClientId >= 0)
@@ -174,6 +230,11 @@ void CFujixTas::FinishRecord()
         io_close(m_File);
         m_File = nullptr;
     }
+    if(m_HookFile)
+    {
+        io_close(m_HookFile);
+        m_HookFile = nullptr;
+    }
 
     m_Recording = false;
     g_Config.m_ClFujixTasRecord = 0;
@@ -208,10 +269,17 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
     Core.m_Input = *pInput;
     Core.Tick(true);
+    Core.Move();
+    Core.Quantize();
 
-    int Index = Collision()->GetMapIndex(Core.m_Pos);
-    int Type = Collision()->GetSwitchType(Index);
-    if(Type == TILE_FREEZE || Type == TILE_DFREEZE || Type == TILE_LFREEZE)
+    int Index = Collision()->GetPureMapIndex(Core.m_Pos.x, Core.m_Pos.y);
+    int Tile = Collision()->GetTileIndex(Index);
+    int Front = Collision()->GetFrontTileIndex(Index);
+
+    bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
+                  Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
+
+    if(Freeze)
     {
         pInput->m_Direction = 0;
         pInput->m_Jump = 0;
@@ -239,6 +307,30 @@ void CFujixTas::StartPlay()
         m_vEntries.push_back(e);
     io_close(File);
 
+    GetHookPath(aPath, sizeof(aPath));
+    IOHANDLE HookFile = Storage()->OpenFile(aPath, IOFLAG_READ, IStorage::TYPE_SAVE);
+    m_vHookEvents.clear();
+    if(HookFile)
+    {
+        SHookEvent Ev;
+        while(io_read(HookFile, &Ev, sizeof(Ev)) == sizeof(Ev))
+            m_vHookEvents.push_back(Ev);
+        io_close(HookFile);
+    }
+    m_HookPlayIndex = 0;
+
+    GetHookPath(aPath, sizeof(aPath));
+    IOHANDLE HookFile = Storage()->OpenFile(aPath, IOFLAG_READ, IStorage::TYPE_SAVE);
+    m_vHookEvents.clear();
+    if(HookFile)
+    {
+        SHookEvent Ev;
+        while(io_read(HookFile, &Ev, sizeof(Ev)) == sizeof(Ev))
+            m_vHookEvents.push_back(Ev);
+        io_close(HookFile);
+    }
+    m_HookPlayIndex = 0;
+
     if(m_vEntries.empty())
 	{
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "tas file is empty");
@@ -259,6 +351,8 @@ void CFujixTas::StopPlay()
     m_vEntries.clear();
     m_PlayIndex = 0;
     m_PlayStartTick = 0;
+    m_vHookEvents.clear();
+    m_HookPlayIndex = 0;
     mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
 }
 
@@ -321,6 +415,8 @@ void CFujixTas::StopTest()
     g_Config.m_ClFujixTasTest = 0;
     m_PhantomActive = false;
     m_vEntries.clear();
+    m_vHookEvents.clear();
+    m_HookPlayIndex = 0;
 }
 
 void CFujixTas::TickPhantomUpTo(int TargetTick)
@@ -336,6 +432,8 @@ void CFujixTas::TickPhantomUpTo(int TargetTick)
 
         if(m_Testing || m_Playing)
             UpdatePlaybackInput();
+        if(m_Testing || m_Playing)
+            ApplyHookEvents(m_PhantomTick, true);
 
         m_PhantomCore.m_Input = m_PhantomInput;
         m_PhantomCore.Tick(true);
@@ -396,7 +494,8 @@ void CFujixTas::OnUpdate()
         StopTest();
 
     MaybeFinishRecord();
-	TickPhantom();
+    RecordHookState(Client()->PredGameTick(g_Config.m_ClDummy));
+    TickPhantom();
 }
 
 void CFujixTas::OnRender()
@@ -490,6 +589,7 @@ void CFujixTas::OnMapLoad()
 {
     Storage()->CreateFolder(ms_pFujixDir, IStorage::TYPE_SAVE);
     StopPlay();
-    StopRecord();
+    if(m_Recording)
+        FinishRecord();
     StopTest();
 }

@@ -22,6 +22,16 @@ int m_Tick;
 CNetObj_PlayerInput m_Input;
 };
 
+ struct SHookEvent
+ {
+ int m_Tick;
+ int m_State;
+ int m_HookedPlayer;
+ int m_HookX;
+ int m_HookY;
+ int m_HookTick;
+ };
+
 bool m_Recording;
 bool m_Playing;
 bool m_Testing;
@@ -38,6 +48,13 @@ CNetObj_PlayerInput m_CurrentInput;
 bool m_StopPending;
 int m_StopTick;
 
+ char m_aHookFilename[IO_MAX_PATH_LENGTH];
+ IOHANDLE m_HookFile;
+ std::vector<SHookEvent> m_vHookEvents;
+ int m_HookPlayIndex;
+ int m_LastHookState;
+ int m_LastHookedPlayer;
+
 // Phantom
 bool m_PhantomActive;
 int m_PhantomTick;
@@ -49,12 +66,15 @@ CNetObj_PlayerInput m_PhantomInput;
 int m_PhantomPlayIndex;
 
 void GetPath(char *pBuf, int Size) const;
+void GetHookPath(char *pBuf, int Size) const;
 void UpdatePlaybackInput();
 void TickPhantom();
 void CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *pChar, int Tick);
 void FinishRecord();
 void RenderFuturePath(int TicksAhead);
 void TickPhantomUpTo(int TargetTick);
+void RecordHookState(int Tick);
+void ApplyHookEvents(int PredTick, bool ToPhantom);
 
 static void ConRecord(IConsole::IResult *pResult, void *pUserData);
 static void ConPlay(IConsole::IResult *pResult, void *pUserData);
