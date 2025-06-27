@@ -3545,29 +3545,14 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
        str_format(aRouteBuf, sizeof(aRouteBuf), Localize("Route ticks: %d"), g_Config.m_ClFujixTasRouteTicks);
        Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasRouteTicks, &g_Config.m_ClFujixTasRouteTicks, &RouteBox, aRouteBuf, 0, 200);
        }
-       else if(m_FujixPage == 1)
-       {
-               CUIRect EnableBox, LevelBox, AdjustBox, UpBtn, DownBtn;
-               MainView.HSplitTop(ms_ButtonHeight, &EnableBox, &MainView);
-               static int s_EnableChk = 0;
-               if(DoButton_CheckBox(&s_EnableChk, Localize("Enable freeze"), g_Config.m_ClFujixFreeze, &EnableBox))
-                       g_Config.m_ClFujixFreeze ^= 1;
-
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &LevelBox, &MainView);
-               char aLevBuf[64];
-               str_format(aLevBuf, sizeof(aLevBuf), Localize("Freeze level: %d"), g_Config.m_ClFujixFreezeLevel);
-               Ui()->DoScrollbarOption(&g_Config.m_ClFujixFreezeLevel, &g_Config.m_ClFujixFreezeLevel, &LevelBox, aLevBuf, -10000, 10000);
-
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &AdjustBox, &MainView);
-               AdjustBox.VSplitMid(&UpBtn, &DownBtn);
-               static CButtonContainer s_UpBtn, s_DownBtn;
-               if(DoButton_Menu(&s_UpBtn, Localize("Up"), 0, &UpBtn))
-                       g_Config.m_ClFujixFreezeLevel -= 32;
-               if(DoButton_Menu(&s_DownBtn, Localize("Down"), 0, &DownBtn))
-                       g_Config.m_ClFujixFreezeLevel += 32;
-       }
+    else if(m_FujixPage == 1)
+    {
+            CUIRect BlockBox;
+            MainView.HSplitTop(ms_ButtonHeight, &BlockBox, &MainView);
+            static int s_BlockChk = 0;
+            if(DoButton_CheckBox(&s_BlockChk, Localize("Block freeze"), g_Config.m_ClFujixBlockFreeze, &BlockBox))
+                    g_Config.m_ClFujixBlockFreeze ^= 1;
+    }
        else if(m_FujixPage == 2)
        {
                CUIRect FpsBox;

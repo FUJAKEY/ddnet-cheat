@@ -153,7 +153,8 @@ void CFujixTas::StartRecord()
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
     m_PhantomPlayIndex = 0;
     // ignore other players but keep map collisions
-    m_PhantomCore.m_CollisionDisabled = true;
+    m_PhantomCore.m_CollisionDisabled = false;
+    m_PhantomCore.m_Solo = true;
     m_PhantomCore.m_HookHitDisabled = true;
     m_PhantomCore.m_HammerHitDisabled = true;
     m_PhantomCore.m_GrenadeHitDisabled = true;
@@ -198,15 +199,24 @@ void CFujixTas::MaybeFinishRecord()
         FinishRecord();
 }
 
-void CFujixTas::UpdateFreezeInput(CNetObj_PlayerInput *pInput)
+void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
 {
-    if(!g_Config.m_ClFujixFreeze)
+    if(!g_Config.m_ClFujixBlockFreeze)
         return;
 
-    vec2 Pos = GameClient()->m_LocalCharacterPos;
-    pInput->m_Hook = 1;
-    pInput->m_TargetX = (int)(Pos.x * 256.0f);
-    pInput->m_TargetY = g_Config.m_ClFujixFreezeLevel * 256;
+    CCharacterCore Core = GameClient()->m_PredictedChar;
+    Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
+    Core.m_Input = *pInput;
+    Core.Tick(true);
+
+    int Index = Collision()->GetMapIndex(Core.m_Pos);
+    int Type = Collision()->GetSwitchType(Index);
+    if(Type == TILE_FREEZE || Type == TILE_DFREEZE || Type == TILE_LFREEZE)
+    {
+        pInput->m_Direction = 0;
+        pInput->m_Jump = 0;
+        pInput->m_Hook = 0;
+    }
 }
 
 void CFujixTas::StartPlay()
@@ -291,7 +301,8 @@ void CFujixTas::StartTest()
     m_PhantomPlayIndex = 0;
 
     // ignore other players while keeping map collisions
-    m_PhantomCore.m_CollisionDisabled = true;
+    m_PhantomCore.m_CollisionDisabled = false;
+    m_PhantomCore.m_Solo = true;
     m_PhantomCore.m_HookHitDisabled = true;
     m_PhantomCore.m_HammerHitDisabled = true;
     m_PhantomCore.m_GrenadeHitDisabled = true;
