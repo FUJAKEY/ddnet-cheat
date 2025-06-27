@@ -160,9 +160,7 @@ void CFujixTas::StartRecord()
     m_PhantomCore.m_ShotgunHitDisabled = true;
     m_PhantomCore.m_LaserHitDisabled = true;
     m_TestStartTick = m_PhantomTick;
-    m_Testing = true;
     m_PhantomActive = true;
-    g_Config.m_ClFujixTasTest = 1;
 }
 
 void CFujixTas::FinishRecord()
@@ -182,9 +180,7 @@ void CFujixTas::FinishRecord()
     m_StopPending = false;
     m_StopTick = -1;
 
-    m_Testing = false;
     m_PhantomActive = false;
-    g_Config.m_ClFujixTasTest = 0;
 }
 
 void CFujixTas::StopRecord()
@@ -317,14 +313,15 @@ void CFujixTas::StopTest()
 
 void CFujixTas::TickPhantomUpTo(int TargetTick)
 {
-    if(!m_PhantomActive || !m_Testing)
+    if(!m_PhantomActive)
         return;
 
     while(m_PhantomTick < TargetTick)
     {
         m_PhantomPrevCore = m_PhantomCore;
 
-        UpdatePlaybackInput();
+        if(m_Testing || m_Playing)
+            UpdatePlaybackInput();
 
         m_PhantomCore.m_Input = m_PhantomInput;
         m_PhantomCore.Tick(true);
@@ -337,8 +334,8 @@ void CFujixTas::TickPhantomUpTo(int TargetTick)
 
 void CFujixTas::TickPhantom()
 {
-	if (!m_Testing)
-		return;
+    if(!m_PhantomActive)
+        return;
     int PredTick = Client()->PredGameTick(g_Config.m_ClDummy);
     TickPhantomUpTo(PredTick);
 }
@@ -390,7 +387,7 @@ void CFujixTas::OnUpdate()
 
 void CFujixTas::OnRender()
 {
-    if(m_PhantomActive && g_Config.m_ClFujixTasTest)
+    if(m_PhantomActive)
     {
         CNetObj_Character Prev, Curr;
         CoreToCharacter(m_PhantomPrevCore, &Prev, m_PhantomTick - 1);
@@ -410,7 +407,7 @@ void CFujixTas::OnRender()
 
 void CFujixTas::RenderFuturePath(int TicksAhead)
 {
-    if(TicksAhead <= 0 || !m_PhantomActive || !m_Testing)
+    if(TicksAhead <= 0 || !m_PhantomActive)
         return;
 
     CFujixTas Tmp = *this;
