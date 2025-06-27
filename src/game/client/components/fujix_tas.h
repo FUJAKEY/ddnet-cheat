@@ -62,4 +62,30 @@ private:
     static void ConRecord(IConsole::IResult *pResult, void *pUserData);
     static void ConPlay(IConsole::IResult *pResult, void *pUserData);
     static void ConTest(IConsole::IResult *pResult, void *pUserData);
+
+public:
+    CFujixTas();
+    virtual int Sizeof() const override { return sizeof(*this); }
+
+    virtual void OnConsoleInit() override;
+    virtual void OnMapLoad() override;
+    virtual void OnUpdate() override;
+    virtual void OnRender() override;
+
+    void StartRecord();
+    void StopRecord();
+    void StartPlay();
+    void StopPlay();
+    void StartTest();
+    void StopTest();
+    bool IsRecording() const { return m_Recording; }
+    bool IsPlaying() const { return m_Playing; }
+    bool IsTesting() const { return m_Testing; }
+    bool IsPhantomActive() const { return m_PhantomActive; }
+    vec2 PhantomPos() const { return m_PhantomCore.m_Pos; }
+    bool FetchPlaybackInput(CNetObj_PlayerInput *pInput);
+    void RecordInput(const CNetObj_PlayerInput *pInput, int Tick);
+    void MaybeFinishRecord();
+};
+
 #endif // GAME_CLIENT_COMPONENTS_FUJIX_TAS_H
