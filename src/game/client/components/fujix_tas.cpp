@@ -114,7 +114,6 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
     if((m_Testing || m_Recording) && m_PhantomActive)
     {
         m_PhantomInput = *pInput;
-        TickPhantomUpTo(Tick + 1);
         m_PhantomPlayIndex = (int)m_vEntries.size();
     }
 }
@@ -153,8 +152,8 @@ void CFujixTas::StartRecord()
     m_PhantomStep = 1;
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
     m_PhantomPlayIndex = 0;
-    // allow normal map collisions so recorded movement matches playback
-    m_PhantomCore.m_CollisionDisabled = false;
+    // ignore other players but keep map collisions
+    m_PhantomCore.m_CollisionDisabled = true;
     m_PhantomCore.m_HookHitDisabled = true;
     m_PhantomCore.m_HammerHitDisabled = true;
     m_PhantomCore.m_GrenadeHitDisabled = true;
@@ -291,8 +290,8 @@ void CFujixTas::StartTest()
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
     m_PhantomPlayIndex = 0;
 
-    // keep collisions to behave like a real player but ignore other tees
-    m_PhantomCore.m_CollisionDisabled = false;
+    // ignore other players while keeping map collisions
+    m_PhantomCore.m_CollisionDisabled = true;
     m_PhantomCore.m_HookHitDisabled = true;
     m_PhantomCore.m_HammerHitDisabled = true;
     m_PhantomCore.m_GrenadeHitDisabled = true;
