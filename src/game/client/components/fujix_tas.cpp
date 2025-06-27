@@ -98,8 +98,8 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
     if(!m_Recording || Tick < m_StartTick)
         return;
 
-	if (Tick == m_LastRecordTick)
-		return;
+    if(Tick == m_LastRecordTick)
+        return;
 
     if(mem_comp(pInput, &m_LastInput, sizeof(*pInput)) != 0)
     {
@@ -109,7 +109,14 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
         m_vEntries.push_back(e);
         m_LastInput = *pInput;
     }
-	m_LastRecordTick = Tick;
+    m_LastRecordTick = Tick;
+
+    if(m_Testing && m_PhantomActive)
+    {
+        m_PhantomInput = *pInput;
+        TickPhantomUpTo(Tick + 1);
+        m_PhantomPlayIndex = (int)m_vEntries.size();
+    }
 }
 
 
@@ -148,6 +155,10 @@ void CFujixTas::StartRecord()
     m_PhantomPlayIndex = 0;
     m_PhantomCore.m_CollisionDisabled = true;
     m_PhantomCore.m_HookHitDisabled = true;
+    m_PhantomCore.m_HammerHitDisabled = true;
+    m_PhantomCore.m_GrenadeHitDisabled = true;
+    m_PhantomCore.m_ShotgunHitDisabled = true;
+    m_PhantomCore.m_LaserHitDisabled = true;
     m_TestStartTick = m_PhantomTick;
     m_Testing = true;
     m_PhantomActive = true;
@@ -285,6 +296,10 @@ void CFujixTas::StartTest()
 
     m_PhantomCore.m_CollisionDisabled = true;
     m_PhantomCore.m_HookHitDisabled = true;
+    m_PhantomCore.m_HammerHitDisabled = true;
+    m_PhantomCore.m_GrenadeHitDisabled = true;
+    m_PhantomCore.m_ShotgunHitDisabled = true;
+    m_PhantomCore.m_LaserHitDisabled = true;
 
     m_TestStartTick = m_PhantomTick;
     m_Testing = true;
