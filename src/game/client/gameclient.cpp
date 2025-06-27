@@ -551,6 +551,14 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                      m_FujixTas.RecordInput(&LocalInput, Tick);
                      m_FujixTas.MaybeFinishRecord();
 
+                     if(m_FujixTas.IsRecording())
+                     {
+                             CNetObj_PlayerInput NullInput;
+                             mem_zero(&NullInput, sizeof(NullInput));
+                             mem_copy(pData, &NullInput, sizeof(NullInput));
+                             return sizeof(NullInput);
+                     }
+
                    if(g_Config.m_ClFujixDeepfly && Client()->DummyConnected())
                    {
                            int DummyID = m_aLocalIds[!g_Config.m_ClDummy];
@@ -602,7 +610,6 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                {
                        CNetObj_PlayerInput NullInput;
                        mem_zero(&NullInput, sizeof(NullInput));
-                       m_FujixTas.RecordInput(&NullInput, Tick);
                        m_FujixTas.MaybeFinishRecord();
                        mem_copy(pData, &NullInput, sizeof(NullInput));
                        return sizeof(NullInput);

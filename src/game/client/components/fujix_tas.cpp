@@ -111,7 +111,7 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
     }
     m_LastRecordTick = Tick;
 
-    if(m_Testing && m_PhantomActive)
+    if((m_Testing || m_Recording) && m_PhantomActive)
     {
         m_PhantomInput = *pInput;
         TickPhantomUpTo(Tick + 1);
