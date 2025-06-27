@@ -3463,17 +3463,17 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 
 void CMenus::RenderSettingsFujix(CUIRect MainView)
 {
-    CUIRect TabBar, TasTab, FreezeTab, AimTab;
+    CUIRect TabBar, TasTab, FreezeTab, OtherTab;
     MainView.HSplitTop(20.0f, &TabBar, &MainView);
     TabBar.VSplitLeft(TabBar.w / 3, &TasTab, &TabBar);
-    TabBar.VSplitLeft(TabBar.w / 2, &FreezeTab, &AimTab);
+    TabBar.VSplitLeft(TabBar.w / 2, &FreezeTab, &OtherTab);
 
-    static CButtonContainer s_TasBtn, s_FreezeBtn, s_AimBtn;
+    static CButtonContainer s_TasBtn, s_FreezeBtn, s_OtherBtn;
     if(DoButton_MenuTab(&s_TasBtn, Localize("TAS"), m_FujixPage == 0, &TasTab, IGraphics::CORNER_L))
             m_FujixPage = 0;
     if(DoButton_MenuTab(&s_FreezeBtn, Localize("Freeze"), m_FujixPage == 1, &FreezeTab, 0))
             m_FujixPage = 1;
-    if(DoButton_MenuTab(&s_AimBtn, Localize("Aim"), m_FujixPage == 2, &AimTab, IGraphics::CORNER_R))
+    if(DoButton_MenuTab(&s_OtherBtn, Localize("Other"), m_FujixPage == 2, &OtherTab, IGraphics::CORNER_R))
             m_FujixPage = 2;
 
        g_Config.m_UiFujixPage = m_FujixPage;
@@ -3567,6 +3567,14 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
                        g_Config.m_ClFujixFreezeLevel -= 32;
                if(DoButton_Menu(&s_DownBtn, Localize("Down"), 0, &DownBtn))
                        g_Config.m_ClFujixFreezeLevel += 32;
+       }
+       else if(m_FujixPage == 2)
+       {
+               CUIRect FpsBox;
+               MainView.HSplitTop(ms_ButtonHeight, &FpsBox, &MainView);
+               char aFpsBuf[64];
+               str_format(aFpsBuf, sizeof(aFpsBuf), Localize("FPS limit: %d"), g_Config.m_GfxRefreshRate);
+               Ui()->DoScrollbarOption(&g_Config.m_GfxRefreshRate, &g_Config.m_GfxRefreshRate, &FpsBox, aFpsBuf, 40, 600);
        }
 }
 

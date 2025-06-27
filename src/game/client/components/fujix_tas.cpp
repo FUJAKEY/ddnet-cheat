@@ -153,7 +153,8 @@ void CFujixTas::StartRecord()
     m_PhantomStep = 1;
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
     m_PhantomPlayIndex = 0;
-    m_PhantomCore.m_CollisionDisabled = true;
+    // allow normal map collisions so recorded movement matches playback
+    m_PhantomCore.m_CollisionDisabled = false;
     m_PhantomCore.m_HookHitDisabled = true;
     m_PhantomCore.m_HammerHitDisabled = true;
     m_PhantomCore.m_GrenadeHitDisabled = true;
@@ -290,7 +291,8 @@ void CFujixTas::StartTest()
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
     m_PhantomPlayIndex = 0;
 
-    m_PhantomCore.m_CollisionDisabled = true;
+    // keep collisions to behave like a real player but ignore other tees
+    m_PhantomCore.m_CollisionDisabled = false;
     m_PhantomCore.m_HookHitDisabled = true;
     m_PhantomCore.m_HammerHitDisabled = true;
     m_PhantomCore.m_GrenadeHitDisabled = true;
@@ -318,6 +320,8 @@ void CFujixTas::TickPhantomUpTo(int TargetTick)
 
     while(m_PhantomTick < TargetTick)
     {
+        // keep world pointers fresh in case prediction updated
+        m_PhantomCore.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
         m_PhantomPrevCore = m_PhantomCore;
 
         if(m_Testing || m_Playing)
