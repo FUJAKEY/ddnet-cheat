@@ -15,92 +15,41 @@ class CFujixTas : public CComponent
 public:
     static const char *ms_pFujixDir;
 
-private:
-    struct SEntry
+    struct STasEntry
     {
         int m_Tick;
         CNetObj_PlayerInput m_Input;
-        vec2 m_Pos; // player position this tick
-        bool m_Active; // true if any input changed this tick
     };
 
-    enum EActionType
-    {
-        ACTION_LEFT_PRESS,
-        ACTION_LEFT_RELEASE,
-        ACTION_RIGHT_PRESS,
-        ACTION_RIGHT_RELEASE,
-        ACTION_HOOK_PRESS,
-        ACTION_HOOK_RELEASE,
-        ACTION_JUMP
-    };
-
-    struct SActionEvent
-    {
-        int m_Tick;
-        vec2 m_Pos;
-        EActionType m_Type;
-    };
-
-    struct SHookEvent
-    {
-        int m_StartTick;
-        int m_EndTick;
-        int m_TileX;
-        int m_TileY;
-    };
-
+private:
     bool m_Recording;
     bool m_Playing;
     bool m_Testing;
     int m_StartTick;
-    int m_TestStartTick;
-    int m_PlayStartTick;
     char m_aFilename[IO_MAX_PATH_LENGTH];
-    char m_aHookFilename[IO_MAX_PATH_LENGTH];
     IOHANDLE m_File;
-    IOHANDLE m_HookFile;
-    IOHANDLE m_EventFile;
-    std::vector<SEntry> m_vEntries;
-    std::vector<SHookEvent> m_vHookEvents;
-    std::vector<SActionEvent> m_vActionEvents;
+
+    std::vector<STasEntry> m_vEntries;
     int m_PlayIndex;
-    int m_PlayHookIndex;
-    int m_PlayActionIndex;
+    int m_PlayStartTick;
+
+    CNetObj_PlayerInput m_LastRecordedInput;
+    CNetObj_PlayerInput m_CurrentPlaybackInput;
+    
     int m_LastRecordTick;
-    CNetObj_PlayerInput m_LastInput;
-    CNetObj_PlayerInput m_CurrentInput;
-    int m_LastHookState;
-    bool m_HookRecording;
-    SHookEvent m_CurHookEvent;
-    int m_PhantomHookIndex;
-    int m_PhantomActionIndex;
     bool m_StopPending;
     int m_StopTick;
 
+    // --- Phantom ---
     bool m_PhantomActive;
     int m_PhantomTick;
-    CNetObj_PlayerInput m_PhantomInput;
-    struct SInputTick
-    {
-        int m_Tick;
-        CNetObj_PlayerInput m_Input;
-    };
-    std::deque<SInputTick> m_PendingInputs;
     CCharacterCore m_PhantomCore;
     CCharacterCore m_PhantomPrevCore;
     CTeeRenderInfo m_PhantomRenderInfo;
-    int m_PhantomFreezeTime;
     int m_PhantomStep;
     int m_LastPredTick;
-
-    bool m_FreezeActive;
-    float m_FreezeLevel;
-    int m_FreezeHookTicks;
-    int m_FreezeHookCooldown;
-
-    int m_OldShowOthers;
-
+    int m_PhantomFreezeTime;
+    
     struct SPhantomState
     {
         int m_Tick;
@@ -110,31 +59,27 @@ private:
         int m_FreezeTime;
     };
     std::deque<SPhantomState> m_PhantomHistory;
+    std::deque<STasEntry> m_PhantomInputs; // Inputs for phantom simulation
+
+    int m_OldShowOthers;
 
     void GetPath(char *pBuf, int Size) const;
-    void GetHookPath(char *pBuf, int Size) const;
-    void GetEventPath(char *pBuf, int Size) const;
     void RecordEntry(const CNetObj_PlayerInput *pInput, int Tick);
-    void RecordActionEvent(EActionType Type, vec2 Pos, int Tick);
-    bool FetchEntry(CNetObj_PlayerInput *pInput);
     void UpdatePlaybackInput();
+    
     void TickPhantom();
     void TickPhantomUpTo(int TargetTick);
+    void CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *pChar, int Tick);
+    void FinishRecord();
     void RenderFuturePath(int TicksAhead);
+
     bool HandlePhantomTiles(int MapIndex);
     void PhantomFreeze(int Seconds);
     void PhantomUnfreeze();
-    void RollbackPhantom(int Ticks);
-    void RewriteFile();
-    void CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *pChar, int Tick);
-    void FinishRecord();
-    void RenderRecommendedRoute(int TicksAhead);
 
     static void ConRecord(IConsole::IResult *pResult, void *pUserData);
     static void ConPlay(IConsole::IResult *pResult, void *pUserData);
     static void ConTest(IConsole::IResult *pResult, void *pUserData);
-    static void ConFreezeUp(IConsole::IResult *pResult, void *pUserData);
-    static void ConFreezeDown(IConsole::IResult *pResult, void *pUserData);
 
 public:
     CFujixTas();
@@ -152,6 +97,16 @@ public:
     void StartTest();
     void StopTest();
     bool IsRecording() const { return m_Recording; }
+    bool IsPlaying() const { return m_Playing; }
+    bool IsTesting() const { return m_Testing; }
+    bool IsPhantomActive() const { return m_PhantomActive; }
+    vec2 PhantomPos() const { return m_PhantomCore.m_Pos; }
+    bool FetchPlaybackInput(CNetObj_PlayerInput *pInput);
+    void RecordInput(const CNetObj_PlayerInput *pInput, int Tick);
+    void MaybeFinishRecord();
+};
+
+#endif // GAME_CLIENT_COMPONENTS_FUJIX_TAS_H
     bool IsPlaying() const { return m_Playing; }
     bool IsTesting() const { return m_Testing; }
     bool IsPhantomActive() const { return m_PhantomActive; }
