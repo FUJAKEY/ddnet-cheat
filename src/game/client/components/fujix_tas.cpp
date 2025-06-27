@@ -133,6 +133,25 @@ void CFujixTas::StartRecord()
     m_Recording = true;
     g_Config.m_ClFujixTasRecord = 1;
     m_vEntries.clear();
+
+    // initialize phantom to visualize recording
+    if(GameClient()->m_Snap.m_LocalClientId >= 0)
+    {
+        m_PhantomCore = GameClient()->m_PredictedChar;
+        m_PhantomPrevCore = m_PhantomCore;
+        m_PhantomCore.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
+        m_PhantomRenderInfo = GameClient()->m_aClients[GameClient()->m_Snap.m_LocalClientId].m_RenderInfo;
+    }
+    m_PhantomTick = Client()->PredGameTick(g_Config.m_ClDummy);
+    m_PhantomStep = 1;
+    mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
+    m_PhantomPlayIndex = 0;
+    m_PhantomCore.m_CollisionDisabled = true;
+    m_PhantomCore.m_HookHitDisabled = true;
+    m_TestStartTick = m_PhantomTick;
+    m_Testing = true;
+    m_PhantomActive = true;
+    g_Config.m_ClFujixTasTest = 1;
 }
 
 void CFujixTas::FinishRecord()
@@ -151,6 +170,10 @@ void CFujixTas::FinishRecord()
     m_LastRecordTick = -1;
     m_StopPending = false;
     m_StopTick = -1;
+
+    m_Testing = false;
+    m_PhantomActive = false;
+    g_Config.m_ClFujixTasTest = 0;
 }
 
 void CFujixTas::StopRecord()
@@ -260,8 +283,8 @@ void CFujixTas::StartTest()
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
     m_PhantomPlayIndex = 0;
 
-    m_PhantomCore.m_CollisionDisabled = false;
-    m_PhantomCore.m_HookHitDisabled = false;
+    m_PhantomCore.m_CollisionDisabled = true;
+    m_PhantomCore.m_HookHitDisabled = true;
 
     m_TestStartTick = m_PhantomTick;
     m_Testing = true;

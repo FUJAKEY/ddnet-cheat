@@ -3568,26 +3568,6 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
                if(DoButton_Menu(&s_DownBtn, Localize("Down"), 0, &DownBtn))
                        g_Config.m_ClFujixFreezeLevel += 32;
        }
-       else
-       {
-               CUIRect EnableBox, AngleBox, DrawBox;
-               MainView.HSplitTop(ms_ButtonHeight, &EnableBox, &MainView);
-               static int s_AimChk = 0;
-               if(DoButton_CheckBox(&s_AimChk, Localize("Enable aimbot"), g_Config.m_ClFujixAimbot, &EnableBox))
-                       g_Config.m_ClFujixAimbot ^= 1;
-
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &AngleBox, &MainView);
-               char aAngBuf[64];
-               str_format(aAngBuf, sizeof(aAngBuf), Localize("Angle range: %d"), g_Config.m_ClFujixAimAngle);
-               Ui()->DoScrollbarOption(&g_Config.m_ClFujixAimAngle, &g_Config.m_ClFujixAimAngle, &AngleBox, aAngBuf, 1, 180);
-
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &DrawBox, &MainView);
-               static int s_DrawChk = 0;
-               if(DoButton_CheckBox(&s_DrawChk, Localize("Show lines"), g_Config.m_ClFujixAimLines, &DrawBox))
-                       g_Config.m_ClFujixAimLines ^= 1;
-       }
 }
 
 CUi::EPopupMenuFunctionResult CMenus::PopupMapPicker(void *pContext, CUIRect View, bool Active)

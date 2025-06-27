@@ -603,48 +603,6 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                            }
                    }
 
-                     if(g_Config.m_ClFujixAimbot && LocalInput.m_Hook)
-                     {
-                             const CTuningParams *pTuning = GetTuning(g_Config.m_ClDummy);
-                             float BestDist = pTuning->m_HookLength;
-                             int BestID = -1;
-                             vec2 BestDir;
-
-                             vec2 AimDir = m_Controls.m_aMousePos[g_Config.m_ClDummy];
-                             if(length(AimDir) == 0.0f)
-                                     AimDir = vec2(1, 0);
-                             AimDir = normalize(AimDir);
-                             float AimAngle = angle(AimDir);
-                             float Limit = g_Config.m_ClFujixAimAngle * pi / 180.0f;
-
-                             for(int i = 0; i < MAX_CLIENTS; i++)
-                             {
-                                     if(!m_aClients[i].m_Active || i == m_Snap.m_LocalClientId)
-                                             continue;
-                                     vec2 Pos = m_aClients[i].m_Predicted.m_Pos;
-                                     vec2 Diff = Pos - m_LocalCharacterPos;
-                                     float Dist = length(Diff);
-                                     if(Dist > pTuning->m_HookLength)
-                                             continue;
-                                     float Ang = angle(normalize(Diff));
-                                     float Delta = absolute(AimAngle - Ang);
-                                     if(Delta > pi)
-                                             Delta = 2 * pi - Delta;
-                                     if(Delta <= Limit && Dist < BestDist)
-                                     {
-                                             BestDist = Dist;
-                                             BestID = i;
-                                             BestDir = Diff;
-                                     }
-                             }
-
-                             if(BestID >= 0)
-                             {
-                                     vec2 Dir = normalize(BestDir) * pTuning->m_HookLength;
-                                     LocalInput.m_TargetX = (int)(Dir.x * 256);
-                                     LocalInput.m_TargetY = (int)(Dir.y * 256);
-                             }
-                     }
 
                       mem_copy(pData, &LocalInput, sizeof(LocalInput));
                       return Size;
