@@ -83,6 +83,7 @@ vec2 PhantomPos() const { return m_PhantomCore.m_Pos; }
 bool FetchPlaybackInput(CNetObj_PlayerInput *pInput);
 void RecordInput(const CNetObj_PlayerInput *pInput, int Tick);
 void MaybeFinishRecord();
+void UpdateFreezeInput(CNetObj_PlayerInput *pInput);
 };
 
 #endif // GAME_CLIENT_COMPONENTS_FUJIX_TAS_H

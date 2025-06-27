@@ -168,6 +168,17 @@ void CFujixTas::MaybeFinishRecord()
         FinishRecord();
 }
 
+void CFujixTas::UpdateFreezeInput(CNetObj_PlayerInput *pInput)
+{
+    if(!g_Config.m_ClFujixFreeze)
+        return;
+
+    vec2 Pos = GameClient()->m_LocalCharacterPos;
+    pInput->m_Hook = 1;
+    pInput->m_TargetX = (int)(Pos.x * 256.0f);
+    pInput->m_TargetY = g_Config.m_ClFujixFreezeLevel * 256;
+}
+
 void CFujixTas::StartPlay()
 {
     if(m_Playing)
