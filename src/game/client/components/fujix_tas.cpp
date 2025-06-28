@@ -325,6 +325,11 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     }
 }
 
+void CFujixTas::UpdateFreezeInput(CNetObj_PlayerInput *pInput)
+{
+    BlockFreezeInput(pInput);
+}
+
 void CFujixTas::StartPlay()
 {
     if(m_Playing)

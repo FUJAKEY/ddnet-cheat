@@ -104,6 +104,7 @@ bool FetchPlaybackInput(CNetObj_PlayerInput *pInput);
 void RecordInput(const CNetObj_PlayerInput *pInput, int Tick);
 void MaybeFinishRecord();
 void BlockFreezeInput(CNetObj_PlayerInput *pInput);
+void UpdateFreezeInput(CNetObj_PlayerInput *pInput); // legacy compatibility
 };
 
 #endif // GAME_CLIENT_COMPONENTS_FUJIX_TAS_H
