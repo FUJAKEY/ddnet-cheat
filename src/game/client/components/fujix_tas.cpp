@@ -271,7 +271,7 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     auto PredictFreeze = [&](const CNetObj_PlayerInput &Input) {
         CCharacterCore Core = GameClient()->m_PredictedChar;
         Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
-        const int Steps = 10;
+        const int Steps = 3;
         for(int i = 0; i < Steps; i++)
         {
             Core.m_Input = Input;
@@ -293,8 +293,13 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
         return;
 
     CNetObj_PlayerInput Adjusted = *pInput;
-    Adjusted.m_Hook = 0;
-    Adjusted.m_Jump = 0;
+    bool FreezeWithoutHook = false;
+    if(Adjusted.m_Hook)
+    {
+        CNetObj_PlayerInput Tmp = Adjusted;
+        Tmp.m_Hook = 0;
+        FreezeWithoutHook = PredictFreeze(Tmp);
+    }
 
     CCharacter *pLocalChar = GameClient()->m_PredictedWorld.GetCharacterById(GameClient()->m_Snap.m_LocalClientId);
     bool OnGround = pLocalChar && pLocalChar->IsGrounded();
@@ -311,6 +316,9 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     }
     else
         Adjusted.m_Direction = 0;
+
+    if(FreezeWithoutHook)
+        Adjusted.m_Hook = 0;
 
     *pInput = Adjusted;
 }
