@@ -10,6 +10,7 @@
 #include <base/math.h>
 #include <game/gamecore.h>
 #include <game/client/components/players.h>
+#include <game/client/prediction/entities/character.h>
 #include <base/system.h>
 #include <cstdlib>
 #include <ctime>
@@ -587,7 +588,7 @@ void CFujixTas::RenderExtras()
 
     if(g_Config.m_ClFujixShowClock)
     {
-        time_t t = time(nullptr);
+        time_t t = std::time(nullptr);
         struct tm *pTm = localtime(&t);
         str_format(aBuf, sizeof(aBuf), "%02d:%02d:%02d", pTm->tm_hour, pTm->tm_min, pTm->tm_sec);
         TextRender()->Text(x, y, 6.0f, aBuf, -1.0f);
@@ -670,8 +671,8 @@ void CFujixTas::OnMapLoad()
         g_Config.m_ClShowChat = 0;
     if(g_Config.m_ClFujixRandomSkin)
     {
-        g_Config.m_PlayerUseCustomColor = 1;
-        g_Config.m_PlayerColorBody = rand() % 0xffffff;
-        g_Config.m_PlayerColorFeet = rand() % 0xffffff;
+        g_Config.m_ClPlayerUseCustomColor = 1;
+        g_Config.m_ClPlayerColorBody = rand() % 0xffffff;
+        g_Config.m_ClPlayerColorFeet = rand() % 0xffffff;
     }
 }
