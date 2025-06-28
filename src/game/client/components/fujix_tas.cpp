@@ -319,18 +319,6 @@ void CFujixTas::StartPlay()
     }
     m_HookPlayIndex = 0;
 
-    GetHookPath(aPath, sizeof(aPath));
-    IOHANDLE HookFile = Storage()->OpenFile(aPath, IOFLAG_READ, IStorage::TYPE_SAVE);
-    m_vHookEvents.clear();
-    if(HookFile)
-    {
-        SHookEvent Ev;
-        while(io_read(HookFile, &Ev, sizeof(Ev)) == sizeof(Ev))
-            m_vHookEvents.push_back(Ev);
-        io_close(HookFile);
-    }
-    m_HookPlayIndex = 0;
-
     if(m_vEntries.empty())
 	{
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "tas file is empty");
