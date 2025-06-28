@@ -268,10 +268,10 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     if(!g_Config.m_ClFujixBlockFreeze || !GameClient()->m_Snap.m_pLocalCharacter)
         return;
 
-    auto PredictFreeze = [&](const CNetObj_PlayerInput &Input) {
+    auto PredictFreezeSteps = [&](const CNetObj_PlayerInput &Input) {
         CCharacterCore Core = GameClient()->m_PredictedChar;
         Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
-        const int Steps = 3;
+        const int Steps = 15;
         for(int i = 0; i < Steps; i++)
         {
             Core.m_Input = Input;
@@ -284,12 +284,13 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
             bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
                           Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
             if(Freeze)
-                return true;
+                return i + 1;
         }
-        return false;
+        return 0;
     };
 
-    if(!PredictFreeze(*pInput))
+    int FreezeIn = PredictFreezeSteps(*pInput);
+    if(!FreezeIn)
         return;
 
     CNetObj_PlayerInput Adjusted = *pInput;
@@ -298,7 +299,7 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     {
         CNetObj_PlayerInput Tmp = Adjusted;
         Tmp.m_Hook = 0;
-        FreezeWithoutHook = PredictFreeze(Tmp);
+        FreezeWithoutHook = PredictFreezeSteps(Tmp);
     }
 
     CCharacter *pLocalChar = GameClient()->m_PredictedWorld.GetCharacterById(GameClient()->m_Snap.m_LocalClientId);
@@ -307,18 +308,28 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     if(!OnGround)
     {
         float VelX = GameClient()->m_PredictedChar.m_Vel.x;
-        if(VelX > 1.0f)
+        if(VelX > 0.5f)
             Adjusted.m_Direction = -1;
-        else if(VelX < -1.0f)
+        else if(VelX < -0.5f)
             Adjusted.m_Direction = 1;
         else
             Adjusted.m_Direction = 0;
+
+        if(FreezeIn <= 3)
+        {
+            if(VelX > 0.1f)
+                Adjusted.m_Direction = -1;
+            else if(VelX < -0.1f)
+                Adjusted.m_Direction = 1;
+        }
     }
     else
         Adjusted.m_Direction = 0;
 
     if(FreezeWithoutHook)
         Adjusted.m_Hook = 0;
+    else if(FreezeIn <= 3 && !Adjusted.m_Jump)
+        Adjusted.m_Hook = 1;
 
     *pInput = Adjusted;
 }
