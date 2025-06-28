@@ -270,7 +270,9 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
 
     CCharacterCore Core = GameClient()->m_PredictedChar;
     Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
-    for(int i = 0; i < 3; i++)
+    // Predict up to 10 future ticks to handle high-speed movement
+    const int Steps = 10;
+    for(int i = 0; i < Steps; i++)
     {
         Core.m_Input = TestInput;
         Core.Tick(true);
@@ -298,7 +300,7 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
         Core = GameClient()->m_PredictedChar;
         Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
         bool StillDanger = false;
-        for(int i = 0; i < 3; i++)
+        for(int i = 0; i < Steps; i++)
         {
             Core.m_Input = TestInput;
             Core.Tick(true);
