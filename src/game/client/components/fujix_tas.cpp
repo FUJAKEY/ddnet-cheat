@@ -262,28 +262,64 @@ void CFujixTas::MaybeFinishRecord()
 
 void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
 {
-    if(!g_Config.m_ClFujixBlockFreeze)
+    if(!g_Config.m_ClFujixBlockFreeze || !GameClient()->m_Snap.m_pLocalCharacter)
         return;
+
+    CNetObj_PlayerInput TestInput = *pInput;
+    bool Danger = false;
 
     CCharacterCore Core = GameClient()->m_PredictedChar;
     Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
-    Core.m_Input = *pInput;
-    Core.Tick(true);
-    Core.Move();
-    Core.Quantize();
-
-    int Index = Collision()->GetPureMapIndex(Core.m_Pos.x, Core.m_Pos.y);
-    int Tile = Collision()->GetTileIndex(Index);
-    int Front = Collision()->GetFrontTileIndex(Index);
-
-    bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
-                  Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
-
-    if(Freeze)
+    for(int i = 0; i < 3; i++)
     {
-        pInput->m_Direction = 0;
-        pInput->m_Jump = 0;
-        pInput->m_Hook = 0;
+        Core.m_Input = TestInput;
+        Core.Tick(true);
+        Core.Move();
+        Core.Quantize();
+
+        int Index = Collision()->GetPureMapIndex(Core.m_Pos.x, Core.m_Pos.y);
+        int Tile = Collision()->GetTileIndex(Index);
+        int Front = Collision()->GetFrontTileIndex(Index);
+        bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
+                      Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
+        if(Freeze)
+        {
+            Danger = true;
+            break;
+        }
+    }
+
+    if(Danger)
+    {
+        TestInput.m_Direction = 0;
+        TestInput.m_Jump = 0;
+
+        // simulate again without movement
+        Core = GameClient()->m_PredictedChar;
+        Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
+        bool StillDanger = false;
+        for(int i = 0; i < 3; i++)
+        {
+            Core.m_Input = TestInput;
+            Core.Tick(true);
+            Core.Move();
+            Core.Quantize();
+            int Index = Collision()->GetPureMapIndex(Core.m_Pos.x, Core.m_Pos.y);
+            int Tile = Collision()->GetTileIndex(Index);
+            int Front = Collision()->GetFrontTileIndex(Index);
+            bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
+                          Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
+            if(Freeze)
+            {
+                StillDanger = true;
+                break;
+            }
+        }
+
+        if(StillDanger)
+            TestInput.m_Hook = 0;
+
+        *pInput = TestInput;
     }
 }
 
