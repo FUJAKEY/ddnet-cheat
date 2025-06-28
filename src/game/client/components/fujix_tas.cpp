@@ -44,6 +44,11 @@ CFujixTas::CFujixTas()
     m_LastHookedPlayer = -1;
 }
 
+int CFujixTas::Sizeof() const
+{
+    return sizeof(*this);
+}
+
 void CFujixTas::GetPath(char *pBuf, int Size) const
 {
     const char *pMap = Client()->GetCurrentMap();

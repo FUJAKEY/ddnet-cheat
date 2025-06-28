@@ -13,7 +13,7 @@
 class CFujixTas : public CComponent
 {
 public:
-static const char *ms_pFujixDir;
+       static const char *ms_pFujixDir;
 
 private:
 struct SEntry
@@ -81,8 +81,8 @@ static void ConPlay(IConsole::IResult *pResult, void *pUserData);
 static void ConTest(IConsole::IResult *pResult, void *pUserData);
 
 public:
-CFujixTas();
-virtual int Sizeof() const override { return sizeof(*this); }
+       CFujixTas();
+       virtual int Sizeof() const override;
 
 virtual void OnConsoleInit() override;
 virtual void OnMapLoad() override;
