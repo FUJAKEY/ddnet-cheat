@@ -667,18 +667,6 @@ MACRO_CONFIG_INT(ClFujixDeepflyHoldTicks, cl_fujix_deepfly_hold_ticks, 2, 1, 50,
 MACRO_CONFIG_INT(ClFujixDeepflyReleaseTicks, cl_fujix_deepfly_release_ticks, 1, 1, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks to release hook when deepfly")
 MACRO_CONFIG_INT(ClDummyAutoClick, cl_dummy_auto_click, 0, 0, 1, CFGFLAG_CLIENT, "Dummy hits repeatedly while held")
 MACRO_CONFIG_INT(UiFujixPage, ui_fujix_page, 0, 0, 2, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Fujix settings sub page")
-
-// Extra options under Fujix "Other" tab
-MACRO_CONFIG_INT(ClFujixAutoPause, cl_fujix_auto_pause, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Automatically /pause on map start")
-MACRO_CONFIG_INT(ClFujixAutoRecord, cl_fujix_auto_record, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Auto start TAS recording on map start")
-MACRO_CONFIG_INT(ClFujixHideChat, cl_fujix_hide_chat, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Hide chat while playing")
-MACRO_CONFIG_INT(ClFujixRandomSkin, cl_fujix_random_skin, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Randomize skin on map start")
-MACRO_CONFIG_INT(ClFujixShowPing, cl_fujix_show_ping, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show ping on screen")
-MACRO_CONFIG_INT(ClFujixShowClock, cl_fujix_show_clock, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show local time on screen")
-MACRO_CONFIG_INT(ClFujixShowPos, cl_fujix_show_pos, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show coordinates on screen")
-MACRO_CONFIG_INT(ClFujixShowVelocity, cl_fujix_show_velocity, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show velocity on screen")
-MACRO_CONFIG_INT(ClFujixShowAngle, cl_fujix_show_angle, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show aim angle on screen")
-
 MACRO_CONFIG_INT(ClBackgroundShowTilesLayers, cl_background_show_tiles_layers, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Whether draw tiles layers when using custom background (entities)")
 MACRO_CONFIG_INT(SvShowOthers, sv_show_others, 1, 0, 1, CFGFLAG_SERVER, "Whether players can use the command showothers or not")
 MACRO_CONFIG_INT(SvShowOthersDefault, sv_show_others_default, 0, 0, 2, CFGFLAG_SERVER | CFGFLAG_GAME, "Whether players see others by default (2 for own team)")

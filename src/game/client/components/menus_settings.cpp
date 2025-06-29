@@ -3561,59 +3561,7 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
                str_format(aFpsBuf, sizeof(aFpsBuf), Localize("FPS limit: %d"), g_Config.m_GfxRefreshRate);
                Ui()->DoScrollbarOption(&g_Config.m_GfxRefreshRate, &g_Config.m_GfxRefreshRate, &Box, aFpsBuf, 40, 600);
 
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &Box, &MainView);
-               static int s_AutoPauseChk = 0;
-               if(DoButton_CheckBox(&s_AutoPauseChk, Localize("Auto pause"), g_Config.m_ClFujixAutoPause, &Box))
-                       g_Config.m_ClFujixAutoPause ^= 1;
 
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &Box, &MainView);
-               static int s_AutoRecChk = 0;
-               if(DoButton_CheckBox(&s_AutoRecChk, Localize("Auto record"), g_Config.m_ClFujixAutoRecord, &Box))
-                       g_Config.m_ClFujixAutoRecord ^= 1;
-
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &Box, &MainView);
-               static int s_HideChatChk = 0;
-               if(DoButton_CheckBox(&s_HideChatChk, Localize("Hide chat"), g_Config.m_ClFujixHideChat, &Box))
-                       g_Config.m_ClFujixHideChat ^= 1;
-
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &Box, &MainView);
-               static int s_RandSkinChk = 0;
-               if(DoButton_CheckBox(&s_RandSkinChk, Localize("Random skin"), g_Config.m_ClFujixRandomSkin, &Box))
-                       g_Config.m_ClFujixRandomSkin ^= 1;
-
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &Box, &MainView);
-               static int s_PingChk = 0;
-               if(DoButton_CheckBox(&s_PingChk, Localize("Show ping"), g_Config.m_ClFujixShowPing, &Box))
-                       g_Config.m_ClFujixShowPing ^= 1;
-
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &Box, &MainView);
-               static int s_ClockChk = 0;
-               if(DoButton_CheckBox(&s_ClockChk, Localize("Show clock"), g_Config.m_ClFujixShowClock, &Box))
-                       g_Config.m_ClFujixShowClock ^= 1;
-
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &Box, &MainView);
-               static int s_PosChk = 0;
-               if(DoButton_CheckBox(&s_PosChk, Localize("Show position"), g_Config.m_ClFujixShowPos, &Box))
-                       g_Config.m_ClFujixShowPos ^= 1;
-
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &Box, &MainView);
-               static int s_VelChk = 0;
-               if(DoButton_CheckBox(&s_VelChk, Localize("Show velocity"), g_Config.m_ClFujixShowVelocity, &Box))
-                       g_Config.m_ClFujixShowVelocity ^= 1;
-
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &Box, &MainView);
-               static int s_AngleChk = 0;
-               if(DoButton_CheckBox(&s_AngleChk, Localize("Show angle"), g_Config.m_ClFujixShowAngle, &Box))
-                       g_Config.m_ClFujixShowAngle ^= 1;
        }
 }
 

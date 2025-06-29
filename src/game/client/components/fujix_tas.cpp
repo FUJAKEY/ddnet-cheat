@@ -276,7 +276,7 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     auto PredictFreeze = [&](const CNetObj_PlayerInput &Input, int HookMode) {
         CCharacterCore Core = GameClient()->m_PredictedChar;
         Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
-        const int Steps = 6;
+        const int Steps = 12;
         for(int i = 0; i < Steps; i++)
         {
             CNetObj_PlayerInput Step = Input;
@@ -310,6 +310,13 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     int FreezeNoHook = PredictFreeze(Adjusted, 0);
     int FreezeFullHook = PredictFreeze(Adjusted, 1);
     int FreezeShortHook = PredictFreeze(Adjusted, 2);
+
+    if(GameClient()->m_PredictedChar.m_Vel.y < 0 && FreezeFullHook &&
+       (!FreezeNoHook || FreezeFullHook <= FreezeNoHook))
+    {
+        if(!FreezeShortHook || FreezeShortHook >= FreezeFullHook)
+            Adjusted.m_Hook = 0;
+    }
 
     if(FreezeFullHook && (!FreezeNoHook || FreezeFullHook < FreezeNoHook))
     {
@@ -573,7 +580,6 @@ void CFujixTas::OnRender()
         RenderFuturePath(g_Config.m_ClFujixTasPreviewTicks);
     }
 
-    RenderExtras();
 }
 
 void CFujixTas::RenderFuturePath(int TicksAhead)
@@ -608,52 +614,6 @@ void CFujixTas::RenderFuturePath(int TicksAhead)
     Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
-void CFujixTas::RenderExtras()
-{
-    float x = 5.0f;
-    float y = 5.0f;
-    char aBuf[64];
-
-    if(g_Config.m_ClFujixShowPing && GameClient()->m_Snap.m_pLocalInfo)
-    {
-        str_format(aBuf, sizeof(aBuf), "Ping: %d", GameClient()->m_Snap.m_pLocalInfo->m_Latency);
-        TextRender()->Text(x, y, 6.0f, aBuf, -1.0f);
-        y += 8.0f;
-    }
-
-    if(g_Config.m_ClFujixShowClock)
-    {
-        time_t t = std::time(nullptr);
-        struct tm *pTm = localtime(&t);
-        str_format(aBuf, sizeof(aBuf), "%02d:%02d:%02d", pTm->tm_hour, pTm->tm_min, pTm->tm_sec);
-        TextRender()->Text(x, y, 6.0f, aBuf, -1.0f);
-        y += 8.0f;
-    }
-
-    if(g_Config.m_ClFujixShowPos)
-    {
-        vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
-        str_format(aBuf, sizeof(aBuf), "Pos: %.0f %.0f", Pos.x, Pos.y);
-        TextRender()->Text(x, y, 6.0f, aBuf, -1.0f);
-        y += 8.0f;
-    }
-
-    if(g_Config.m_ClFujixShowVelocity)
-    {
-        float Speed = length(GameClient()->m_PredictedChar.m_Vel);
-        str_format(aBuf, sizeof(aBuf), "Vel: %.1f", Speed);
-        TextRender()->Text(x, y, 6.0f, aBuf, -1.0f);
-        y += 8.0f;
-    }
-
-    if(g_Config.m_ClFujixShowAngle)
-    {
-        float Angle = GameClient()->m_PredictedChar.m_Angle / 256.0f * 180.0f / pi;
-        str_format(aBuf, sizeof(aBuf), "Ang: %.1f", Angle);
-        TextRender()->Text(x, y, 6.0f, aBuf, -1.0f);
-        y += 8.0f;
-    }
-}
 
 
 void CFujixTas::ConRecord(IConsole::IResult *pResult, void *pUserData)
@@ -698,16 +658,4 @@ void CFujixTas::OnMapLoad()
         FinishRecord();
     StopTest();
 
-    if(g_Config.m_ClFujixAutoPause)
-        Console()->ExecuteLine("say /pause");
-    if(g_Config.m_ClFujixAutoRecord)
-        StartRecord();
-    if(g_Config.m_ClFujixHideChat)
-        g_Config.m_ClShowChat = 0;
-    if(g_Config.m_ClFujixRandomSkin)
-    {
-        g_Config.m_ClPlayerUseCustomColor = 1;
-        g_Config.m_ClPlayerColorBody = rand() % 0xffffff;
-        g_Config.m_ClPlayerColorFeet = rand() % 0xffffff;
-    }
 }
