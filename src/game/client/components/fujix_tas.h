@@ -58,6 +58,7 @@ int m_LastHookedPlayer;
 // Rage mode
 bool m_RageActive;
 vec2 m_RageTarget;
+bool m_RagePrevEnabled;
 
 // Phantom
 bool m_PhantomActive;

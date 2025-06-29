@@ -46,6 +46,7 @@ CFujixTas::CFujixTas()
     m_LastHookedPlayer = -1;
     m_RageActive = false;
     m_RageTarget = vec2(0.f, 0.f);
+    m_RagePrevEnabled = false;
 }
 
 int CFujixTas::Sizeof() const
@@ -181,6 +182,18 @@ void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
 
 void CFujixTas::UpdateRageTarget()
 {
+    if(g_Config.m_ClFujixBlockFreezeRage != m_RagePrevEnabled)
+    {
+        m_RagePrevEnabled = g_Config.m_ClFujixBlockFreezeRage;
+        if(!m_RagePrevEnabled)
+            m_RageActive = false;
+        else
+        {
+            m_RageTarget = vec2(Ui()->MouseWorldX(), Ui()->MouseWorldY());
+            m_RageActive = true;
+        }
+    }
+
     if(!g_Config.m_ClFujixBlockFreezeRage)
         return;
 
