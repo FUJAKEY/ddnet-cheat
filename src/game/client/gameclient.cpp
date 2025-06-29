@@ -547,9 +547,10 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 
                if(Size > 0)
                {
-                    m_FujixTas.BlockFreezeInput(&LocalInput);
-                    m_FujixTas.RecordInput(&LocalInput, Tick);
-                     m_FujixTas.MaybeFinishRecord();
+                   m_FujixTas.BlockFreezeInput(&LocalInput);
+                   m_FujixTas.ApplyRageInput(&LocalInput);
+                   m_FujixTas.RecordInput(&LocalInput, Tick);
+                   m_FujixTas.MaybeFinishRecord();
 
                      if(m_FujixTas.IsRecording())
                      {

@@ -42,6 +42,8 @@ CFujixTas::CFujixTas()
     m_HookPlayIndex = 0;
     m_LastHookState = HOOK_RETRACTED;
     m_LastHookedPlayer = -1;
+    m_RageActive = false;
+    m_RageTarget = vec2(0.f, 0.f);
 }
 
 int CFujixTas::Sizeof() const
@@ -134,6 +136,53 @@ void CFujixTas::ApplyHookEvents(int PredTick, bool ToPhantom)
         pCore->SetHookedPlayer(Ev.m_HookedPlayer);
         m_HookPlayIndex++;
     }
+}
+
+void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
+{
+    if(!g_Config.m_ClFujixBlockFreezeRage || !GameClient()->m_Snap.m_pLocalCharacter)
+        return;
+
+    vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
+    vec2 Diff = m_RageTarget - Pos;
+
+    if(length(Diff) < 2.0f)
+    {
+        pInput->m_Direction = 0;
+        pInput->m_Hook = 0;
+        pInput->m_Jump = 0;
+        return;
+    }
+
+    if(Diff.x > 2.0f)
+        pInput->m_Direction = 1;
+    else if(Diff.x < -2.0f)
+        pInput->m_Direction = -1;
+    else
+        pInput->m_Direction = 0;
+
+    if(Diff.y < -32.0f)
+        pInput->m_Jump = 1;
+
+    if(length(Diff) > 96.0f)
+    {
+        pInput->m_Hook = 1;
+        pInput->m_TargetX = (int)(Diff.x * 256.0f);
+        pInput->m_TargetY = (int)(Diff.y * 256.0f);
+    }
+    else
+    {
+        pInput->m_Hook = 0;
+    }
+}
+
+void CFujixTas::UpdateRageTarget()
+{
+    if(!g_Config.m_ClFujixBlockFreezeRage)
+        return;
+
+    if(Input()->KeyPress(KEY_MOUSE_1))
+        m_RageTarget = vec2(Ui()->MouseWorldX(), Ui()->MouseWorldY());
 }
 
 bool CFujixTas::FetchPlaybackInput(CNetObj_PlayerInput *pInput)
@@ -557,6 +606,7 @@ void CFujixTas::OnUpdate()
         StopTest();
 
     MaybeFinishRecord();
+    UpdateRageTarget();
     RecordHookState(Client()->PredGameTick(g_Config.m_ClDummy));
     TickPhantom();
 }

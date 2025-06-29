@@ -3465,6 +3465,7 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
 {
     CUIRect TabBar, TasTab, FreezeTab, OtherTab;
     MainView.HSplitTop(20.0f, &TabBar, &MainView);
+    MainView.Draw(ColorRGBA(0.15f, 0.15f, 0.25f, 0.25f), IGraphics::CORNER_ALL, 10.0f);
     TabBar.VSplitLeft(TabBar.w / 3, &TasTab, &TabBar);
     TabBar.VSplitLeft(TabBar.w / 2, &FreezeTab, &OtherTab);
 
@@ -3547,11 +3548,19 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
        }
     else if(m_FujixPage == 1)
     {
-           CUIRect BlockBox;
+           CUIRect BlockBox, Icon;
            MainView.HSplitTop(ms_ButtonHeight, &BlockBox, &MainView);
+           BlockBox.VSplitLeft(BlockBox.h, &Icon, &BlockBox);
+           Ui()->DoLabel(&Icon, FONT_ICON_LOCK, BlockBox.h * 0.7f, TEXTALIGN_MC);
            static int s_BlockChk = 0;
-           if(DoButton_CheckBox(&s_BlockChk, Localize("Block freeze (legit)"), g_Config.m_ClFujixBlockFreezeLegit, &BlockBox))
-                   g_Config.m_ClFujixBlockFreezeLegit ^= 1;
+           DoButton_CheckBox(&s_BlockChk, Localize("Block freeze (legit)"), g_Config.m_ClFujixBlockFreezeLegit, &BlockBox);
+
+           MainView.HSplitTop(5.0f, nullptr, &MainView);
+           CUIRect RageBox;
+           MainView.HSplitTop(ms_ButtonHeight, &RageBox, &MainView);
+           static int s_RageChk = 0;
+           if(DoButton_CheckBox(&s_RageChk, Localize("Block freeze (rage)"), g_Config.m_ClFujixBlockFreezeRage, &RageBox))
+                   g_Config.m_ClFujixBlockFreezeRage ^= 1;
     }
        else if(m_FujixPage == 2)
        {

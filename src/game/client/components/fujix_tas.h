@@ -51,9 +51,13 @@ int m_StopTick;
  char m_aHookFilename[IO_MAX_PATH_LENGTH];
  IOHANDLE m_HookFile;
  std::vector<SHookEvent> m_vHookEvents;
- int m_HookPlayIndex;
- int m_LastHookState;
- int m_LastHookedPlayer;
+int m_HookPlayIndex;
+int m_LastHookState;
+int m_LastHookedPlayer;
+
+// Rage mode
+bool m_RageActive;
+vec2 m_RageTarget;
 
 // Phantom
 bool m_PhantomActive;
@@ -75,6 +79,8 @@ void RenderFuturePath(int TicksAhead);
 void TickPhantomUpTo(int TargetTick);
 void RecordHookState(int Tick);
 void ApplyHookEvents(int PredTick, bool ToPhantom);
+void ApplyRageInput(CNetObj_PlayerInput *pInput);
+void UpdateRageTarget();
 
 static void ConRecord(IConsole::IResult *pResult, void *pUserData);
 static void ConPlay(IConsole::IResult *pResult, void *pUserData);
@@ -105,6 +111,7 @@ void RecordInput(const CNetObj_PlayerInput *pInput, int Tick);
 void MaybeFinishRecord();
 void BlockFreezeInput(CNetObj_PlayerInput *pInput);
 void UpdateFreezeInput(CNetObj_PlayerInput *pInput); // legacy compatibility
+void SetRageTarget(vec2 Pos) { m_RageTarget = Pos; }
 };
 
 #endif // GAME_CLIENT_COMPONENTS_FUJIX_TAS_H

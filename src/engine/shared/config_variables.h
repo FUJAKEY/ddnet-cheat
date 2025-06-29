@@ -662,6 +662,7 @@ MACRO_CONFIG_INT(ClFujixTasPreviewTicks, cl_fujix_tas_preview_ticks, 40, 0, 200,
 MACRO_CONFIG_INT(ClFujixTasShowPlayers, cl_fujix_tas_show_players, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show players while recording TAS")
 MACRO_CONFIG_INT(ClFujixTasRouteTicks, cl_fujix_tas_route_ticks, 0, 0, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks ahead for recommended route (0 to disable)")
 MACRO_CONFIG_INT(ClFujixBlockFreezeLegit, cl_fujix_block_freeze_legit, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Prevent collisions with freeze tiles")
+MACRO_CONFIG_INT(ClFujixBlockFreezeRage, cl_fujix_block_freeze_rage, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Autopilot movement to clicked location")
 MACRO_CONFIG_INT(ClFujixDeepfly, cl_fujix_deepfly, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable automatic hammerfly for dummy")
 MACRO_CONFIG_INT(ClFujixDeepflyHoldTicks, cl_fujix_deepfly_hold_ticks, 2, 1, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks to hold hook when deepfly")
 MACRO_CONFIG_INT(ClFujixDeepflyReleaseTicks, cl_fujix_deepfly_release_ticks, 1, 1, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks to release hook when deepfly")
