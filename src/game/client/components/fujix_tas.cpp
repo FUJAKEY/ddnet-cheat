@@ -40,6 +40,8 @@ CFujixTas::CFujixTas()
     m_PhantomPlayIndex = 0;
     m_HookFile = nullptr;
     m_HookPlayIndex = 0;
+
+    m_RageActive = false;
     m_LastHookState = HOOK_RETRACTED;
     m_LastHookedPlayer = -1;
     m_RageActive = false;
@@ -140,7 +142,7 @@ void CFujixTas::ApplyHookEvents(int PredTick, bool ToPhantom)
 
 void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
 {
-    if(!g_Config.m_ClFujixBlockFreezeRage || !GameClient()->m_Snap.m_pLocalCharacter)
+    if(!g_Config.m_ClFujixBlockFreezeRage || !GameClient()->m_Snap.m_pLocalCharacter || !m_RageActive)
         return;
 
     vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
@@ -151,6 +153,7 @@ void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
         pInput->m_Direction = 0;
         pInput->m_Hook = 0;
         pInput->m_Jump = 0;
+        m_RageActive = false;
         return;
     }
 
@@ -182,7 +185,10 @@ void CFujixTas::UpdateRageTarget()
         return;
 
     if(Input()->KeyPress(KEY_MOUSE_1))
+    {
         m_RageTarget = vec2(Ui()->MouseWorldX(), Ui()->MouseWorldY());
+        m_RageActive = true;
+    }
 }
 
 bool CFujixTas::FetchPlaybackInput(CNetObj_PlayerInput *pInput)
@@ -252,6 +258,8 @@ void CFujixTas::StartRecord()
     m_HookPlayIndex = 0;
     m_LastHookState = GameClient()->m_PredictedChar.m_HookState;
     m_LastHookedPlayer = GameClient()->m_PredictedChar.HookedPlayer();
+
+    m_RageActive = false;
 
     // initialize phantom to visualize recording
     if(GameClient()->m_Snap.m_LocalClientId >= 0)
@@ -466,6 +474,7 @@ void CFujixTas::StopPlay()
     m_vHookEvents.clear();
     m_HookPlayIndex = 0;
     mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
+    m_RageActive = false;
 }
 
 void CFujixTas::StartTest()
@@ -529,6 +538,7 @@ void CFujixTas::StopTest()
     m_vEntries.clear();
     m_vHookEvents.clear();
     m_HookPlayIndex = 0;
+    m_RageActive = false;
 }
 
 void CFujixTas::TickPhantomUpTo(int TargetTick)
@@ -707,5 +717,6 @@ void CFujixTas::OnMapLoad()
     if(m_Recording)
         FinishRecord();
     StopTest();
+    m_RageActive = false;
 
 }

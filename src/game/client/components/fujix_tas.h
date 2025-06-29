@@ -18,19 +18,19 @@ public:
 private:
 struct SEntry
 {
-int m_Tick;
-CNetObj_PlayerInput m_Input;
+       int m_Tick;
+       CNetObj_PlayerInput m_Input;
 };
 
- struct SHookEvent
- {
- int m_Tick;
- int m_State;
- int m_HookedPlayer;
- int m_HookX;
- int m_HookY;
- int m_HookTick;
- };
+struct SHookEvent
+{
+       int m_Tick;
+       int m_State;
+       int m_HookedPlayer;
+       int m_HookX;
+       int m_HookY;
+       int m_HookTick;
+};
 
 bool m_Recording;
 bool m_Playing;
