@@ -3547,11 +3547,11 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
        }
     else if(m_FujixPage == 1)
     {
-            CUIRect BlockBox;
-            MainView.HSplitTop(ms_ButtonHeight, &BlockBox, &MainView);
-            static int s_BlockChk = 0;
-            if(DoButton_CheckBox(&s_BlockChk, Localize("Block freeze"), g_Config.m_ClFujixBlockFreeze, &BlockBox))
-                    g_Config.m_ClFujixBlockFreeze ^= 1;
+           CUIRect BlockBox;
+           MainView.HSplitTop(ms_ButtonHeight, &BlockBox, &MainView);
+           static int s_BlockChk = 0;
+           if(DoButton_CheckBox(&s_BlockChk, Localize("Block freeze (legit)"), g_Config.m_ClFujixBlockFreezeLegit, &BlockBox))
+                   g_Config.m_ClFujixBlockFreezeLegit ^= 1;
     }
        else if(m_FujixPage == 2)
        {

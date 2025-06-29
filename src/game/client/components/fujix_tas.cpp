@@ -270,7 +270,7 @@ void CFujixTas::MaybeFinishRecord()
 
 void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
 {
-    if(!g_Config.m_ClFujixBlockFreeze || !GameClient()->m_Snap.m_pLocalCharacter)
+    if(!g_Config.m_ClFujixBlockFreezeLegit || !GameClient()->m_Snap.m_pLocalCharacter)
         return;
 
     auto PredictFreeze = [&](const CNetObj_PlayerInput &Input, int HookMode) {
@@ -319,6 +319,8 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     else if(FreezeNoHook && !FreezeFullHook)
     {
         Adjusted.m_Hook = 1;
+        if(GameClient()->m_PredictedChar.m_Vel.y < 0)
+            Adjusted.m_Jump = 1;
     }
 
     CCharacter *pLocalChar = GameClient()->m_PredictedWorld.GetCharacterById(GameClient()->m_Snap.m_LocalClientId);
