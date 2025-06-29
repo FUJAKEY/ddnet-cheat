@@ -3463,17 +3463,18 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 
 void CMenus::RenderSettingsFujix(CUIRect MainView)
 {
-    CUIRect TabBar, TasTab, FreezeTab, AimTab;
+    CUIRect TabBar, TasTab, FreezeTab, OtherTab;
     MainView.HSplitTop(20.0f, &TabBar, &MainView);
+    MainView.Draw(ColorRGBA(0.15f, 0.15f, 0.25f, 0.25f), IGraphics::CORNER_ALL, 10.0f);
     TabBar.VSplitLeft(TabBar.w / 3, &TasTab, &TabBar);
-    TabBar.VSplitLeft(TabBar.w / 2, &FreezeTab, &AimTab);
+    TabBar.VSplitLeft(TabBar.w / 2, &FreezeTab, &OtherTab);
 
-    static CButtonContainer s_TasBtn, s_FreezeBtn, s_AimBtn;
+    static CButtonContainer s_TasBtn, s_FreezeBtn, s_OtherBtn;
     if(DoButton_MenuTab(&s_TasBtn, Localize("TAS"), m_FujixPage == 0, &TasTab, IGraphics::CORNER_L))
             m_FujixPage = 0;
     if(DoButton_MenuTab(&s_FreezeBtn, Localize("Freeze"), m_FujixPage == 1, &FreezeTab, 0))
             m_FujixPage = 1;
-    if(DoButton_MenuTab(&s_AimBtn, Localize("Aim"), m_FujixPage == 2, &AimTab, IGraphics::CORNER_R))
+    if(DoButton_MenuTab(&s_OtherBtn, Localize("Other"), m_FujixPage == 2, &OtherTab, IGraphics::CORNER_R))
             m_FujixPage = 2;
 
        g_Config.m_UiFujixPage = m_FujixPage;
@@ -3545,48 +3546,31 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
        str_format(aRouteBuf, sizeof(aRouteBuf), Localize("Route ticks: %d"), g_Config.m_ClFujixTasRouteTicks);
        Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasRouteTicks, &g_Config.m_ClFujixTasRouteTicks, &RouteBox, aRouteBuf, 0, 200);
        }
-       else if(m_FujixPage == 1)
+    else if(m_FujixPage == 1)
+    {
+           CUIRect BlockBox, Icon;
+           MainView.HSplitTop(ms_ButtonHeight, &BlockBox, &MainView);
+           BlockBox.VSplitLeft(BlockBox.h, &Icon, &BlockBox);
+           Ui()->DoLabel(&Icon, FONT_ICON_LOCK, BlockBox.h * 0.7f, TEXTALIGN_MC);
+           static int s_BlockChk = 0;
+           DoButton_CheckBox(&s_BlockChk, Localize("Block freeze (legit)"), g_Config.m_ClFujixBlockFreezeLegit, &BlockBox);
+
+           MainView.HSplitTop(5.0f, nullptr, &MainView);
+           CUIRect RageBox;
+           MainView.HSplitTop(ms_ButtonHeight, &RageBox, &MainView);
+           static int s_RageChk = 0;
+           if(DoButton_CheckBox(&s_RageChk, Localize("Block freeze (rage)"), g_Config.m_ClFujixBlockFreezeRage, &RageBox))
+                   g_Config.m_ClFujixBlockFreezeRage ^= 1;
+    }
+       else if(m_FujixPage == 2)
        {
-               CUIRect EnableBox, LevelBox, AdjustBox, UpBtn, DownBtn;
-               MainView.HSplitTop(ms_ButtonHeight, &EnableBox, &MainView);
-               static int s_EnableChk = 0;
-               if(DoButton_CheckBox(&s_EnableChk, Localize("Enable freeze"), g_Config.m_ClFujixFreeze, &EnableBox))
-                       g_Config.m_ClFujixFreeze ^= 1;
+               CUIRect Box;
+               MainView.HSplitTop(ms_ButtonHeight, &Box, &MainView);
+               char aFpsBuf[64];
+               str_format(aFpsBuf, sizeof(aFpsBuf), Localize("FPS limit: %d"), g_Config.m_GfxRefreshRate);
+               Ui()->DoScrollbarOption(&g_Config.m_GfxRefreshRate, &g_Config.m_GfxRefreshRate, &Box, aFpsBuf, 40, 600);
 
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &LevelBox, &MainView);
-               char aLevBuf[64];
-               str_format(aLevBuf, sizeof(aLevBuf), Localize("Freeze level: %d"), g_Config.m_ClFujixFreezeLevel);
-               Ui()->DoScrollbarOption(&g_Config.m_ClFujixFreezeLevel, &g_Config.m_ClFujixFreezeLevel, &LevelBox, aLevBuf, -10000, 10000);
 
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &AdjustBox, &MainView);
-               AdjustBox.VSplitMid(&UpBtn, &DownBtn);
-               static CButtonContainer s_UpBtn, s_DownBtn;
-               if(DoButton_Menu(&s_UpBtn, Localize("Up"), 0, &UpBtn))
-                       g_Config.m_ClFujixFreezeLevel -= 32;
-               if(DoButton_Menu(&s_DownBtn, Localize("Down"), 0, &DownBtn))
-                       g_Config.m_ClFujixFreezeLevel += 32;
-       }
-       else
-       {
-               CUIRect EnableBox, AngleBox, DrawBox;
-               MainView.HSplitTop(ms_ButtonHeight, &EnableBox, &MainView);
-               static int s_AimChk = 0;
-               if(DoButton_CheckBox(&s_AimChk, Localize("Enable aimbot"), g_Config.m_ClFujixAimbot, &EnableBox))
-                       g_Config.m_ClFujixAimbot ^= 1;
-
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &AngleBox, &MainView);
-               char aAngBuf[64];
-               str_format(aAngBuf, sizeof(aAngBuf), Localize("Angle range: %d"), g_Config.m_ClFujixAimAngle);
-               Ui()->DoScrollbarOption(&g_Config.m_ClFujixAimAngle, &g_Config.m_ClFujixAimAngle, &AngleBox, aAngBuf, 1, 180);
-
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &DrawBox, &MainView);
-               static int s_DrawChk = 0;
-               if(DoButton_CheckBox(&s_DrawChk, Localize("Show lines"), g_Config.m_ClFujixAimLines, &DrawBox))
-                       g_Config.m_ClFujixAimLines ^= 1;
        }
 }
 
