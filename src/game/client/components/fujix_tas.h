@@ -79,6 +79,7 @@ void RenderFuturePath(int TicksAhead);
 void TickPhantomUpTo(int TargetTick);
 void RecordHookState(int Tick);
 void ApplyHookEvents(int PredTick, bool ToPhantom);
+public:
 void ApplyRageInput(CNetObj_PlayerInput *pInput);
 void UpdateRageTarget();
 
@@ -86,8 +87,7 @@ static void ConRecord(IConsole::IResult *pResult, void *pUserData);
 static void ConPlay(IConsole::IResult *pResult, void *pUserData);
 static void ConTest(IConsole::IResult *pResult, void *pUserData);
 
-public:
-       CFujixTas();
+CFujixTas();
        virtual int Sizeof() const override;
 
 virtual void OnConsoleInit() override;
