@@ -52,6 +52,104 @@ CFujixTas::CFujixTas()
     m_pSmartAutopilot = std::make_unique<CSmartAutopilot>();
     m_SmartAutopilotInitialized = false;
 }
+// Copy constructor - shallow copy with m_pSmartAutopilot set to nullptr
+CFujixTas::CFujixTas(const CFujixTas& other)
+{
+    // Copy all basic members
+    m_Recording = other.m_Recording;
+    m_Playing = other.m_Playing;
+    m_Testing = other.m_Testing;
+    m_StartTick = other.m_StartTick;
+    m_TestStartTick = other.m_TestStartTick;
+    m_PlayStartTick = other.m_PlayStartTick;
+    str_copy(m_aFilename, other.m_aFilename, sizeof(m_aFilename));
+    m_File = other.m_File;
+    m_vEntries = other.m_vEntries;
+    m_PlayIndex = other.m_PlayIndex;
+    m_LastRecordTick = other.m_LastRecordTick;
+    m_LastInput = other.m_LastInput;
+    m_CurrentInput = other.m_CurrentInput;
+    m_StopPending = other.m_StopPending;
+    m_StopTick = other.m_StopTick;
+    
+    // Copy hook-related members
+    str_copy(m_aHookFilename, other.m_aHookFilename, sizeof(m_aHookFilename));
+    m_HookFile = other.m_HookFile;
+    m_vHookEvents = other.m_vHookEvents;
+    m_HookPlayIndex = other.m_HookPlayIndex;
+    m_LastHookState = other.m_LastHookState;
+    m_LastHookedPlayer = other.m_LastHookedPlayer;
+    
+    // Copy rage mode members
+    m_RageActive = other.m_RageActive;
+    m_RageTarget = other.m_RageTarget;
+    m_RagePrevEnabled = other.m_RagePrevEnabled;
+    
+    // Copy phantom members
+    m_PhantomActive = other.m_PhantomActive;
+    m_PhantomTick = other.m_PhantomTick;
+    m_PhantomCore = other.m_PhantomCore;
+    m_PhantomPrevCore = other.m_PhantomPrevCore;
+    m_PhantomRenderInfo = other.m_PhantomRenderInfo;
+    m_PhantomStep = other.m_PhantomStep;
+    m_PhantomInput = other.m_PhantomInput;
+    m_PhantomPlayIndex = other.m_PhantomPlayIndex;
+    
+    // Set smart autopilot to nullptr (can't copy unique_ptr)
+    m_pSmartAutopilot = nullptr;
+    m_SmartAutopilotInitialized = false;
+}
+
+// Copy assignment operator
+CFujixTas& CFujixTas::operator=(const CFujixTas& other)
+{
+    if (this != &other) {
+        // Copy all basic members
+        m_Recording = other.m_Recording;
+        m_Playing = other.m_Playing;
+        m_Testing = other.m_Testing;
+        m_StartTick = other.m_StartTick;
+        m_TestStartTick = other.m_TestStartTick;
+        m_PlayStartTick = other.m_PlayStartTick;
+        str_copy(m_aFilename, other.m_aFilename, sizeof(m_aFilename));
+        m_File = other.m_File;
+        m_vEntries = other.m_vEntries;
+        m_PlayIndex = other.m_PlayIndex;
+        m_LastRecordTick = other.m_LastRecordTick;
+        m_LastInput = other.m_LastInput;
+        m_CurrentInput = other.m_CurrentInput;
+        m_StopPending = other.m_StopPending;
+        m_StopTick = other.m_StopTick;
+        
+        // Copy hook-related members
+        str_copy(m_aHookFilename, other.m_aHookFilename, sizeof(m_aHookFilename));
+        m_HookFile = other.m_HookFile;
+        m_vHookEvents = other.m_vHookEvents;
+        m_HookPlayIndex = other.m_HookPlayIndex;
+        m_LastHookState = other.m_LastHookState;
+        m_LastHookedPlayer = other.m_LastHookedPlayer;
+        
+        // Copy rage mode members
+        m_RageActive = other.m_RageActive;
+        m_RageTarget = other.m_RageTarget;
+        m_RagePrevEnabled = other.m_RagePrevEnabled;
+        
+        // Copy phantom members
+        m_PhantomActive = other.m_PhantomActive;
+        m_PhantomTick = other.m_PhantomTick;
+        m_PhantomCore = other.m_PhantomCore;
+        m_PhantomPrevCore = other.m_PhantomPrevCore;
+        m_PhantomRenderInfo = other.m_PhantomRenderInfo;
+        m_PhantomStep = other.m_PhantomStep;
+        m_PhantomInput = other.m_PhantomInput;
+        m_PhantomPlayIndex = other.m_PhantomPlayIndex;
+        
+        // Set smart autopilot to nullptr (can't copy unique_ptr)
+        m_pSmartAutopilot = nullptr;
+        m_SmartAutopilotInitialized = false;
+    }
+    return *this;
+}
 
 int CFujixTas::Sizeof() const
 {

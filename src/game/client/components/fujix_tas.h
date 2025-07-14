@@ -112,6 +112,10 @@ static void ConPlay(IConsole::IResult *pResult, void *pUserData);
 static void ConTest(IConsole::IResult *pResult, void *pUserData);
 
 CFujixTas();
+// Copy constructor - sets m_pSmartAutopilot to nullptr to avoid unique_ptr copy issues
+CFujixTas(const CFujixTas& other);
+// Copy assignment operator
+CFujixTas& operator=(const CFujixTas& other);
        virtual int Sizeof() const override;
 
 virtual void OnConsoleInit() override;
