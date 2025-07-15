@@ -310,15 +310,43 @@ void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
     CNetObj_PlayerInput SmartInput;
     mem_zero(&SmartInput, sizeof(SmartInput));
 
-    if(m_pSmartAutopilot->UpdateAutopilot(GameClient()->m_PredictedChar, &SmartInput))
+    bool bSmart = m_pSmartAutopilot->UpdateAutopilot(GameClient()->m_PredictedChar, &SmartInput);
+
+    if(bSmart)
     {
+        // Smart autopilot produced input
         *pInput = SmartInput;
+        static int s_FailCount = 0;
+        s_FailCount = 0;
     }
     else
     {
+        // Fall back to simple logic while the autopilot is planning
+        vec2 Diff = m_RageTarget - Pos;
+
+        if(Diff.x > 2.0f)
+            pInput->m_Direction = 1;
+        else if(Diff.x < -2.0f)
+            pInput->m_Direction = -1;
+        else
+            pInput->m_Direction = 0;
+
+        if(Diff.y < -32.0f)
+            pInput->m_Jump = 1;
+
+        if(length(Diff) > 96.0f)
+        {
+            pInput->m_Hook = 1;
+            pInput->m_TargetX = (int)(Diff.x * 256.0f);
+            pInput->m_TargetY = (int)(Diff.y * 256.0f);
+        }
+        else
+        {
+            pInput->m_Hook = 0;
+        }
+
         static int s_FailCount = 0;
-        s_FailCount++;
-        if(s_FailCount > 60)
+        if(++s_FailCount > 60)
         {
             m_RageActive = false;
             s_FailCount = 0;
