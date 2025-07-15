@@ -2347,6 +2347,10 @@ if(CLIENT)
     components/flow.h
     components/freezebars.cpp
     components/freezebars.h
+    components/fujix_pathfinding.cpp
+    components/fujix_pathfinding.h
+    components/fujix_tas.cpp
+    components/fujix_tas.h
     components/ghost.cpp
     components/ghost.h
     components/hud.cpp
@@ -2382,10 +2386,6 @@ if(CLIENT)
     components/players.h
     components/race_demo.cpp
     components/race_demo.h
-    components/fujix_pathfinding.cpp
-    components/fujix_pathfinding.h
-    components/fujix_tas.cpp
-    components/fujix_tas.h
     components/scoreboard.cpp
     components/scoreboard.h
     components/skins.cpp
