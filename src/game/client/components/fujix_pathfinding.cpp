@@ -9,9 +9,16 @@
 // =====================================================
 bool SPathNodeComparator::operator()(int a, int b) const
 {
-    // This will be implemented when we have access to the nodes vector
-    // For now, return false to satisfy compiler
-    return false;
+    if(!m_pNodes)
+        return false;
+
+    const SPathNode &NodeA = (*m_pNodes)[a];
+    const SPathNode &NodeB = (*m_pNodes)[b];
+
+    if(NodeA.m_FCost == NodeB.m_FCost)
+        return NodeA.m_HCost > NodeB.m_HCost;
+
+    return NodeA.m_FCost > NodeB.m_FCost;
 }
 
 // =====================================================

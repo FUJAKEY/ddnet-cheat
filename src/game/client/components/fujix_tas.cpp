@@ -311,8 +311,6 @@ void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
     CNetObj_PlayerInput SmartInput;
     mem_zero(&SmartInput, sizeof(SmartInput));
 
-    m_pSmartAutopilot->SetTarget(m_RageTarget);
-
     if(m_pSmartAutopilot->UpdateAutopilot(GameClient()->m_PredictedChar, &SmartInput))
     {
         // Copy smart input to actual input

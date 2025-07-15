@@ -49,6 +49,13 @@ struct SPathNode
 // Comparison for priority queue (lower F cost = higher priority)
 struct SPathNodeComparator
 {
+    const std::vector<SPathNode> *m_pNodes;
+
+    SPathNodeComparator(const std::vector<SPathNode> *pNodes = nullptr)
+        : m_pNodes(pNodes)
+    {
+    }
+
     bool operator()(int a, int b) const;
 };
 
@@ -138,7 +145,12 @@ class CPathPlanner
     std::vector<bool> m_ClosedSet;
     
 public:
-    CPathPlanner() : m_pMapAnalyzer(nullptr), m_pCollision(nullptr) {}
+    CPathPlanner()
+        : m_pMapAnalyzer(nullptr),
+          m_pCollision(nullptr),
+          m_OpenSet(SPathNodeComparator(&m_Nodes))
+    {
+    }
     void Init(CMapAnalyzer *pMapAnalyzer, CCollision *pCollision) 
     { 
         m_pMapAnalyzer = pMapAnalyzer; 
