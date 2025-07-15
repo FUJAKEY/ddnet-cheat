@@ -2,6 +2,7 @@
 #define GAME_CLIENT_COMPONENTS_FUJIX_PATHFINDING_H
 
 #include <base/vmath.h>
+#include <base/system.h>
 #include <game/gamecore.h>
 #include <game/collision.h>
 #include <vector>

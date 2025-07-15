@@ -185,7 +185,7 @@ float CMapAnalyzer::GetMovementCost(vec2 Pos, float Radius)
         vec2 SamplePos = Pos + vec2(cos(Angle), sin(Angle)) * (Radius * 0.7f);
         
         SMapCell Cell = AnalyzeCell(SamplePos);
-        MaxCost = max(MaxCost, Cell.m_MovementCost);
+        MaxCost = std::max(MaxCost, Cell.m_MovementCost);
     }
     
     return MaxCost;
@@ -208,7 +208,7 @@ vec2 CMapAnalyzer::FindNearestSafePos(vec2 Pos, float SearchRadius)
     {
         float CurrentRadius = radius * StepSize;
         int CirclePoints = (int)(2.0f * M_PI * CurrentRadius / StepSize);
-        CirclePoints = max(8, CirclePoints); // At least 8 points
+        CirclePoints = std::max(8, CirclePoints); // At least 8 points
         
         for(int i = 0; i < CirclePoints; i++)
         {
@@ -383,7 +383,6 @@ std::vector<SPathNode> CPathPlanner::OptimizePath(const std::vector<SPathNode> &
     for(size_t i = 1; i < Path.size() - 1; i++)
     {
         vec2 Prev = OptimizedPath.back().m_Pos;
-        vec2 Current = Path[i].m_Pos;
         vec2 Next = Path[i + 1].m_Pos;
         
         // Check if we can go directly from Prev to Next
@@ -681,7 +680,7 @@ bool CSmartAutopilot::ExecuteStep(CCharacterCore &Core, CNetObj_PlayerInput *pIn
     {
         m_CurrentStepIndex++;
         m_Status.m_CurrentStep = m_CurrentStepIndex;
-        m_Status.m_Progress = (float)m_CurrentStepIndex / max(1, (int)m_CurrentPath.size());
+        m_Status.m_Progress = (float)m_CurrentStepIndex / std::max(1, (int)m_CurrentPath.size());
         
         if(m_CurrentStepIndex >= (int)m_CurrentPath.size())
         {
@@ -712,7 +711,7 @@ void CSmartAutopilot::UpdateStatus(const CCharacterCore &Core)
     // Update progress
     if(!m_CurrentPath.empty())
     {
-        m_Status.m_Progress = (float)m_CurrentStepIndex / max(1, (int)m_CurrentPath.size());
+        m_Status.m_Progress = (float)m_CurrentStepIndex / std::max(1, (int)m_CurrentPath.size());
     }
     
     // Check for stuck state
@@ -726,7 +725,7 @@ void CSmartAutopilot::UpdateStatus(const CCharacterCore &Core)
     }
     else
     {
-        m_StuckCounter = max(0, m_StuckCounter - 1);
+        m_StuckCounter = std::max(0, m_StuckCounter - 1);
     }
 }
 
