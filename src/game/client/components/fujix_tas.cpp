@@ -295,7 +295,6 @@ void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
 
     // Use smart autopilot
     vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
-    vec2 Vel = GameClient()->m_PredictedChar.m_Vel;
     
     // Check if we reached the target
     if(length(m_RageTarget - Pos) < 2.0f)
