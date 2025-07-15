@@ -313,15 +313,13 @@ void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
 
     if(m_pSmartAutopilot->UpdateAutopilot(GameClient()->m_PredictedChar, &SmartInput))
     {
-        // Copy smart input to actual input
         *pInput = SmartInput;
     }
     else
     {
-        // Smart autopilot failed, keep current input but stop rage mode after some time
         static int s_FailCount = 0;
         s_FailCount++;
-        if(s_FailCount > 60) // Stop after 1 second of failures
+        if(s_FailCount > 60)
         {
             m_RageActive = false;
             s_FailCount = 0;
