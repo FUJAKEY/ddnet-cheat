@@ -10,25 +10,7 @@
 #include <vector>
 #include <deque>
 #include <memory>
-// #include "fujix_pathfinding.h"  // Comment out for now to test compilation
-
-// Temporary forward declaration
-class CSmartAutopilot
-{
-public:
-    CSmartAutopilot() {}
-    ~CSmartAutopilot() {}
-    void Init(void *pCollision) {}
-    bool Update(const struct SAutopilotState &State, CNetObj_PlayerInput *pInput) { return false; }
-};
-
-struct SAutopilotState
-{
-    vec2 m_Position;
-    vec2 m_Velocity;
-    vec2 m_Target;
-    bool m_OnGround;
-};
+#include "fujix_pathfinding.h"
 
 class CFujixTas : public CComponent
 {

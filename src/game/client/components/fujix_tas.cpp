@@ -308,21 +308,12 @@ void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
     }
 
     // Get next action from smart autopilot
-    SAutopilotState State;
-    State.m_Position = Pos;
-    State.m_Velocity = Vel;
-    State.m_Target = m_RageTarget;
-    State.m_OnGround = false; // We'll detect this properly later
-    
-    // Detect if on ground
-    CCharacter *pLocalChar = GameClient()->m_PredictedWorld.GetCharacterById(GameClient()->m_Snap.m_LocalClientId);
-    if(pLocalChar)
-        State.m_OnGround = pLocalChar->IsGrounded();
-    
     CNetObj_PlayerInput SmartInput;
     mem_zero(&SmartInput, sizeof(SmartInput));
-    
-    if(m_pSmartAutopilot->Update(State, &SmartInput))
+
+    m_pSmartAutopilot->SetTarget(m_RageTarget);
+
+    if(m_pSmartAutopilot->UpdateAutopilot(GameClient()->m_PredictedChar, &SmartInput))
     {
         // Copy smart input to actual input
         *pInput = SmartInput;
@@ -351,6 +342,8 @@ void CFujixTas::UpdateRageTarget()
         {
             m_RageTarget = vec2(Ui()->MouseWorldX(), Ui()->MouseWorldY());
             m_RageActive = true;
+            if(m_pSmartAutopilot)
+                m_pSmartAutopilot->SetTarget(m_RageTarget);
         }
     }
 
@@ -361,6 +354,8 @@ void CFujixTas::UpdateRageTarget()
     {
         m_RageTarget = vec2(Ui()->MouseWorldX(), Ui()->MouseWorldY());
         m_RageActive = true;
+        if(m_pSmartAutopilot)
+            m_pSmartAutopilot->SetTarget(m_RageTarget);
     }
 }
 
