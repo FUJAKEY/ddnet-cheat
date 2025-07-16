@@ -11,6 +11,19 @@
 #include <deque>
 #include <memory>
 
+// Forward declarations
+class CSmartAutopilot;
+
+// 🆕 Структура состояния для интеграции с autopilot
+struct SAutopilotState
+{
+    vec2 m_Position;      // Текущая позиция
+    vec2 m_Velocity;      // Текущая скорость  
+    vec2 m_Target;        // Целевая позиция
+    bool m_OnGround;      // На земле ли персонаж
+    
+    SAutopilotState() : m_Position(0, 0), m_Velocity(0, 0), m_Target(0, 0), m_OnGround(false) {}
+};
 // 🆕 ПОЛНОСТЬЮ НОВАЯ STATE-BASED TAS СИСТЕМА
 class CFujixTas : public CComponent
 {
@@ -50,7 +63,6 @@ private:
         // Инпут который привел к этому состоянию
         CNetObj_PlayerInput m_Input;
     };
-
     // 🆕 Основные переменные новой TAS системы
     bool m_Recording;
     bool m_Playing;
@@ -59,12 +71,43 @@ private:
     int m_TestStartTick;
     int m_PlayStartTick;
     char m_aFilename[IO_MAX_PATH_LENGTH];
+    char m_aHookFilename[IO_MAX_PATH_LENGTH];
     IOHANDLE m_File;
+    IOHANDLE m_HookFile;
     std::vector<SStateSnapshot> m_vStates;  // Вектор состояний
     int m_PlayIndex;
     int m_LastRecordTick;
     bool m_StopPending;
     int m_StopTick;
+    
+    // 🆕 События крюка (отдельная система для точности)
+    struct SHookEvent
+    {
+        int m_Tick;                  // Тик события
+        int m_State;                 // Состояние крюка
+        int m_HookX, m_HookY;       // Позиция крюка (целые для экономии)
+        int m_HookDirX, m_HookDirY; // Направление (умноженное на 256)
+        int m_HookTick;             // Счетчик крюка
+        int m_HookedPlayer;         // К кому прицепился
+        int m_HookTeleBaseX, m_HookTeleBaseY; // Телепорт база
+        bool m_NewHook;             // Флаг нового крюка
+        int m_TriggeredEvents;      // Триггеры
+    };
+    std::vector<SHookEvent> m_vHookEvents;
+    int m_HookPlayIndex;
+    int m_LastHookState;
+    int m_LastHookedPlayer;
+    
+    // 🆕 Старая система для совместимости
+    struct SEntry
+    {
+        int m_Tick;
+        CNetObj_PlayerInput m_Input;
+    };
+    std::vector<SEntry> m_vEntries;  // Старые записи инпута
+    CNetObj_PlayerInput m_CurrentInput;
+    CNetObj_PlayerInput m_LastInput;
+    CNetObj_PlayerInput m_PhantomInput;
 
     // Phantom для предпросмотра
     bool m_PhantomActive;
@@ -74,25 +117,39 @@ private:
     CTeeRenderInfo m_PhantomRenderInfo;
     int m_PhantomStep;
     int m_PhantomPlayIndex;
-
-    // 🆕 Методы для работы с состояниями
-    void GetPath(char *pBuf, int Size) const;
-    void CaptureCurrentState(SStateSnapshot *pSnapshot, int Tick);
-    void ApplyState(const SStateSnapshot &Snapshot, bool ToPhantom = false);
-    void UpdatePlaybackState();
-    void TickPhantom();
-    void CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *pChar, int Tick);
-    void FinishRecord();
-    void RenderFuturePath(int TicksAhead);
-    void TickPhantomUpTo(int TargetTick);
-
-    // 🆕 Интерполяция состояний для плавности
-    void InterpolateStates(const SStateSnapshot &From, const SStateSnapshot &To, float Factor, SStateSnapshot *pResult);
-
+    
+    // Smart autopilot integration
+    std::unique_ptr<CSmartAutopilot> m_pSmartAutopilot;
+    bool m_SmartAutopilotInitialized;
+    
     // Rage mode
     bool m_RageActive;
     vec2 m_RageTarget;
     bool m_RagePrevEnabled;
+    // 🆕 Методы для работы с состояниями
+    void GetPath(char *pBuf, int Size) const;
+    void GetHookPath(char *pBuf, int Size) const;
+    void CaptureCurrentState(SStateSnapshot *pSnapshot, int Tick);
+    void RestoreState(const SStateSnapshot &Snapshot, CCharacterCore *pCore);
+    bool LoadStates(const char *pFilename);
+    void UpdateStatePlayback();
+    void ApplyState(const SStateSnapshot &Snapshot);
+    void InterpolateAndApplyState(const SStateSnapshot &Prev, const SStateSnapshot &Next, float Factor);
+    
+    // Методы для записи/воспроизведения инпута (совместимость)
+    void UpdatePlaybackInput();
+    void RecordHookState(int Tick);
+    void ApplyHookEvents(int PredTick, bool ToPhantom);
+    bool FetchPlaybackInput(CNetObj_PlayerInput *pInput);
+    void RecordInput(const CNetObj_PlayerInput *pInput, int Tick);
+    
+    void TickPhantom();
+    void CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *pChar, int Tick);
+    void FinishRecord();
+    void RenderFuturePath(int TicksAhead);
+    void RenderAutopilotPath();
+    void TickPhantomUpTo(int TargetTick);
+    // Rage mode переменные уже определены выше в private секции
     void ApplyRageInput(CNetObj_PlayerInput *pInput);
     void UpdateRageTarget();
 public:
