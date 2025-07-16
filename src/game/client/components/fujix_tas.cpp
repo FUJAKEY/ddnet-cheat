@@ -18,8 +18,11 @@
 
 const char *CFujixTas::ms_pFujixDir = "fujix";
 
+// 🆕 ПОЛНОСТЬЮ НОВЫЙ КОНСТРУКТОР - STATE-BASED TAS
+// 🆕 ПОЛНОСТЬЮ НОВЫЙ КОНСТРУКТОР - STATE-BASED TAS
 CFujixTas::CFujixTas()
 {
+    // Инициализация основных переменных
     m_Recording = false;
     m_Playing = false;
     m_Testing = false;
@@ -27,128 +30,41 @@ CFujixTas::CFujixTas()
     m_TestStartTick = 0;
     m_PlayStartTick = 0;
     m_File = nullptr;
+    m_HookFile = nullptr;
     m_PlayIndex = 0;
+    m_HookPlayIndex = 0;
     m_LastRecordTick = -1;
-    mem_zero(&m_LastInput, sizeof(m_LastInput));
     m_aFilename[0] = '\0';
-    mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
+    m_aHookFilename[0] = '\0';
     m_StopPending = false;
     m_StopTick = -1;
+    
+    // Phantom для предпросмотра
     m_PhantomActive = false;
     m_PhantomTick = 0;
-    mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
+    m_PhantomStep = 1;
     m_PhantomPlayIndex = 0;
-    m_HookFile = nullptr;
-    m_HookPlayIndex = 0;
 
-    m_RageActive = false;
-    m_LastHookState = HOOK_RETRACTED;
-    m_LastHookedPlayer = -1;
+    // Rage mode
     m_RageActive = false;
     m_RageTarget = vec2(0.f, 0.f);
     m_RagePrevEnabled = false;
     
-    // Initialize smart autopilot
-    m_pSmartAutopilot = std::make_unique<CSmartAutopilot>();
-    m_SmartAutopilotInitialized = false;
-}
-// Copy constructor - shallow copy with m_pSmartAutopilot set to nullptr
-CFujixTas::CFujixTas(const CFujixTas& other)
-{
-    // Copy all basic members
-    m_Recording = other.m_Recording;
-    m_Playing = other.m_Playing;
-    m_Testing = other.m_Testing;
-    m_StartTick = other.m_StartTick;
-    m_TestStartTick = other.m_TestStartTick;
-    m_PlayStartTick = other.m_PlayStartTick;
-    str_copy(m_aFilename, other.m_aFilename, sizeof(m_aFilename));
-    m_File = other.m_File;
-    m_vEntries = other.m_vEntries;
-    m_PlayIndex = other.m_PlayIndex;
-    m_LastRecordTick = other.m_LastRecordTick;
-    m_LastInput = other.m_LastInput;
-    m_CurrentInput = other.m_CurrentInput;
-    m_StopPending = other.m_StopPending;
-    m_StopTick = other.m_StopTick;
+    // Hook state tracking
+    m_LastHookState = HOOK_IDLE;
+    m_LastHookedPlayer = -1;
     
-    // Copy hook-related members
-    str_copy(m_aHookFilename, other.m_aHookFilename, sizeof(m_aHookFilename));
-    m_HookFile = other.m_HookFile;
-    m_vHookEvents = other.m_vHookEvents;
-    m_HookPlayIndex = other.m_HookPlayIndex;
-    m_LastHookState = other.m_LastHookState;
-    m_LastHookedPlayer = other.m_LastHookedPlayer;
-    
-    // Copy rage mode members
-    m_RageActive = other.m_RageActive;
-    m_RageTarget = other.m_RageTarget;
-    m_RagePrevEnabled = other.m_RagePrevEnabled;
-    
-    // Copy phantom members
-    m_PhantomActive = other.m_PhantomActive;
-    m_PhantomTick = other.m_PhantomTick;
-    m_PhantomCore = other.m_PhantomCore;
-    m_PhantomPrevCore = other.m_PhantomPrevCore;
-    m_PhantomRenderInfo = other.m_PhantomRenderInfo;
-    m_PhantomStep = other.m_PhantomStep;
-    m_PhantomInput = other.m_PhantomInput;
-    m_PhantomPlayIndex = other.m_PhantomPlayIndex;
-    
-    // Set smart autopilot to nullptr (can't copy unique_ptr)
+    // Smart autopilot
     m_pSmartAutopilot = nullptr;
     m_SmartAutopilotInitialized = false;
-}
-
-// Copy assignment operator
-CFujixTas& CFujixTas::operator=(const CFujixTas& other)
-{
-    if (this != &other) {
-        // Copy all basic members
-        m_Recording = other.m_Recording;
-        m_Playing = other.m_Playing;
-        m_Testing = other.m_Testing;
-        m_StartTick = other.m_StartTick;
-        m_TestStartTick = other.m_TestStartTick;
-        m_PlayStartTick = other.m_PlayStartTick;
-        str_copy(m_aFilename, other.m_aFilename, sizeof(m_aFilename));
-        m_File = other.m_File;
-        m_vEntries = other.m_vEntries;
-        m_PlayIndex = other.m_PlayIndex;
-        m_LastRecordTick = other.m_LastRecordTick;
-        m_LastInput = other.m_LastInput;
-        m_CurrentInput = other.m_CurrentInput;
-        m_StopPending = other.m_StopPending;
-        m_StopTick = other.m_StopTick;
-        
-        // Copy hook-related members
-        str_copy(m_aHookFilename, other.m_aHookFilename, sizeof(m_aHookFilename));
-        m_HookFile = other.m_HookFile;
-        m_vHookEvents = other.m_vHookEvents;
-        m_HookPlayIndex = other.m_HookPlayIndex;
-        m_LastHookState = other.m_LastHookState;
-        m_LastHookedPlayer = other.m_LastHookedPlayer;
-        
-        // Copy rage mode members
-        m_RageActive = other.m_RageActive;
-        m_RageTarget = other.m_RageTarget;
-        m_RagePrevEnabled = other.m_RagePrevEnabled;
-        
-        // Copy phantom members
-        m_PhantomActive = other.m_PhantomActive;
-        m_PhantomTick = other.m_PhantomTick;
-        m_PhantomCore = other.m_PhantomCore;
-        m_PhantomPrevCore = other.m_PhantomPrevCore;
-        m_PhantomRenderInfo = other.m_PhantomRenderInfo;
-        m_PhantomStep = other.m_PhantomStep;
-        m_PhantomInput = other.m_PhantomInput;
-        m_PhantomPlayIndex = other.m_PhantomPlayIndex;
-        
-        // Set smart autopilot to nullptr (can't copy unique_ptr)
-        m_pSmartAutopilot = nullptr;
-        m_SmartAutopilotInitialized = false;
-    }
-    return *this;
+    
+    // Input states
+    mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
+    mem_zero(&m_LastInput, sizeof(m_LastInput));
+    mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
+    
+    // 🆕 Резервируем память для состояний (оптимизация)
+    m_vStates.reserve(60 * 60 * 5); // 5 минут при 60 FPS
 }
 
 int CFujixTas::Sizeof() const
@@ -156,18 +72,200 @@ int CFujixTas::Sizeof() const
     return sizeof(*this);
 }
 
+// 🆕 НОВЫЙ МЕТОД: Получить путь к файлу состояний
 void CFujixTas::GetPath(char *pBuf, int Size) const
 {
     const char *pMap = Client()->GetCurrentMap();
     str_format(pBuf, Size, "%s/%s.fjx", ms_pFujixDir, pMap);
 }
 
+// 🆕 НОВЫЙ МЕТОД: Получить путь к файлу событий крюка
 void CFujixTas::GetHookPath(char *pBuf, int Size) const
 {
     const char *pMap = Client()->GetCurrentMap();
-    str_format(pBuf, Size, "%s/%s.hook", ms_pFujixDir, pMap);
+    str_format(pBuf, Size, "%s/%s_hook.fjx", ms_pFujixDir, pMap);
 }
 
+// 🆕 НОВЫЙ МЕТОД: Захват полного состояния персонажа
+void CFujixTas::CaptureCurrentState(SStateSnapshot *pSnapshot, int Tick)
+{
+    if(!GameClient()->m_Snap.m_pLocalCharacter)
+        return;
+
+    const CCharacterCore &Core = GameClient()->m_PredictedChar;
+    
+    // Заполняем базовую информацию
+    pSnapshot->m_Tick = Tick;
+    
+    // Позиция и движение с максимальной точностью
+    pSnapshot->m_PosX = Core.m_Pos.x;
+    pSnapshot->m_PosY = Core.m_Pos.y;
+    pSnapshot->m_VelX = Core.m_Vel.x;
+    pSnapshot->m_VelY = Core.m_Vel.y;
+    pSnapshot->m_Angle = Core.m_Angle;
+    pSnapshot->m_Direction = Core.m_Direction;
+    
+    // Состояние крюка
+    pSnapshot->m_HookState = Core.m_HookState;
+    pSnapshot->m_HookPosX = Core.m_HookPos.x;
+    pSnapshot->m_HookPosY = Core.m_HookPos.y;
+    pSnapshot->m_HookDirX = Core.m_HookDir.x;
+    pSnapshot->m_HookDirY = Core.m_HookDir.y;
+    pSnapshot->m_HookTick = Core.m_HookTick;
+    pSnapshot->m_HookedPlayer = Core.HookedPlayer();
+    pSnapshot->m_NewHook = Core.m_NewHook;
+    
+    // Физические состояния 
+    pSnapshot->m_Grounded = (Core.m_Jumped & 2) == 0; // Простой способ определить на земле ли
+    pSnapshot->m_Jumps = Core.m_Jumps;
+    pSnapshot->m_Jumped = Core.m_Jumped != 0;
+    
+    // Игровые параметры
+    if(GameClient()->m_Snap.m_pLocalCharacter)
+    {
+        pSnapshot->m_Health = GameClient()->m_Snap.m_pLocalCharacter->m_Health;
+        pSnapshot->m_Armor = GameClient()->m_Snap.m_pLocalCharacter->m_Armor; 
+        pSnapshot->m_Weapon = GameClient()->m_Snap.m_pLocalCharacter->m_Weapon;
+    }
+    else
+    {
+        pSnapshot->m_Health = 10;
+        pSnapshot->m_Armor = 0;
+        pSnapshot->m_Weapon = 0;
+    }
+    
+    // Последний инпут - это то что привело к этому состоянию
+    pSnapshot->m_Input = Core.m_Input;
+}
+
+// 🆕 НОВЫЙ МЕТОД: Записать текущее состояние
+void CFujixTas::RecordCurrentState(int Tick)
+{
+    if(!m_Recording || !GameClient()->m_Snap.m_pLocalCharacter)
+        return;
+        
+    SStateSnapshot Snapshot;
+    CaptureCurrentState(&Snapshot, Tick);
+    
+    m_vStates.push_back(Snapshot);
+    
+    // Записываем в файл
+    if(m_File)
+        io_write(m_File, &Snapshot, sizeof(Snapshot));
+}
+
+// 🆕 НОВЫЙ МЕТОД: Восстановить состояние из снимка
+void CFujixTas::RestoreState(const SStateSnapshot &Snapshot, CCharacterCore *pCore)
+{
+    if(!pCore)
+        return;
+        
+    // Восстанавливаем позицию и движение
+    pCore->m_Pos = vec2(Snapshot.m_PosX, Snapshot.m_PosY);
+    pCore->m_Vel = vec2(Snapshot.m_VelX, Snapshot.m_VelY);
+    pCore->m_Angle = Snapshot.m_Angle;
+    pCore->m_Direction = Snapshot.m_Direction;
+    
+    // Восстанавливаем состояние крюка
+    pCore->m_HookState = Snapshot.m_HookState;
+    pCore->m_HookPos = vec2(Snapshot.m_HookPosX, Snapshot.m_HookPosY);
+    pCore->m_HookDir = vec2(Snapshot.m_HookDirX, Snapshot.m_HookDirY);
+    pCore->m_HookTick = Snapshot.m_HookTick;
+    pCore->SetHookedPlayer(Snapshot.m_HookedPlayer);
+    pCore->m_NewHook = Snapshot.m_NewHook;
+    
+    // Восстанавливаем физические состояния
+    pCore->m_Jumps = Snapshot.m_Jumps;
+    pCore->m_Jumped = Snapshot.m_Jumped ? 1 : 0;
+    
+    // Последний инпут
+    pCore->m_Input = Snapshot.m_Input;
+}
+
+// 🆕 НОВЫЙ МЕТОД: Загрузить состояния из файла
+bool CFujixTas::LoadStates(const char *pFilename)
+{
+    IOHANDLE File = Storage()->OpenFile(pFilename, IOFLAG_READ, IStorage::TYPE_SAVE);
+    if(!File)
+        return false;
+        
+    m_vStates.clear();
+    SStateSnapshot State;
+    while(io_read(File, &State, sizeof(State)) == sizeof(State))
+        m_vStates.push_back(State);
+        
+    io_close(File);
+    return !m_vStates.empty();
+}
+
+// 🆕 НОВЫЙ МЕТОД: State-based воспроизведение  
+void CFujixTas::UpdateStatePlayback()
+{
+    if(!m_Playing || m_vStates.empty())
+        return;
+        
+    int PredTick = Client()->PredGameTick(g_Config.m_ClDummy);
+    int RelativeTick = PredTick - m_PlayStartTick;
+    
+    // Ищем ближайшее состояние
+    for(size_t i = 0; i < m_vStates.size(); i++)
+    {
+        if(m_vStates[i].m_Tick >= RelativeTick)
+        {
+            if(i > 0 && m_vStates[i].m_Tick > RelativeTick)
+            {
+                // Интерполируем между состояниями для плавности
+                const SStateSnapshot &Prev = m_vStates[i-1];
+                const SStateSnapshot &Next = m_vStates[i];
+                float Factor = (float)(RelativeTick - Prev.m_Tick) / (float)(Next.m_Tick - Prev.m_Tick);
+                
+                InterpolateAndApplyState(Prev, Next, Factor);
+            }
+            else
+            {
+                // Применяем точное состояние
+                ApplyState(m_vStates[i]);
+            }
+            break;
+        }
+    }
+}
+
+void CFujixTas::ApplyState(const SStateSnapshot &Snapshot)
+{
+    RestoreState(Snapshot, &GameClient()->m_PredictedChar);
+    m_CurrentInput = Snapshot.m_Input;
+}
+
+// 🆕 НОВЫЙ МЕТОД: Интерполяция состояний
+void CFujixTas::InterpolateAndApplyState(const SStateSnapshot &Prev, const SStateSnapshot &Next, float Factor)
+{
+    SStateSnapshot Interpolated;
+    
+    // Интерполируем позицию и скорость
+    Interpolated.m_PosX = Prev.m_PosX + (Next.m_PosX - Prev.m_PosX) * Factor;
+    Interpolated.m_PosY = Prev.m_PosY + (Next.m_PosY - Prev.m_PosY) * Factor;
+    Interpolated.m_VelX = Prev.m_VelX + (Next.m_VelX - Prev.m_VelX) * Factor;
+    Interpolated.m_VelY = Prev.m_VelY + (Next.m_VelY - Prev.m_VelY) * Factor;
+    
+    // Для дискретных значений используем пороговую интерполяцию
+    Interpolated.m_Direction = Factor < 0.5f ? Prev.m_Direction : Next.m_Direction;
+    Interpolated.m_HookState = Factor < 0.5f ? Prev.m_HookState : Next.m_HookState;
+    Interpolated.m_HookedPlayer = Factor < 0.5f ? Prev.m_HookedPlayer : Next.m_HookedPlayer;
+    Interpolated.m_Jumps = Factor < 0.5f ? Prev.m_Jumps : Next.m_Jumps;
+    Interpolated.m_Jumped = Factor < 0.5f ? Prev.m_Jumped : Next.m_Jumped;
+    
+    // Интерполируем крюк
+    Interpolated.m_HookPosX = Prev.m_HookPosX + (Next.m_HookPosX - Prev.m_HookPosX) * Factor;
+    Interpolated.m_HookPosY = Prev.m_HookPosY + (Next.m_HookPosY - Prev.m_HookPosY) * Factor;
+    Interpolated.m_HookDirX = Prev.m_HookDirX + (Next.m_HookDirX - Prev.m_HookDirX) * Factor;
+    Interpolated.m_HookDirY = Prev.m_HookDirY + (Next.m_HookDirY - Prev.m_HookDirY) * Factor;
+    
+    // Применяем интерполированное состояние
+    ApplyState(Interpolated);
+}
+
+// 🆕 ИСПРАВЛЕННЫЙ МЕТОД: UpdatePlaybackInput
 void CFujixTas::UpdatePlaybackInput()
 {
     if(!m_Playing && !m_Testing)
@@ -177,6 +275,13 @@ void CFujixTas::UpdatePlaybackInput()
     int BaseTick = m_Playing ? m_PlayStartTick : m_TestStartTick;
     int *pPlayIndex = m_Playing ? &m_PlayIndex : &m_PhantomPlayIndex;
 
+    // КРИТИЧЕСКИ ВАЖНО: Сначала применяем события крюка, ПОТОМ инпут!
+    if (m_Playing)
+        ApplyHookEvents(PredTick, false);
+    else if (m_Testing)
+        ApplyHookEvents(PredTick, true);
+
+    // Затем обновляем инпут
     while(*pPlayIndex < (int)m_vEntries.size() && BaseTick + m_vEntries[*pPlayIndex].m_Tick <= PredTick)
     {
         if (m_Playing)
@@ -193,7 +298,6 @@ void CFujixTas::UpdatePlaybackInput()
         {
             StopPlay();
         }
-        ApplyHookEvents(PredTick, false);
     }
     else // m_Testing
     {
@@ -201,7 +305,6 @@ void CFujixTas::UpdatePlaybackInput()
         {
             StopTest();
         }
-        ApplyHookEvents(PredTick, true);
     }
 }
 
@@ -209,25 +312,35 @@ void CFujixTas::RecordHookState(int Tick)
 {
     if(!m_Recording)
         return;
-
     const CCharacterCore &Core = GameClient()->m_PredictedChar;
     
-    // Записываем состояние крюка КАЖДЫЙ тик для максимальной точности
+    // Записываем состояние крюка только при изменениях для оптимизации
+    if(Core.m_HookState == m_LastHookState && Core.HookedPlayer() == m_LastHookedPlayer && 
+       Core.m_HookState == HOOK_IDLE)
+        return;
+    
     SHookEvent Ev;
     Ev.m_Tick = Tick - m_StartTick;
     Ev.m_State = Core.m_HookState;
     Ev.m_HookedPlayer = Core.HookedPlayer();
     
-    // Записываем точные координаты крюка с высокой точностью
-    Ev.m_HookX = round_to_int(Core.m_HookPos.x * 256.0f); // Увеличенная точность
-    Ev.m_HookY = round_to_int(Core.m_HookPos.y * 256.0f); // Увеличенная точность
+    // Записываем точные координаты крюка
+    Ev.m_HookX = round_to_int(Core.m_HookPos.x);
+    Ev.m_HookY = round_to_int(Core.m_HookPos.y);
     Ev.m_HookTick = Core.m_HookTick;
     
     // Записываем направление крюка с высокой точностью
     Ev.m_HookDirX = round_to_int(Core.m_HookDir.x * 256.0f);
     Ev.m_HookDirY = round_to_int(Core.m_HookDir.y * 256.0f);
     
-    // Записываем КАЖДЫЙ тик, а не только изменения
+    // Записываем телепорт базу
+    Ev.m_HookTeleBaseX = round_to_int(Core.m_HookTeleBase.x);
+    Ev.m_HookTeleBaseY = round_to_int(Core.m_HookTeleBase.y);
+    
+    // Записываем флаги
+    Ev.m_NewHook = Core.m_NewHook;
+    Ev.m_TriggeredEvents = Core.m_TriggeredEvents;
+    
     m_vHookEvents.push_back(Ev);
     if(m_HookFile)
         io_write(m_HookFile, &Ev, sizeof(Ev));
@@ -246,12 +359,17 @@ void CFujixTas::ApplyHookEvents(int PredTick, bool ToPhantom)
         const SHookEvent &Ev = m_vHookEvents[m_HookPlayIndex];
         CCharacterCore *pCore = ToPhantom ? &m_PhantomCore : &GameClient()->m_PredictedChar;
         
-        // Применяем все параметры крюка с высокой точностью
+        // Применяем все параметры крюка точно как записали
         pCore->m_HookState = Ev.m_State;
         pCore->m_HookTick = Ev.m_HookTick;
-        pCore->m_HookPos = vec2(Ev.m_HookX / 256.0f, Ev.m_HookY / 256.0f); // Восстанавливаем точность
+        pCore->m_HookPos = vec2((float)Ev.m_HookX, (float)Ev.m_HookY); // Точные координаты
         pCore->m_HookDir = vec2(Ev.m_HookDirX / 256.0f, Ev.m_HookDirY / 256.0f); // Восстанавливаем направление
+        pCore->m_HookTeleBase = vec2((float)Ev.m_HookTeleBaseX, (float)Ev.m_HookTeleBaseY); // Телепорт база
         pCore->SetHookedPlayer(Ev.m_HookedPlayer);
+        
+        // Применяем флаги
+        pCore->m_NewHook = Ev.m_NewHook;
+        pCore->m_TriggeredEvents = Ev.m_TriggeredEvents;
         
         m_HookPlayIndex++;
     }
@@ -728,6 +846,19 @@ void CFujixTas::StartTest()
         m_vEntries.push_back(e);
     io_close(File);
 
+    // Загружаем события крюка для тестирования
+    GetHookPath(aPath, sizeof(aPath));
+    IOHANDLE HookFile = Storage()->OpenFile(aPath, IOFLAG_READ, IStorage::TYPE_SAVE);
+    m_vHookEvents.clear();
+    if(HookFile)
+    {
+        SHookEvent Ev;
+        while(io_read(HookFile, &Ev, sizeof(Ev)) == sizeof(Ev))
+            m_vHookEvents.push_back(Ev);
+        io_close(HookFile);
+    }
+    m_HookPlayIndex = 0;
+
     if(m_vEntries.empty())
 	{
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "tas file is empty");
@@ -783,10 +914,11 @@ void CFujixTas::TickPhantomUpTo(int TargetTick)
         m_PhantomCore.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
         m_PhantomPrevCore = m_PhantomCore;
 
+        // ВАЖНО: Сначала применяем крюк, потом инпут, затем симулируем движение
         if(m_Testing || m_Playing)
-            UpdatePlaybackInput();
-        if(m_Testing || m_Playing)
-            ApplyHookEvents(m_PhantomTick, true);
+        {
+            UpdatePlaybackInput(); // Это уже включает ApplyHookEvents
+        }
 
         m_PhantomCore.m_Input = m_PhantomInput;
         m_PhantomCore.Tick(true);
