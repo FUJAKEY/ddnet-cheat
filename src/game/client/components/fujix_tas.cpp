@@ -211,34 +211,50 @@ void CFujixTas::RecordHookState(int Tick)
         return;
 
     const CCharacterCore &Core = GameClient()->m_PredictedChar;
-    if(Core.m_HookState != m_LastHookState || Core.HookedPlayer() != m_LastHookedPlayer)
-    {
-        SHookEvent Ev;
-        Ev.m_Tick = Tick - m_StartTick;
-        Ev.m_State = Core.m_HookState;
-        Ev.m_HookedPlayer = Core.HookedPlayer();
-        Ev.m_HookX = round_to_int(Core.m_HookPos.x);
-        Ev.m_HookY = round_to_int(Core.m_HookPos.y);
-        Ev.m_HookTick = Core.m_HookTick;
-        m_vHookEvents.push_back(Ev);
-        if(m_HookFile)
-            io_write(m_HookFile, &Ev, sizeof(Ev));
-        m_LastHookState = Core.m_HookState;
-        m_LastHookedPlayer = Core.HookedPlayer();
-    }
+    
+    // Записываем состояние крюка КАЖДЫЙ тик для максимальной точности
+    SHookEvent Ev;
+    Ev.m_Tick = Tick - m_StartTick;
+    Ev.m_State = Core.m_HookState;
+    Ev.m_HookedPlayer = Core.HookedPlayer();
+    
+    // Записываем точные координаты крюка с высокой точностью
+    Ev.m_HookX = round_to_int(Core.m_HookPos.x * 256.0f); // Увеличенная точность
+    Ev.m_HookY = round_to_int(Core.m_HookPos.y * 256.0f); // Увеличенная точность
+    Ev.m_HookTick = Core.m_HookTick;
+    
+    // Записываем дополнительные данные для точности
+    Ev.m_HookVelX = round_to_int(Core.m_HookVel.x * 256.0f);
+    Ev.m_HookVelY = round_to_int(Core.m_HookVel.y * 256.0f);
+    Ev.m_HookDir = round_to_int(Core.m_HookDir * 256.0f);
+    
+    // Записываем КАЖДЫЙ тик, а не только изменения
+    m_vHookEvents.push_back(Ev);
+    if(m_HookFile)
+        io_write(m_HookFile, &Ev, sizeof(Ev));
+        
+    m_LastHookState = Core.m_HookState;
+    m_LastHookedPlayer = Core.HookedPlayer();
 }
 
 void CFujixTas::ApplyHookEvents(int PredTick, bool ToPhantom)
 {
     int BaseTick = m_Playing ? m_PlayStartTick : m_TestStartTick;
+    
+    // Применяем каждое событие крюка с максимальной точностью
     while(m_HookPlayIndex < (int)m_vHookEvents.size() && BaseTick + m_vHookEvents[m_HookPlayIndex].m_Tick <= PredTick)
     {
         const SHookEvent &Ev = m_vHookEvents[m_HookPlayIndex];
         CCharacterCore *pCore = ToPhantom ? &m_PhantomCore : &GameClient()->m_PredictedChar;
+        
+        // Применяем все параметры крюка с высокой точностью
         pCore->m_HookState = Ev.m_State;
         pCore->m_HookTick = Ev.m_HookTick;
-        pCore->m_HookPos = vec2(Ev.m_HookX, Ev.m_HookY);
+        pCore->m_HookPos = vec2(Ev.m_HookX / 256.0f, Ev.m_HookY / 256.0f); // Восстанавливаем точность
+        pCore->m_HookVel = vec2(Ev.m_HookVelX / 256.0f, Ev.m_HookVelY / 256.0f);
+        pCore->m_HookDir = Ev.m_HookDir / 256.0f;
         pCore->SetHookedPlayer(Ev.m_HookedPlayer);
+        
         m_HookPlayIndex++;
     }
 }
@@ -396,7 +412,6 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
         m_LastInput = *pInput;
     }
     m_LastRecordTick = Tick;
-
     if((m_Testing || m_Recording) && m_PhantomActive)
     {
         m_PhantomInput = *pInput;
@@ -404,49 +419,90 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
     }
 }
 
-
 void CFujixTas::StartRecord()
 {
     if(m_Recording)
         return;
 
+    // Защита от множественных попыток записи
+    static bool s_StartingRecord = false;
+    if(s_StartingRecord)
+        return;
+    s_StartingRecord = true;
+
     GetPath(m_aFilename, sizeof(m_aFilename));
     GetHookPath(m_aHookFilename, sizeof(m_aHookFilename));
-    Storage()->CreateFolder(ms_pFujixDir, IStorage::TYPE_SAVE);
+    
+    if(!Storage()->CreateFolder(ms_pFujixDir, IStorage::TYPE_SAVE))
+    {
+        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "failed to create directory");
+        s_StartingRecord = false;
+        return;
+    }
+    
     m_File = Storage()->OpenFile(m_aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
     if(!m_File)
     {
         Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "failed to open file for recording");
+        s_StartingRecord = false;
         return;
     }
+    
     m_HookFile = Storage()->OpenFile(m_aHookFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
+    if(!m_HookFile)
+    {
+        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "failed to open hook file for recording");
+        io_close(m_File);
+        m_File = nullptr;
+        s_StartingRecord = false;
+        return;
+    }
 
+    // Очищаем векторы сначала для экономии памяти
+    m_vEntries.clear();
+    m_vHookEvents.clear();
+    m_vEntries.reserve(60 * 60); // Резервируем место на 1 минуту (60 FPS)
+    m_vHookEvents.reserve(60 * 60); // Резервируем место на 1 минуту
+    
     m_StartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
     m_LastRecordTick = m_StartTick - 1;
     mem_zero(&m_LastInput, sizeof(m_LastInput));
     m_Recording = true;
     g_Config.m_ClFujixTasRecord = 1;
-    m_vEntries.clear();
-    m_vHookEvents.clear();
+    
     m_HookPlayIndex = 0;
     m_LastHookState = GameClient()->m_PredictedChar.m_HookState;
     m_LastHookedPlayer = GameClient()->m_PredictedChar.HookedPlayer();
 
     m_RageActive = false;
 
-    // initialize phantom to visualize recording
-    if(GameClient()->m_Snap.m_LocalClientId >= 0)
+    // Initialize phantom safely
+    if(GameClient()->m_Snap.m_LocalClientId >= 0 && GameClient()->m_Snap.m_pLocalCharacter)
     {
         m_PhantomCore = GameClient()->m_PredictedChar;
         m_PhantomPrevCore = m_PhantomCore;
-        m_PhantomCore.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
+        
+        // Безопасное подключение к миру
+        if(Collision())
+        {
+            m_PhantomCore.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
+        }
         m_PhantomRenderInfo = GameClient()->m_aClients[GameClient()->m_Snap.m_LocalClientId].m_RenderInfo;
     }
+    else
+    {
+        // Если персонаж недоступен, инициализируем phantom по умолчанию
+        mem_zero(&m_PhantomCore, sizeof(m_PhantomCore));
+        mem_zero(&m_PhantomPrevCore, sizeof(m_PhantomPrevCore));
+        mem_zero(&m_PhantomRenderInfo, sizeof(m_PhantomRenderInfo));
+    }
+    
     m_PhantomTick = Client()->PredGameTick(g_Config.m_ClDummy);
     m_PhantomStep = 1;
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
     m_PhantomPlayIndex = 0;
-    // ignore other players but keep map collisions
+    
+    // Настройки phantom для изоляции
     m_PhantomCore.m_CollisionDisabled = false;
     m_PhantomCore.m_Solo = true;
     m_PhantomCore.m_HookHitDisabled = true;
@@ -454,8 +510,12 @@ void CFujixTas::StartRecord()
     m_PhantomCore.m_GrenadeHitDisabled = true;
     m_PhantomCore.m_ShotgunHitDisabled = true;
     m_PhantomCore.m_LaserHitDisabled = true;
+    
     m_TestStartTick = m_PhantomTick;
     m_PhantomActive = true;
+    
+    s_StartingRecord = false;
+    Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "Recording started successfully");
 }
 
 void CFujixTas::FinishRecord()
@@ -825,16 +885,42 @@ void CFujixTas::RenderFuturePath(int TicksAhead)
     if(TicksAhead <= 0 || !m_PhantomActive)
         return;
 
-    CFujixTas Tmp = *this;
+    // Избегаем копирования всего объекта - используем только нужные данные
+    CCharacterCore TempCore = m_PhantomCore;
+    TempCore.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
+    
     std::vector<vec2> Points;
     Points.reserve(TicksAhead + 1);
-    Points.push_back(Tmp.m_PhantomCore.m_Pos);
+    Points.push_back(TempCore.m_Pos);
 
-    int TargetTick = m_PhantomTick + TicksAhead;
-    while(Tmp.m_PhantomTick < TargetTick)
+    int CurrentTick = m_PhantomTick;
+    int TargetTick = CurrentTick + TicksAhead;
+    int CurrentPlayIndex = m_PhantomPlayIndex;
+    
+    while(CurrentTick < TargetTick)
     {
-        Tmp.TickPhantomUpTo(Tmp.m_PhantomTick + 1);
-        Points.push_back(Tmp.m_PhantomCore.m_Pos);
+        // Получаем инпут для текущего тика
+        CNetObj_PlayerInput CurrentInput = m_PhantomInput;
+        
+        if(m_Testing || m_Playing)
+        {
+            // Симулируем получение инпута
+            int BaseTick = m_Playing ? m_PlayStartTick : m_TestStartTick;
+            while(CurrentPlayIndex < (int)m_vEntries.size() && 
+                  BaseTick + m_vEntries[CurrentPlayIndex].m_Tick <= CurrentTick)
+            {
+                CurrentInput = m_vEntries[CurrentPlayIndex].m_Input;
+                CurrentPlayIndex++;
+            }
+        }
+        
+        TempCore.m_Input = CurrentInput;
+        TempCore.Tick(true);
+        TempCore.Move();
+        TempCore.Quantize();
+        
+        Points.push_back(TempCore.m_Pos);
+        CurrentTick++;
     }
 
     if(Points.size() <= 1)

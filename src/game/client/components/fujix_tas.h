@@ -37,9 +37,12 @@ struct SHookEvent
        int m_Tick;
        int m_State;
        int m_HookedPlayer;
-       int m_HookX;
-       int m_HookY;
+       int m_HookX;        // Позиция X с увеличенной точностью (*256)
+       int m_HookY;        // Позиция Y с увеличенной точностью (*256)
        int m_HookTick;
+       int m_HookVelX;     // Скорость крюка X с увеличенной точностью (*256)
+       int m_HookVelY;     // Скорость крюка Y с увеличенной точностью (*256)
+       int m_HookDir;      // Направление крюка с увеличенной точностью (*256)
 };
 
 bool m_Recording;
