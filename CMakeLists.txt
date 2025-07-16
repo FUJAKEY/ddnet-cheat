@@ -2398,6 +2398,15 @@ if(CLIENT)
     components/spectator.h
     components/statboard.cpp
     components/statboard.h
+    components/statboard.cpp
+    components/statboard.h
+    components/test_includes/base/system.h
+    components/test_includes/base/vmath.h
+    components/test_includes/game/collision.h
+    components/test_includes/game/gamecore.h
+    components/test_includes/game/mapitems.h
+    components/test_syntax.cpp
+    components/test_syntax_full.cpp
     components/tooltips.cpp
     components/tooltips.h
     components/touch_controls.cpp
