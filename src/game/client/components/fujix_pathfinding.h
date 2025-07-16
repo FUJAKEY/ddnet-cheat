@@ -273,6 +273,10 @@ public:
     void SetTarget(vec2 Target);
     void SetConfig(const SPathfindingConfig &Config);
     
+    
+    // Main update function - compatible with fujix_tas
+    bool Update(const struct SAutopilotState &State, CNetObj_PlayerInput *pInput);
+    
     // Main update function
     bool UpdateAutopilot(CCharacterCore &Core, CNetObj_PlayerInput *pInput);
     

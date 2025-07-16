@@ -812,7 +812,12 @@ void CFujixTas::OnRender()
 
         RenderFuturePath(g_Config.m_ClFujixTasPreviewTicks);
     }
-
+    
+    // Render smart autopilot planned path in rage mode
+    if(m_RageActive && m_pSmartAutopilot && m_SmartAutopilotInitialized)
+    {
+        RenderAutopilotPath();
+    }
 }
 
 void CFujixTas::RenderFuturePath(int TicksAhead)
@@ -846,9 +851,44 @@ void CFujixTas::RenderFuturePath(int TicksAhead)
     Graphics()->LinesEnd();
     Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 }
+}
 
-
-
+void CFujixTas::RenderAutopilotPath()
+{
+    if(!m_pSmartAutopilot || !GameClient()->m_Snap.m_pLocalCharacter)
+        return;
+    
+    // Get current player position
+    vec2 PlayerPos = GameClient()->m_PredictedChar.m_Pos;
+    
+    // Get planned path from autopilot
+    std::vector<vec2> Path = m_pSmartAutopilot->GetPath(PlayerPos, m_RageTarget);
+    
+    if(Path.size() < 2)
+        return;
+    
+    // Render the planned path
+    Graphics()->TextureClear();
+    Graphics()->LinesBegin();
+    Graphics()->SetColor(1.0f, 0.5f, 0.0f, 0.8f); // Orange color for autopilot path
+    
+    for(size_t i = 1; i < Path.size(); i++)
+    {
+        IGraphics::CLineItem Line(Path[i - 1].x, Path[i - 1].y, Path[i].x, Path[i].y);
+        Graphics()->LinesDraw(&Line, 1);
+    }
+    
+    Graphics()->LinesEnd();
+    
+    // Render target marker
+    Graphics()->QuadsBegin();
+    Graphics()->SetColor(1.0f, 0.0f, 0.0f, 0.8f); // Red color for target
+    IGraphics::CQuadItem QuadItem(m_RageTarget.x - 8.0f, m_RageTarget.y - 8.0f, 16.0f, 16.0f);
+    Graphics()->QuadsDrawTL(&QuadItem, 1);
+    Graphics()->QuadsEnd();
+    
+    Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f); // Reset color
+}
 void CFujixTas::ConRecord(IConsole::IResult *pResult, void *pUserData)
 {
     CFujixTas *pSelf = static_cast<CFujixTas *>(pUserData);

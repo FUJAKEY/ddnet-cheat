@@ -1,5 +1,7 @@
 #include "fujix_pathfinding.h"
+#include <game/collision.h>
 #include <game/mapitems.h>
+#include <base/system.h>
 #include <base/math.h>
 #include <algorithm>
 #include <cmath>
@@ -7,163 +9,139 @@
 // =====================================================
 // PATH NODE COMPARATOR IMPLEMENTATION
 // =====================================================
+static std::vector<SPathNode> *s_pNodes = nullptr;
+
 bool SPathNodeComparator::operator()(int a, int b) const
 {
-    // This will be implemented when we have access to the nodes vector
-    // For now, return false to satisfy compiler
-    return false;
+    if (!s_pNodes || a >= (int)s_pNodes->size() || b >= (int)s_pNodes->size())
+        return false;
+    return (*s_pNodes)[a].m_FCost > (*s_pNodes)[b].m_FCost; // Higher F cost = lower priority
 }
 
 // =====================================================
-// MAP ANALYZER IMPLEMENTATION
+// MAP ANALYZER IMPLEMENTATION  
 // =====================================================
-ETileType CMapAnalyzer::ClassifyTile(int TileIndex, int FrontTileIndex)
-{
-    // Check front layer first (higher priority)
-    if(FrontTileIndex != 0)
-    {
-        switch(FrontTileIndex)
-        {
-            case TILE_FREEZE:
-            case TILE_DFREEZE:
-            case TILE_LFREEZE:
-                return TILE_TYPE_FREEZE;
-            case TILE_DEATH:
-                return TILE_TYPE_DEATH;
-            case TILE_SOLID:
-                return TILE_TYPE_SOLID;
-            case TILE_NOHOOK:
-                return TILE_TYPE_NOHOOK;
-        }
-    }
-    
-    // Check game layer
-    switch(TileIndex)
-    {
-        case TILE_FREEZE:
-        case TILE_DFREEZE:
-        case TILE_LFREEZE:
-            return TILE_TYPE_FREEZE;
-        case TILE_DEATH:
-            return TILE_TYPE_DEATH;
-        case TILE_SOLID:
-            return TILE_TYPE_SOLID;
-        case TILE_NOHOOK:
-            return TILE_TYPE_NOHOOK;
-        case TILE_THROUGH:
-        case TILE_THROUGH_ALL:
-        case TILE_THROUGH_DIR:
-            return TILE_TYPE_PLATFORM;
-        case TILE_AIR:
-        default:
-            return TILE_TYPE_SAFE;
-    }
-}
-
 SMapCell CMapAnalyzer::AnalyzeCell(vec2 Pos)
 {
-    return AnalyzeCell((int)Pos.x, (int)Pos.y);
+    int x = round_to_int(Pos.x / 32.0f);
+    int y = round_to_int(Pos.y / 32.0f);
+    return AnalyzeCell(x, y);
 }
 
 SMapCell CMapAnalyzer::AnalyzeCell(int x, int y)
 {
-    if(!m_pCollision)
-        return SMapCell(); // Return safe default
-    
-    int CacheKey = GetCacheKey(x, y);
-    auto it = m_CachedCells.find(CacheKey);
-    if(it != m_CachedCells.end())
-        return it->second;
-    
+    int Key = GetCacheKey(x, y);
+    auto It = m_CachedCells.find(Key);
+    if (It != m_CachedCells.end())
+        return It->second;
+
     SMapCell Cell;
+    if (!m_pCollision)
+    {
+        m_CachedCells[Key] = Cell;
+        return Cell;
+    }
+
+    vec2 Pos = vec2(x * 32.0f, y * 32.0f);
+    int Index = m_pCollision->GetPureMapIndex(Pos.x, Pos.y);
+    int TileIndex = m_pCollision->GetTileIndex(Index);
+    int FrontTileIndex = m_pCollision->GetFrontTileIndex(Index);
     
-    // Get tile indices
-    int TileIndex = m_pCollision->GetTile(x, y);
-    int FrontTileIndex = m_pCollision->GetFrontTile(x, y);
-    
-    // Classify tile type
     Cell.m_Type = ClassifyTile(TileIndex, FrontTileIndex);
     
     // Determine passability
-    switch(Cell.m_Type)
+    switch (Cell.m_Type)
     {
         case TILE_TYPE_SOLID:
-        case TILE_TYPE_DEATH:
-        case TILE_TYPE_FREEZE:
             Cell.m_IsPassable = false;
-            Cell.m_MovementCost = 1000.0f; // Very high cost
+            Cell.m_IsHookable = m_pCollision->CheckPoint(Pos.x, Pos.y) ? false : true;
+            Cell.m_MovementCost = 999.0f; // Very high cost
+            break;
+        case TILE_TYPE_FREEZE:
+            Cell.m_IsPassable = true;
+            Cell.m_IsHookable = true;
+            Cell.m_MovementCost = 50.0f; // High cost but passable
+            break;
+        case TILE_TYPE_DEATH:
+            Cell.m_IsPassable = false;
+            Cell.m_IsHookable = false;
+            Cell.m_MovementCost = 999.0f;
             break;
         case TILE_TYPE_PLATFORM:
             Cell.m_IsPassable = true;
-            Cell.m_MovementCost = 1.5f; // Slightly higher cost
+            Cell.m_IsHookable = true;
+            Cell.m_MovementCost = 2.0f; // Slightly higher cost
             break;
         case TILE_TYPE_NOHOOK:
             Cell.m_IsPassable = true;
             Cell.m_IsHookable = false;
-            Cell.m_MovementCost = 1.2f;
+            Cell.m_MovementCost = 1.5f;
             break;
-        case TILE_TYPE_SAFE:
-        default:
+        default: // TILE_TYPE_SAFE
             Cell.m_IsPassable = true;
+            Cell.m_IsHookable = true;
             Cell.m_MovementCost = 1.0f;
             break;
     }
-    
-    // Special handling for hookability
-    if(Cell.m_Type == TILE_TYPE_NOHOOK)
-        Cell.m_IsHookable = false;
-    else
-        Cell.m_IsHookable = (Cell.m_Type == TILE_TYPE_SOLID || Cell.m_Type == TILE_TYPE_HOOKABLE);
-    
-    // Cache the result
-    m_CachedCells[CacheKey] = Cell;
-    
+
+    m_CachedCells[Key] = Cell;
     return Cell;
+}
+
+ETileType CMapAnalyzer::ClassifyTile(int TileIndex, int FrontTileIndex)
+{
+    // Check front layer first (higher priority)
+    if (FrontTileIndex == TILE_FREEZE || FrontTileIndex == TILE_DFREEZE || FrontTileIndex == TILE_LFREEZE)
+        return TILE_TYPE_FREEZE;
+    if (FrontTileIndex == TILE_DEATH)
+        return TILE_TYPE_DEATH;
+    if (FrontTileIndex == TILE_NOHOOK)
+        return TILE_TYPE_NOHOOK;
+    
+    // Check main layer
+    if (TileIndex == TILE_FREEZE || TileIndex == TILE_DFREEZE || TileIndex == TILE_LFREEZE)
+        return TILE_TYPE_FREEZE;
+    if (TileIndex == TILE_DEATH)
+        return TILE_TYPE_DEATH;
+    if (TileIndex == TILE_SOLID)
+        return TILE_TYPE_SOLID;
+    if (TileIndex == TILE_NOHOOK)
+        return TILE_TYPE_NOHOOK;
+    if (TileIndex >= TILE_PLATFORM_BLUE && TileIndex <= TILE_PLATFORM_ORANGE)
+        return TILE_TYPE_PLATFORM;
+    
+    return TILE_TYPE_SAFE;
 }
 
 bool CMapAnalyzer::IsSafePosition(vec2 Pos, float Radius)
 {
-    if(!m_pCollision)
-        return true;
-    
-    // Check multiple points around the character's bounding box
+    // Check multiple points around the character
     const int CheckPoints = 8;
-    const float Step = 2.0f * M_PI / CheckPoints;
-    
-    for(int i = 0; i < CheckPoints; i++)
+    for (int i = 0; i < CheckPoints; i++)
     {
-        float Angle = i * Step;
-        vec2 CheckPos = Pos + vec2(cos(Angle), sin(Angle)) * Radius;
+        float Angle = (2.0f * pi * i) / CheckPoints;
+        vec2 CheckPos = Pos + vec2(cos(Angle) * Radius, sin(Angle) * Radius);
         
         SMapCell Cell = AnalyzeCell(CheckPos);
-        if(!Cell.m_IsPassable)
+        if (Cell.m_Type == TILE_TYPE_DEATH || Cell.m_Type == TILE_TYPE_SOLID)
             return false;
     }
     
-    // Also check center point
+    // Check center
     SMapCell CenterCell = AnalyzeCell(Pos);
-    return CenterCell.m_IsPassable;
+    return CenterCell.m_Type != TILE_TYPE_DEATH && CenterCell.m_Type != TILE_TYPE_SOLID;
 }
 
 bool CMapAnalyzer::IsPathClear(vec2 From, vec2 To, float Radius)
 {
-    if(!m_pCollision)
-        return true;
+    vec2 Dir = normalize(To - From);
+    float Distance = length(To - From);
+    const int Steps = maximum(1, (int)(Distance / 16.0f)); // Check every 16 units
     
-    vec2 Dir = To - From;
-    float Distance = length(Dir);
-    
-    if(Distance < 1.0f)
-        return IsSafePosition(To, Radius);
-    
-    Dir = normalize(Dir);
-    const float StepSize = 16.0f; // Check every 16 units
-    int Steps = (int)(Distance / StepSize) + 1;
-    
-    for(int i = 0; i <= Steps; i++)
+    for (int i = 0; i <= Steps; i++)
     {
-        vec2 CheckPos = From + Dir * (i * StepSize);
-        if(!IsSafePosition(CheckPos, Radius))
+        vec2 CheckPos = From + Dir * (Distance * i / Steps);
+        if (!IsSafePosition(CheckPos, Radius))
             return false;
     }
     
@@ -172,60 +150,50 @@ bool CMapAnalyzer::IsPathClear(vec2 From, vec2 To, float Radius)
 
 float CMapAnalyzer::GetMovementCost(vec2 Pos, float Radius)
 {
-    if(!m_pCollision)
-        return 1.0f;
+    float TotalCost = 0.0f;
+    int CheckCount = 0;
     
-    // Sample multiple points and take the maximum cost
-    float MaxCost = 1.0f;
-    const int SamplePoints = 4;
-    
-    for(int i = 0; i < SamplePoints; i++)
+    // Sample points around the position
+    const int SampleRadius = (int)(Radius / 16.0f) + 1;
+    for (int dx = -SampleRadius; dx <= SampleRadius; dx++)
     {
-        float Angle = (i * 2.0f * M_PI) / SamplePoints;
-        vec2 SamplePos = Pos + vec2(cos(Angle), sin(Angle)) * (Radius * 0.7f);
-        
-        SMapCell Cell = AnalyzeCell(SamplePos);
-        MaxCost = std::max(MaxCost, Cell.m_MovementCost);
+        for (int dy = -SampleRadius; dy <= SampleRadius; dy++)
+        {
+            vec2 SamplePos = Pos + vec2(dx * 16.0f, dy * 16.0f);
+            if (length(SamplePos - Pos) <= Radius)
+            {
+                SMapCell Cell = AnalyzeCell(SamplePos);
+                TotalCost += Cell.m_MovementCost;
+                CheckCount++;
+            }
+        }
     }
     
-    return MaxCost;
+    return CheckCount > 0 ? TotalCost / CheckCount : 1.0f;
 }
 
 vec2 CMapAnalyzer::FindNearestSafePos(vec2 Pos, float SearchRadius)
 {
-    if(!m_pCollision)
-        return Pos;
-    
-    // If current position is already safe, return it
-    if(IsSafePosition(Pos))
+    if (IsSafePosition(Pos))
         return Pos;
     
     // Search in expanding circles
-    const float StepSize = 8.0f;
-    int MaxSteps = (int)(SearchRadius / StepSize);
-    
-    for(int radius = 1; radius <= MaxSteps; radius++)
+    const int Steps = 8;
+    for (float r = 16.0f; r <= SearchRadius; r += 16.0f)
     {
-        float CurrentRadius = radius * StepSize;
-        int CirclePoints = (int)(2.0f * M_PI * CurrentRadius / StepSize);
-        CirclePoints = std::max(8, CirclePoints); // At least 8 points
-        
-        for(int i = 0; i < CirclePoints; i++)
+        for (int i = 0; i < Steps; i++)
         {
-            float Angle = (i * 2.0f * M_PI) / CirclePoints;
-            vec2 TestPos = Pos + vec2(cos(Angle), sin(Angle)) * CurrentRadius;
-            
-            if(IsSafePosition(TestPos))
+            float Angle = (2.0f * pi * i) / Steps;
+            vec2 TestPos = Pos + vec2(cos(Angle) * r, sin(Angle) * r);
+            if (IsSafePosition(TestPos))
                 return TestPos;
         }
     }
     
-    // If no safe position found, return original position
-    return Pos;
+    return Pos; // Return original if no safe position found
 }
-
 // =====================================================
-// PATH PLANNER IMPLEMENTATION (skeleton)
+// PATH PLANNER IMPLEMENTATION
 // =====================================================
 std::vector<SPathNode> CPathPlanner::FindPath(const CCharacterCore &StartCore, vec2 Goal)
 {
@@ -233,6 +201,9 @@ std::vector<SPathNode> CPathPlanner::FindPath(const CCharacterCore &StartCore, v
     
     if(!m_pMapAnalyzer || !m_pCollision)
         return Path;
+    
+    // Set global pointer for comparator
+    s_pNodes = &m_Nodes;
     
     // Reset state
     Reset();
@@ -279,9 +250,6 @@ std::vector<SPathNode> CPathPlanner::FindPath(const CCharacterCore &StartCore, v
         }
         
         // Generate successors (simplified for now)
-        // This would normally generate all possible moves (left, right, jump, hook, etc.)
-        // For brevity, I'll implement a basic version
-        
         // Simple movement in 4 directions
         vec2 Directions[] = {
             vec2(32, 0),   // Right
@@ -421,9 +389,8 @@ int CPathPlanner::FindNodeIndex(vec2 Pos, float Tolerance)
     }
     return -1;
 }
-
 // =====================================================
-// SAFETY SIMULATOR IMPLEMENTATION (skeleton)
+// SAFETY SIMULATOR IMPLEMENTATION
 // =====================================================
 SSafetyResult CSafetySimulator::ValidatePath(const std::vector<SPathNode> &Path, const CCharacterCore &StartCore)
 {
@@ -494,6 +461,8 @@ ESafetyLevel CSafetySimulator::AnalyzeTrajectory(const CCharacterCore &Core, int
     // TODO: Implement trajectory analysis
     return SAFETY_SAFE;
 }
+
+// =====================================================
 // SMART AUTOPILOT IMPLEMENTATION
 // =====================================================
 CSmartAutopilot::CSmartAutopilot()
@@ -542,117 +511,111 @@ void CSmartAutopilot::SetConfig(const SPathfindingConfig &Config)
 
 bool CSmartAutopilot::UpdateAutopilot(CCharacterCore &Core, CNetObj_PlayerInput *pInput)
 {
-    if(!pInput || m_Status.m_State == AUTOPILOT_IDLE)
+    if(!pInput)
         return false;
     
     UpdateStatus(Core);
     
-    switch(m_Status.m_State)
+    // Check if we need to replan
+    if(ShouldReplan(Core))
     {
-        case AUTOPILOT_PLANNING:
-            if(PlanPath(Core))
-            {
-                m_Status.m_State = AUTOPILOT_EXECUTING;
-                m_Status.m_pStatusMessage = "Executing path...";
-                m_CurrentStepIndex = 0;
-            }
-            else
-            {
-                m_Status.m_State = AUTOPILOT_STUCK;
-                m_Status.m_pStatusMessage = "Cannot find path to target";
-            }
-            break;
-            
-        case AUTOPILOT_EXECUTING:
-            if(!ExecuteStep(Core, pInput))
-            {
-                // Check if we need to replan
-                if(ShouldReplan(Core))
-                {
-                    m_Status.m_State = AUTOPILOT_PLANNING;
-                    m_Status.m_pStatusMessage = "Replanning path...";
-                }
-                else if(IsStuck(Core))
-                {
-                    m_Status.m_State = AUTOPILOT_STUCK;
-                    m_Status.m_pStatusMessage = "Stuck, trying to recover...";
-                }
-            }
-            break;
-            
-        case AUTOPILOT_STUCK:
-            HandleStuckState(Core);
-            break;
-            
-        case AUTOPILOT_REACHED:
-            // Target reached, nothing to do
+        if(!PlanPath(Core))
+        {
+            m_Status.m_State = AUTOPILOT_STUCK;
+            m_Status.m_pStatusMessage = "Failed to find path";
             return false;
-            
-        default:
-            break;
+        }
     }
     
-    return true;
+    // Execute current step
+    if(m_Status.m_State == AUTOPILOT_EXECUTING)
+    {
+        return ExecuteStep(Core, pInput);
+    }
+    
+    return false;
 }
 
 void CSmartAutopilot::Stop()
 {
     m_Status.m_State = AUTOPILOT_IDLE;
-    m_Status.m_pStatusMessage = "Idle";
+    m_Status.m_pStatusMessage = "Stopped";
     m_CurrentPath.clear();
     m_CurrentStepIndex = 0;
+    m_StuckCounter = 0;
 }
 
 void CSmartAutopilot::Reset()
 {
     Stop();
-    m_StuckCounter = 0;
+    m_LastTarget = vec2(0, 0);
     m_LastPlanTick = 0;
-    if(m_pMapAnalyzer)
-        m_pMapAnalyzer->ClearCache();
 }
 
 bool CSmartAutopilot::ShouldReplan(const CCharacterCore &Core) const
 {
+    // Replan if we don't have a path
+    if(m_CurrentPath.empty())
+        return true;
+    
     // Replan if target changed significantly
     if(length(m_LastTarget - m_Status.m_Target) > 64.0f)
         return true;
     
-    // Replan if we deviated significantly from the path
-    if(!m_CurrentPath.empty() && m_CurrentStepIndex < (int)m_CurrentPath.size())
-    {
-        vec2 ExpectedPos = m_CurrentPath[m_CurrentStepIndex].m_Pos;
-        if(length(Core.m_Pos - ExpectedPos) > 96.0f)
-            return true;
-    }
+    // Replan if we're stuck
+    if(m_Status.m_State == AUTOPILOT_STUCK)
+        return true;
     
-    // Replan periodically for long paths
-    return m_CurrentPath.size() > 10 && m_CurrentStepIndex > 5;
+    // Replan if we've completed the current path
+    if(m_CurrentStepIndex >= (int)m_CurrentPath.size())
+        return true;
+    
+    return false;
 }
 
 bool CSmartAutopilot::PlanPath(const CCharacterCore &Core)
 {
+    m_Status.m_State = AUTOPILOT_PLANNING;
+    m_Status.m_pStatusMessage = "Planning path...";
+    
     if(!m_pPathPlanner)
         return false;
     
-    // Find safe target position if needed
-    vec2 Target = m_Status.m_Target;
-    if(m_pMapAnalyzer && !m_pMapAnalyzer->IsSafePosition(Target))
+    // Clear old path
+    m_CurrentPath.clear();
+    m_CurrentStepIndex = 0;
+    
+    // Find new path
+    std::vector<SPathNode> NewPath = m_pPathPlanner->FindPath(Core, m_Status.m_Target);
+    
+    if(NewPath.empty())
     {
-        Target = m_pMapAnalyzer->FindNearestSafePos(Target);
+        m_Status.m_State = AUTOPILOT_STUCK;
+        m_Status.m_pStatusMessage = "No path found";
+        return false;
     }
     
-    // Plan the path
-    m_CurrentPath = m_pPathPlanner->FindPath(Core, Target);
-    
-    if(!m_CurrentPath.empty())
+    // Validate path safety
+    if(m_pSafetySimulator)
     {
-        m_Status.m_TotalSteps = (int)m_CurrentPath.size();
-        m_Status.m_CurrentStep = 0;
-        return true;
+        SSafetyResult SafetyResult = m_pSafetySimulator->ValidatePath(NewPath, Core);
+        if(SafetyResult.m_Level == SAFETY_FATAL)
+        {
+            m_Status.m_State = AUTOPILOT_STUCK;
+            m_Status.m_pStatusMessage = SafetyResult.m_pReason;
+            return false;
+        }
     }
     
-    return false;
+    m_CurrentPath = NewPath;
+    m_CurrentStepIndex = 0;
+    m_Status.m_State = AUTOPILOT_EXECUTING;
+    m_Status.m_pStatusMessage = "Executing path";
+    m_Status.m_TotalSteps = (int)m_CurrentPath.size();
+    m_LastTarget = m_Status.m_Target;
+    m_StuckCounter = 0;
+    
+    return true;
 }
 
 bool CSmartAutopilot::ExecuteStep(CCharacterCore &Core, CNetObj_PlayerInput *pInput)
@@ -660,111 +623,133 @@ bool CSmartAutopilot::ExecuteStep(CCharacterCore &Core, CNetObj_PlayerInput *pIn
     if(m_CurrentPath.empty() || m_CurrentStepIndex >= (int)m_CurrentPath.size())
         return false;
     
-    // Check if we reached the final target
-    if(length(Core.m_Pos - m_Status.m_Target) < 48.0f)
+    // Check if we're close enough to the target
+    if(length(Core.m_Pos - m_Status.m_Target) < 32.0f)
     {
         m_Status.m_State = AUTOPILOT_REACHED;
         m_Status.m_pStatusMessage = "Target reached";
+        mem_zero(pInput, sizeof(*pInput));
         return true;
     }
     
     // Get current target node
-    SPathNode &TargetNode = m_CurrentPath[m_CurrentStepIndex];
+    const SPathNode &TargetNode = m_CurrentPath[m_CurrentStepIndex];
     
-    // Simple movement logic (this would be much more sophisticated in reality)
-    vec2 Dir = TargetNode.m_Pos - Core.m_Pos;
-    float Distance = length(Dir);
-    
-    // Move to next step if we're close enough
-    if(Distance < 32.0f)
+    // Check if we reached current step
+    if(length(Core.m_Pos - TargetNode.m_Pos) < 24.0f)
     {
         m_CurrentStepIndex++;
-        m_Status.m_CurrentStep = m_CurrentStepIndex;
-        m_Status.m_Progress = (float)m_CurrentStepIndex / std::max(1, (int)m_CurrentPath.size());
-        
         if(m_CurrentStepIndex >= (int)m_CurrentPath.size())
         {
             m_Status.m_State = AUTOPILOT_REACHED;
-            m_Status.m_pStatusMessage = "Target reached";
+            m_Status.m_pStatusMessage = "Path completed";
             return true;
         }
-        return true;
     }
     
-    // Basic directional input
-    if(Dir.x > 8.0f)
-        pInput->m_Direction = 1;
-    else if(Dir.x < -8.0f)
-        pInput->m_Direction = -1;
-    else
-        pInput->m_Direction = 0;
+    // Calculate input for current step
+    vec2 Direction = normalize(TargetNode.m_Pos - Core.m_Pos);
+    float Distance = length(TargetNode.m_Pos - Core.m_Pos);
     
-    // Jump if we need to go up significantly
-    if(Dir.y < -32.0f)
+    // Basic movement logic
+    mem_zero(pInput, sizeof(*pInput));
+    
+    // Horizontal movement
+    if(Direction.x > 0.1f)
+        pInput->m_Direction = 1;
+    else if(Direction.x < -0.1f)
+        pInput->m_Direction = -1;
+    
+    // Jumping logic
+    if(Direction.y < -32.0f && Core.m_Vel.y > -1.0f) // Need to go up and not already jumping
         pInput->m_Jump = 1;
+    
+    // Hook logic for long distances
+    if(Distance > 96.0f && m_Config.m_AllowHook)
+    {
+        pInput->m_Hook = 1;
+        pInput->m_TargetX = (int)(Direction.x * 256.0f);
+        pInput->m_TargetY = (int)(Direction.y * 256.0f);
+    }
+    
+    // Check for stuck state
+    if(IsStuck(Core))
+    {
+        HandleStuckState(Core);
+        return false;
+    }
     
     return true;
 }
 
 void CSmartAutopilot::UpdateStatus(const CCharacterCore &Core)
 {
-    // Update progress
-    if(!m_CurrentPath.empty())
-    {
-        m_Status.m_Progress = (float)m_CurrentStepIndex / std::max(1, (int)m_CurrentPath.size());
-    }
+    m_Status.m_CurrentStep = m_CurrentStepIndex;
     
-    // Check for stuck state
-    if(IsStuck(Core))
+    if(!m_CurrentPath.empty() && m_Status.m_TotalSteps > 0)
     {
-        m_StuckCounter++;
-        if(m_StuckCounter > 50) // Stuck for ~1 second at 50 FPS
-        {
-            m_Status.m_State = AUTOPILOT_STUCK;
-        }
+        m_Status.m_Progress = (float)m_CurrentStepIndex / m_Status.m_TotalSteps;
     }
     else
     {
-        m_StuckCounter = std::max(0, m_StuckCounter - 1);
+        m_Status.m_Progress = 0.0f;
     }
 }
 
 bool CSmartAutopilot::IsStuck(const CCharacterCore &Core)
 {
-    // Simple stuck detection - not moving much despite having a path
-    if(m_CurrentPath.empty())
-        return false;
-    
     static vec2 s_LastPos = Core.m_Pos;
-    static int s_LastUpdate = 0;
+    static int s_StuckTicks = 0;
     
-    // Check every few frames
-    if(s_LastUpdate++ % 10 == 0)
+    // Check if position changed significantly
+    if(length(Core.m_Pos - s_LastPos) < 8.0f)
     {
-        float Movement = length(Core.m_Pos - s_LastPos);
+        s_StuckTicks++;
+    }
+    else
+    {
+        s_StuckTicks = 0;
         s_LastPos = Core.m_Pos;
-        
-        // If we haven't moved much in 10 frames, we might be stuck
-        return Movement < 8.0f;
     }
     
-    return false;
+    // Consider stuck after 60 ticks (1 second) without movement
+    return s_StuckTicks > 60;
 }
 
 void CSmartAutopilot::HandleStuckState(const CCharacterCore &Core)
 {
-    // Try to get unstuck by finding a new path
-    m_StuckCounter--;
+    m_StuckCounter++;
     
-    if(m_StuckCounter <= 0)
+    if(m_StuckCounter > 3) // After 3 stuck attempts, give up
     {
-        // Try replanning
-        m_Status.m_State = AUTOPILOT_PLANNING;
-        m_Status.m_pStatusMessage = "Trying new path...";
-        m_StuckCounter = 0;
-        
-        // Clear path cache to force fresh planning
-        if(m_pMapAnalyzer)
-            m_pMapAnalyzer->ClearCache();
+        m_Status.m_State = AUTOPILOT_STUCK;
+        m_Status.m_pStatusMessage = "Stuck - giving up";
+        return;
     }
+    
+    // Try to replan with different settings
+    SPathfindingConfig NewConfig = m_Config;
+    NewConfig.m_AllowJumps = true;
+    NewConfig.m_AllowHook = true;
+    NewConfig.m_MaxSearchRadius *= 1.5f; // Expand search
+    
+    SetConfig(NewConfig);
+    m_Status.m_State = AUTOPILOT_PLANNING; // Force replan
+}
+// Compatibility method for fujix_tas integration
+bool CSmartAutopilot::Update(const SAutopilotState &State, CNetObj_PlayerInput *pInput)
+{
+    // Create a temporary character core from the state
+    CCharacterCore TempCore;
+    TempCore.m_Pos = State.m_Position;
+    TempCore.m_Vel = State.m_Velocity;
+    
+    // Set target if it changed
+    if(length(State.m_Target - m_Status.m_Target) > 8.0f)
+    {
+        SetTarget(State.m_Target);
+    }
+    
+    // Use the main update method
+    return UpdateAutopilot(TempCore, pInput);
 }

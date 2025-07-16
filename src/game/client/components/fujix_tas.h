@@ -10,17 +10,7 @@
 #include <vector>
 #include <deque>
 #include <memory>
-// #include "fujix_pathfinding.h"  // Comment out for now to test compilation
-
-// Temporary forward declaration
-class CSmartAutopilot
-{
-public:
-    CSmartAutopilot() {}
-    ~CSmartAutopilot() {}
-    void Init(void *pCollision) {}
-    bool Update(const struct SAutopilotState &State, CNetObj_PlayerInput *pInput) { return false; }
-};
+#include "fujix_pathfinding.h"
 
 struct SAutopilotState
 {
@@ -100,6 +90,7 @@ void TickPhantom();
 void CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *pChar, int Tick);
 void FinishRecord();
 void RenderFuturePath(int TicksAhead);
+void RenderAutopilotPath();
 void TickPhantomUpTo(int TargetTick);
 void RecordHookState(int Tick);
 void ApplyHookEvents(int PredTick, bool ToPhantom);
