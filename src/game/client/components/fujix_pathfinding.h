@@ -27,7 +27,7 @@ struct SPathNode
     float m_HCost;                 // Heuristic cost to goal
     float m_FCost;                 // Total cost (G + H)
     
-    int m_ParentIndex;             // Index of parent node (-1 if start)
+    int m_ParentIndex;             // Index of parent node
     int m_TimeTicks;               // Time in ticks to reach this node
     bool m_IsGrounded;             // Whether character is on ground
     bool m_CanHook;                // Whether hook is available
@@ -46,15 +46,20 @@ struct SPathNode
     }
 };
 
+// Forward declaration for fujix_tas integration
+struct SAutopilotState
+{
+    vec2 m_Position;
+    vec2 m_Velocity;
+    vec2 m_Target;
+};
+
 // Comparison for priority queue (lower F cost = higher priority)
 struct SPathNodeComparator
 {
     bool operator()(int a, int b) const;
 };
-
-// =====================================================
 // MAP ANALYZER - Analyzes terrain and obstacles
-// =====================================================
 enum ETileType
 {
     TILE_TYPE_SAFE = 0,

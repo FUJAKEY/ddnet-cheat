@@ -106,11 +106,15 @@ ETileType CMapAnalyzer::ClassifyTile(int TileIndex, int FrontTileIndex)
     if (TileIndex == TILE_SOLID)
         return TILE_TYPE_SOLID;
     if (TileIndex == TILE_NOHOOK)
-        return TILE_TYPE_NOHOOK;
-    if (TileIndex >= TILE_PLATFORM_BLUE && TileIndex <= TILE_PLATFORM_ORANGE)
+         return TILE_TYPE_NOHOOK;
+    // Platform tiles (jump-through platforms)  
+    if (TileIndex == TILE_THROUGH || TileIndex == TILE_THROUGH_ALL || TileIndex == TILE_THROUGH_DIR || TileIndex == TILE_THROUGH_CUT)
         return TILE_TYPE_PLATFORM;
+    if (TileIndex == TILE_AIR || TileIndex == TILE_UNFREEZE || TileIndex == TILE_DUNFREEZE)
+        return TILE_TYPE_SAFE;
     
-    return TILE_TYPE_SAFE;
+    // Default to solid for unknown tiles
+    return TILE_TYPE_SOLID;
 }
 
 bool CMapAnalyzer::IsSafePosition(vec2 Pos, float Radius)
@@ -131,7 +135,6 @@ bool CMapAnalyzer::IsSafePosition(vec2 Pos, float Radius)
     SMapCell CenterCell = AnalyzeCell(Pos);
     return CenterCell.m_Type != TILE_TYPE_DEATH && CenterCell.m_Type != TILE_TYPE_SOLID;
 }
-
 bool CMapAnalyzer::IsPathClear(vec2 From, vec2 To, float Radius)
 {
     vec2 Dir = normalize(To - From);
