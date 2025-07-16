@@ -359,21 +359,26 @@ void CFujixTas::UpdateRageTarget()
     if(g_Config.m_ClFujixBlockFreezeRage != m_RagePrevEnabled)
     {
         m_RagePrevEnabled = g_Config.m_ClFujixBlockFreezeRage;
+
+        // When enabling freeze rage, wait for an explicit click to start
         if(!m_RagePrevEnabled)
+        {
             m_RageActive = false;
+            if(m_pSmartAutopilot)
+                m_pSmartAutopilot->Stop();
+        }
         else
         {
-            m_RageTarget = vec2(Ui()->MouseWorldX(), Ui()->MouseWorldY());
-            m_RageActive = true;
+            m_RageActive = false; // Do not start moving until user selects a target
             if(m_pSmartAutopilot)
-                m_pSmartAutopilot->SetTarget(m_RageTarget);
+                m_pSmartAutopilot->Stop();
         }
     }
 
     if(!g_Config.m_ClFujixBlockFreezeRage)
         return;
 
-    if(Input()->KeyPress(KEY_MOUSE_1))
+    if(Input()->KeyPress(KEY_MOUSE_1) && GameClient()->m_Snap.m_pLocalCharacter)
     {
         m_RageTarget = vec2(Ui()->MouseWorldX(), Ui()->MouseWorldY());
         m_RageActive = true;
