@@ -492,7 +492,7 @@ void CFujixTas::StartRecord()
         // Если персонаж недоступен, инициализируем phantom по умолчанию
         m_PhantomCore = CCharacterCore();
         m_PhantomPrevCore = CCharacterCore();
-        mem_zero(&m_PhantomRenderInfo, sizeof(m_PhantomRenderInfo));
+        m_PhantomRenderInfo = CTeeRenderInfo();
     }
     
     m_PhantomTick = Client()->PredGameTick(g_Config.m_ClDummy);
@@ -941,10 +941,6 @@ void CFujixTas::RenderAutopilotPath()
     if(!m_pSmartAutopilot || !GameClient()->m_Snap.m_pLocalCharacter)
         return;
     
-    // Get current player position
-    vec2 PlayerPos = GameClient()->m_PredictedChar.m_Pos;
-    
-    // Get planned path from autopilot
     const std::vector<SPathNode> &PathNodes = m_pSmartAutopilot->GetCurrentPath();
     
     if(PathNodes.size() < 2)
