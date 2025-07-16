@@ -223,10 +223,9 @@ void CFujixTas::RecordHookState(int Tick)
     Ev.m_HookY = round_to_int(Core.m_HookPos.y * 256.0f); // Увеличенная точность
     Ev.m_HookTick = Core.m_HookTick;
     
-    // Записываем дополнительные данные для точности
-    Ev.m_HookVelX = round_to_int(Core.m_HookVel.x * 256.0f);
-    Ev.m_HookVelY = round_to_int(Core.m_HookVel.y * 256.0f);
-    Ev.m_HookDir = round_to_int(Core.m_HookDir * 256.0f);
+    // Записываем направление крюка с высокой точностью
+    Ev.m_HookDirX = round_to_int(Core.m_HookDir.x * 256.0f);
+    Ev.m_HookDirY = round_to_int(Core.m_HookDir.y * 256.0f);
     
     // Записываем КАЖДЫЙ тик, а не только изменения
     m_vHookEvents.push_back(Ev);
@@ -251,8 +250,7 @@ void CFujixTas::ApplyHookEvents(int PredTick, bool ToPhantom)
         pCore->m_HookState = Ev.m_State;
         pCore->m_HookTick = Ev.m_HookTick;
         pCore->m_HookPos = vec2(Ev.m_HookX / 256.0f, Ev.m_HookY / 256.0f); // Восстанавливаем точность
-        pCore->m_HookVel = vec2(Ev.m_HookVelX / 256.0f, Ev.m_HookVelY / 256.0f);
-        pCore->m_HookDir = Ev.m_HookDir / 256.0f;
+        pCore->m_HookDir = vec2(Ev.m_HookDirX / 256.0f, Ev.m_HookDirY / 256.0f); // Восстанавливаем направление
         pCore->SetHookedPlayer(Ev.m_HookedPlayer);
         
         m_HookPlayIndex++;
@@ -492,8 +490,8 @@ void CFujixTas::StartRecord()
     else
     {
         // Если персонаж недоступен, инициализируем phantom по умолчанию
-        mem_zero(&m_PhantomCore, sizeof(m_PhantomCore));
-        mem_zero(&m_PhantomPrevCore, sizeof(m_PhantomPrevCore));
+        m_PhantomCore = CCharacterCore();
+        m_PhantomPrevCore = CCharacterCore();
         mem_zero(&m_PhantomRenderInfo, sizeof(m_PhantomRenderInfo));
     }
     
