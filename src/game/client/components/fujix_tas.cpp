@@ -1,4 +1,5 @@
 #include "fujix_tas.h"
+#include "fujix_pathfinding.h"
 
 #include <engine/shared/config.h>
 #include <engine/storage.h>
@@ -15,6 +16,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <cmath>
+#include <memory>
 
 const char *CFujixTas::ms_pFujixDir = "fujix";
 
@@ -53,9 +55,8 @@ CFujixTas::CFujixTas()
     // Hook state tracking
     m_LastHookState = HOOK_IDLE;
     m_LastHookedPlayer = -1;
-    
     // Smart autopilot
-    m_pSmartAutopilot = nullptr;
+    m_pSmartAutopilot = std::make_unique<CSmartAutopilot>();
     m_SmartAutopilotInitialized = false;
     
     // Input states
