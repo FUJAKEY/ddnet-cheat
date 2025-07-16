@@ -851,7 +851,6 @@ void CFujixTas::RenderFuturePath(int TicksAhead)
     Graphics()->LinesEnd();
     Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 }
-}
 
 void CFujixTas::RenderAutopilotPath()
 {
@@ -862,13 +861,20 @@ void CFujixTas::RenderAutopilotPath()
     vec2 PlayerPos = GameClient()->m_PredictedChar.m_Pos;
     
     // Get planned path from autopilot
-    std::vector<vec2> Path = m_pSmartAutopilot->GetPath(PlayerPos, m_RageTarget);
+    const std::vector<SPathNode> &PathNodes = m_pSmartAutopilot->GetCurrentPath();
     
-    if(Path.size() < 2)
+    if(PathNodes.size() < 2)
         return;
     
+    // Convert path nodes to positions
+    std::vector<vec2> Path;
+    Path.reserve(PathNodes.size());
+    for(const SPathNode &Node : PathNodes)
+    {
+        Path.push_back(Node.m_Pos);
+    }
+    
     // Render the planned path
-    Graphics()->TextureClear();
     Graphics()->LinesBegin();
     Graphics()->SetColor(1.0f, 0.5f, 0.0f, 0.8f); // Orange color for autopilot path
     
