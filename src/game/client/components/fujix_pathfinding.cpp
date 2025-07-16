@@ -9,9 +9,16 @@
 // =====================================================
 bool SPathNodeComparator::operator()(int a, int b) const
 {
-    // This will be implemented when we have access to the nodes vector
-    // For now, return false to satisfy compiler
-    return false;
+    if(!m_pNodes)
+        return false;
+
+    const SPathNode &NodeA = (*m_pNodes)[a];
+    const SPathNode &NodeB = (*m_pNodes)[b];
+
+    if(NodeA.m_FCost == NodeB.m_FCost)
+        return NodeA.m_HCost > NodeB.m_HCost;
+
+    return NodeA.m_FCost > NodeB.m_FCost;
 }
 
 // =====================================================
@@ -544,9 +551,9 @@ bool CSmartAutopilot::UpdateAutopilot(CCharacterCore &Core, CNetObj_PlayerInput 
 {
     if(!pInput || m_Status.m_State == AUTOPILOT_IDLE)
         return false;
-    
+
     UpdateStatus(Core);
-    
+
     switch(m_Status.m_State)
     {
         case AUTOPILOT_PLANNING:
@@ -561,12 +568,11 @@ bool CSmartAutopilot::UpdateAutopilot(CCharacterCore &Core, CNetObj_PlayerInput 
                 m_Status.m_State = AUTOPILOT_STUCK;
                 m_Status.m_pStatusMessage = "Cannot find path to target";
             }
-            break;
-            
+            return false;
+
         case AUTOPILOT_EXECUTING:
             if(!ExecuteStep(Core, pInput))
             {
-                // Check if we need to replan
                 if(ShouldReplan(Core))
                 {
                     m_Status.m_State = AUTOPILOT_PLANNING;
@@ -577,22 +583,22 @@ bool CSmartAutopilot::UpdateAutopilot(CCharacterCore &Core, CNetObj_PlayerInput 
                     m_Status.m_State = AUTOPILOT_STUCK;
                     m_Status.m_pStatusMessage = "Stuck, trying to recover...";
                 }
+                return false;
             }
-            break;
-            
+            return true;
+
         case AUTOPILOT_STUCK:
             HandleStuckState(Core);
-            break;
-            
-        case AUTOPILOT_REACHED:
-            // Target reached, nothing to do
             return false;
-            
+
+        case AUTOPILOT_REACHED:
+            return false;
+
         default:
             break;
     }
-    
-    return true;
+
+    return false;
 }
 
 void CSmartAutopilot::Stop()

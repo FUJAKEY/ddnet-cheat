@@ -295,7 +295,6 @@ void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
 
     // Use smart autopilot
     vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
-    vec2 Vel = GameClient()->m_PredictedChar.m_Vel;
     
     // Check if we reached the target
     if(length(m_RageTarget - Pos) < 2.0f)
@@ -308,33 +307,56 @@ void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
     }
 
     // Get next action from smart autopilot
-    SAutopilotState State;
-    State.m_Position = Pos;
-    State.m_Velocity = Vel;
-    State.m_Target = m_RageTarget;
-    State.m_OnGround = false; // We'll detect this properly later
-    
-    // Detect if on ground
-    CCharacter *pLocalChar = GameClient()->m_PredictedWorld.GetCharacterById(GameClient()->m_Snap.m_LocalClientId);
-    if(pLocalChar)
-        State.m_OnGround = pLocalChar->IsGrounded();
-    
     CNetObj_PlayerInput SmartInput;
     mem_zero(&SmartInput, sizeof(SmartInput));
-    
-    if(m_pSmartAutopilot->Update(State, &SmartInput))
+
+    bool bSmart = m_pSmartAutopilot->UpdateAutopilot(GameClient()->m_PredictedChar, &SmartInput);
+
+    if(bSmart)
     {
-        // Copy smart input to actual input
+        // Smart autopilot produced input
         *pInput = SmartInput;
+        static int s_FailCount = 0;
+        s_FailCount = 0;
     }
     else
     {
-        // Smart autopilot failed, keep current input but stop rage mode after some time
-        static int s_FailCount = 0;
-        s_FailCount++;
-        if(s_FailCount > 60) // Stop after 1 second of failures
+        // Fall back to simple logic while the autopilot plans
+        vec2 Diff = m_RageTarget - Pos;
+
+        if(Diff.x > 2.0f)
+            pInput->m_Direction = 1;
+        else if(Diff.x < -2.0f)
+            pInput->m_Direction = -1;
+        else
+            pInput->m_Direction = 0;
+
+        if(Diff.y < -32.0f)
+            pInput->m_Jump = 1;
+
+        if(length(Diff) > 96.0f)
         {
-            m_RageActive = false;
+            pInput->m_Hook = 1;
+            pInput->m_TargetX = (int)(Diff.x * 256.0f);
+            pInput->m_TargetY = (int)(Diff.y * 256.0f);
+        }
+        else
+        {
+            pInput->m_Hook = 0;
+        }
+
+        static int s_FailCount = 0;
+        SAutopilotStatus Status = m_pSmartAutopilot->GetStatus();
+        if(Status.m_State != AUTOPILOT_PLANNING && Status.m_State != AUTOPILOT_EXECUTING)
+        {
+            if(++s_FailCount > 120)
+            {
+                m_RageActive = false;
+                s_FailCount = 0;
+            }
+        }
+        else
+        {
             s_FailCount = 0;
         }
     }
@@ -345,22 +367,32 @@ void CFujixTas::UpdateRageTarget()
     if(g_Config.m_ClFujixBlockFreezeRage != m_RagePrevEnabled)
     {
         m_RagePrevEnabled = g_Config.m_ClFujixBlockFreezeRage;
+
+        // When enabling freeze rage, wait for an explicit click to start
         if(!m_RagePrevEnabled)
+        {
             m_RageActive = false;
+            if(m_pSmartAutopilot)
+                m_pSmartAutopilot->Stop();
+        }
         else
         {
-            m_RageTarget = vec2(Ui()->MouseWorldX(), Ui()->MouseWorldY());
-            m_RageActive = true;
+            // Rage was enabled - wait for explicit click
+            m_RageActive = false;
+            if(m_pSmartAutopilot)
+                m_pSmartAutopilot->Stop();
         }
     }
 
     if(!g_Config.m_ClFujixBlockFreezeRage)
         return;
 
-    if(Input()->KeyPress(KEY_MOUSE_1))
+    if(Input()->KeyPress(KEY_MOUSE_1) && GameClient()->m_Snap.m_pLocalCharacter)
     {
         m_RageTarget = vec2(Ui()->MouseWorldX(), Ui()->MouseWorldY());
         m_RageActive = true;
+        if(m_pSmartAutopilot)
+            m_pSmartAutopilot->SetTarget(m_RageTarget);
     }
 }
 
