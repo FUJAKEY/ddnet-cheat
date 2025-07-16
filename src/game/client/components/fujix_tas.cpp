@@ -68,6 +68,12 @@ CFujixTas::CFujixTas()
     m_vStates.reserve(60 * 60 * 5); // 5 минут при 60 FPS
 }
 
+// 🆕 Деструктор для корректной работы с unique_ptr<CSmartAutopilot>
+CFujixTas::~CFujixTas()
+{
+    // Деструктор unique_ptr корректно удалит объект CSmartAutopilot
+    // когда определение CSmartAutopilot доступно через include
+}
 int CFujixTas::Sizeof() const
 {
     return sizeof(*this);

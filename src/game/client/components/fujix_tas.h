@@ -140,8 +140,6 @@ private:
     void UpdatePlaybackInput();
     void RecordHookState(int Tick);
     void ApplyHookEvents(int PredTick, bool ToPhantom);
-    bool FetchPlaybackInput(CNetObj_PlayerInput *pInput);
-    void RecordInput(const CNetObj_PlayerInput *pInput, int Tick);
     
     void TickPhantom();
     void CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *pChar, int Tick);
@@ -149,15 +147,21 @@ private:
     void RenderFuturePath(int TicksAhead);
     void RenderAutopilotPath();
     void TickPhantomUpTo(int TargetTick);
-    // Rage mode переменные уже определены выше в private секции
-    void ApplyRageInput(CNetObj_PlayerInput *pInput);
     void UpdateRageTarget();
+
 public:
+    // Методы, используемые в gameclient.cpp
+    bool FetchPlaybackInput(CNetObj_PlayerInput *pInput);
+    void RecordInput(const CNetObj_PlayerInput *pInput, int Tick);
+    void ApplyRageInput(CNetObj_PlayerInput *pInput);
+
+    // Console commands
     static void ConRecord(IConsole::IResult *pResult, void *pUserData);
     static void ConPlay(IConsole::IResult *pResult, void *pUserData);
     static void ConTest(IConsole::IResult *pResult, void *pUserData);
 
     CFujixTas();
+    ~CFujixTas(); // Кастомный деструктор для unique_ptr с forward declaration
     virtual int Sizeof() const override;
 
     virtual void OnConsoleInit() override;
