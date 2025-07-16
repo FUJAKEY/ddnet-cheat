@@ -1,11 +1,11 @@
 #include "fujix_pathfinding.h"
+#include "fujix_tas.h"
 #include <game/collision.h>
 #include <game/mapitems.h>
 #include <base/system.h>
 #include <base/math.h>
 #include <algorithm>
 #include <cmath>
-
 // =====================================================
 // PATH NODE COMPARATOR IMPLEMENTATION
 // =====================================================
