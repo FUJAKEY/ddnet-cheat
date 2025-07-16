@@ -321,7 +321,7 @@ void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
     }
     else
     {
-        // Fall back to simple logic while the autopilot is planning
+        // Fall back to simple logic while the autopilot plans
         vec2 Diff = m_RageTarget - Pos;
 
         if(Diff.x > 2.0f)
@@ -346,9 +346,17 @@ void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
         }
 
         static int s_FailCount = 0;
-        if(++s_FailCount > 60)
+        SAutopilotStatus Status = m_pSmartAutopilot->GetStatus();
+        if(Status.m_State != AUTOPILOT_PLANNING && Status.m_State != AUTOPILOT_EXECUTING)
         {
-            m_RageActive = false;
+            if(++s_FailCount > 120)
+            {
+                m_RageActive = false;
+                s_FailCount = 0;
+            }
+        }
+        else
+        {
             s_FailCount = 0;
         }
     }
@@ -369,7 +377,8 @@ void CFujixTas::UpdateRageTarget()
         }
         else
         {
-            m_RageActive = false; // Do not start moving until user selects a target
+            // Rage was enabled - wait for explicit click
+            m_RageActive = false;
             if(m_pSmartAutopilot)
                 m_pSmartAutopilot->Stop();
         }
