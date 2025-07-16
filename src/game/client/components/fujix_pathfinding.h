@@ -47,12 +47,7 @@ struct SPathNode
 };
 
 // Forward declaration for fujix_tas integration
-struct SAutopilotState
-{
-    vec2 m_Position;
-    vec2 m_Velocity;
-    vec2 m_Target;
-};
+struct SAutopilotState; // Forward declaration - defined in fujix_tas.h
 
 // Comparison for priority queue (lower F cost = higher priority)
 struct SPathNodeComparator

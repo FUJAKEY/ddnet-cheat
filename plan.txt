@@ -1,20 +1,20 @@
-План исправления CMake Warning:
+## Проблема: Переопределение структуры SAutopilotState
 
-1. Анализ проблемы:
-   - CMake Warning показывает, что переменная GAME_CLIENT не содержит все файлы из src/game/client
-   - Отсутствуют файлы test_includes и test_syntax*.cpp
+### Анализ ошибки:
+- `fujix_tas.h` определяет `SAutopilotState` на строке 15
+- `fujix_pathfinding.h` определяет ту же структуру на строке 50
+- Это вызывает ошибку компиляции "redefinition of 'SAutopilotState'"
 
-2. Шаги решения:
-   - Найти определение переменной GAME_CLIENT в CMakeLists.txt
-   - Найти функции set_src и set_glob для понимания как работает проверка
-   - Проверить реальное содержимое папки src/game/client
-   - Добавить недостающие файлы в правильном алфавитном порядке
+### Причина:
+`fujix_tas.h` включает `fujix_pathfinding.h` на строке 13, что создает конфликт определений.
 
-3. Файлы для добавления:
-   - components/test_includes/base/system.h
-   - components/test_includes/base/vmath.h
-   - components/test_includes/game/collision.h
-   - components/test_includes/game/gamecore.h
-   - components/test_includes/game/mapitems.h
-   - components/test_syntax.cpp
-   - components/test_syntax_full.cpp
+### Решение:
+1. Удалить дублированное определение из `fujix_tas.h`
+2. Использовать определение из `fujix_pathfinding.h`
+3. Возможно добавить недостающие поля если они различаются
+
+### План действий:
+1. Сравнить определения структур
+2. Выбрать наиболее полное определение
+3. Удалить дублированное определение
+4. Проверить совместимость использования
