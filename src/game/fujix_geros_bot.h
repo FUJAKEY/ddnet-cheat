@@ -23,6 +23,10 @@ struct SGerosBotPrediction
 class CFujixGerosBot : public CComponent
 {
 private:
+	// Helper method
+	CGameClient *GetGameClient() { return GameClient(); }
+	
+	// Core prediction and simulation
 	// Core prediction and simulation
 	void PredictMovement(SGerosBotPrediction *pPredictions, int NumTicks);
 	void SimulateCharacterCore(CCharacterCore *pCore, int Ticks);
@@ -49,7 +53,6 @@ private:
 	
 	// Performance optimization
 	bool m_FullPredictionMode;
-	bool m_FullPredictionMode;
 	int m_LastFullPredictionTick;
 
 public:
@@ -63,12 +66,12 @@ public:
 	// Main bot functions
 	void Update();
 	bool IsActive() const;
-	bool ShouldOverrideInput() const;
+	bool ShouldOverrideInput();
 	void GetBotInput(int *pInputDirection, int *pJump, int *pHook, vec2 *pTargetX);
 	
 	// Emergency rescue system
 	void ExecuteEmergencyRescue();
-	bool IsInEmergencyState() const;
+	bool IsInEmergencyState();
 	
 	// Configuration
 	int GetAggressiveness() const;
