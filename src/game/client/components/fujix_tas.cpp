@@ -437,10 +437,9 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
 
     // ПРОСТАЯ СИСТЕМА: Записываем каждый тик без оптимизации
     SEntry e = {Tick - m_StartTick, *pInput};
-    if(m_File)
-        io_write(m_File, &e, sizeof(e));
+    // Записываем только во внутренний буфер, состояние сохраняется отдельно
     m_vEntries.push_back(e);
-    
+
     m_LastRecordTick = Tick;
     
     // Phantom синхронизация
@@ -479,9 +478,10 @@ void CFujixTas::StartRecord()
         return;
     }
 
-    // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX: только инпуты
+    // Очищаем буферы записи
     m_vEntries.clear();
     m_vEntries.reserve(60 * 60); // Резервируем место на 1 минуту (60 FPS)
+    m_vStates.clear();
     
     m_StartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
     m_LastRecordTick = m_StartTick - 1;
@@ -562,9 +562,10 @@ void CFujixTas::StartRecordNoGhost()
         return;
     }
 
-    // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX: только инпуты БЕЗ PHANTOM
+    // Очищаем буферы записи
     m_vEntries.clear();
     m_vEntries.reserve(60 * 60); // Резервируем место на 1 минуту (60 FPS)
+    m_vStates.clear();
     
     m_StartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
     m_LastRecordTick = m_StartTick - 1;
@@ -726,18 +727,21 @@ void CFujixTas::StartPlay()
         return;
     }
 
-    // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX: только инпуты
+    // Загружаем состояния и инпуты
     m_vEntries.clear();
+    m_vStates.clear();
     SEntry e;
     while(io_read(File, &e, sizeof(e)) == sizeof(e))
         m_vEntries.push_back(e);
     io_close(File);
 
-    if(m_vEntries.empty())
-	{
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "tas file is empty");
+    LoadStates(aPath);
+
+    if(m_vEntries.empty() || m_vStates.empty())
+    {
+        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "tas file is empty");
         return;
-	}
+    }
 
     m_PlayIndex = 0;
     m_PlayStartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
@@ -751,6 +755,7 @@ void CFujixTas::StopPlay()
     m_Playing = false;
     g_Config.m_ClFujixTasPlay = 0;
     m_vEntries.clear();
+    m_vStates.clear();
     m_PlayIndex = 0;
     m_PlayStartTick = 0;
     mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
@@ -771,18 +776,21 @@ void CFujixTas::StartTest()
         return;
     }
 
-    // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX: только инпуты
+    // Загружаем состояния и инпуты
     m_vEntries.clear();
+    m_vStates.clear();
     SEntry e;
     while(io_read(File, &e, sizeof(e)) == sizeof(e))
         m_vEntries.push_back(e);
     io_close(File);
 
-    if(m_vEntries.empty())
-	{
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "tas file is empty");
+    LoadStates(aPath);
+
+    if(m_vEntries.empty() || m_vStates.empty())
+    {
+        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "tas file is empty");
         return;
-	}
+    }
 
     if(GameClient()->m_Snap.m_LocalClientId >= 0)
     {
@@ -817,6 +825,7 @@ void CFujixTas::StopTest()
     g_Config.m_ClFujixTasTest = 0;
     m_PhantomActive = false;
     m_vEntries.clear();
+    m_vStates.clear();
     m_RageActive = false;
 }
 
@@ -896,6 +905,15 @@ void CFujixTas::OnUpdate()
         StopTest();
 
     MaybeFinishRecord();
+
+    // Запись точного состояния персонажа
+    if(IsRecording())
+        RecordCurrentState(Client()->PredGameTick(g_Config.m_ClDummy));
+
+    // Воспроизведение с использованием точных состояний
+    if(m_Playing || m_Testing)
+        UpdateStatePlayback();
+
     // УБРАНО: RecordHookState - используем только простые инпуты
     TickPhantom();
 }
