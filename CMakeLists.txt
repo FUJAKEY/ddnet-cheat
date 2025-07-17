@@ -2143,6 +2143,8 @@ set_src(GAME_SHARED GLOB src/game
   alloc.h
   collision.cpp
   collision.h
+  fujix_geros_bot.cpp
+  fujix_geros_bot.h
   gamecore.cpp
   gamecore.h
   layers.cpp
@@ -2401,8 +2403,6 @@ if(CLIENT)
     components/touch_controls.h
     components/voting.cpp
     components/voting.h
-    fujix_geros_bot.cpp
-    fujix_geros_bot.h
     gameclient.cpp
     gameclient.h
     laser_data.cpp
