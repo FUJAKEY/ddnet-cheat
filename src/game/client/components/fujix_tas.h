@@ -109,6 +109,7 @@ private:
     bool m_RagePrevEnabled;
     // 🆕 Методы для работы с состояниями
     void GetPath(char *pBuf, int Size) const;
+    // Tick передается относительно начала записи
     void CaptureCurrentState(SStateSnapshot *pSnapshot, int Tick);
     void RestoreState(const SStateSnapshot &Snapshot, CCharacterCore *pCore);
     bool LoadStates(const char *pFilename);

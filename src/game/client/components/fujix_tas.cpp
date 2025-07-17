@@ -138,7 +138,9 @@ void CFujixTas::RecordCurrentState(int Tick)
         return;
         
     SStateSnapshot Snapshot;
-    CaptureCurrentState(&Snapshot, Tick);
+    // сохраняем состояние с относительным тиком,
+    // чтобы при воспроизведении оно синхронизировалось с началом
+    CaptureCurrentState(&Snapshot, Tick - m_StartTick);
     
     m_vStates.push_back(Snapshot);
     
