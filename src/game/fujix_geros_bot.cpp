@@ -104,7 +104,7 @@ void CFujixGerosBot::Update()
 		m_PlayerTrustLevel = minimum(1.0f, m_PlayerTrustLevel + 0.01f);
 	}
 	
-	m_LastPredictionTick = GameClient()->Client()->GameTick();
+	m_LastPredictionTick = GameClient()->Client()->GameTick(0);
 }
 
 
@@ -229,12 +229,13 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 	return DangerLevel;
 }
 
+
 vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
-	return DangerLevel;
-		DangerLevel += 2.0f;
+{
+	if(!GameClient()->m_GameWorld.m_pCollision)
+		return vec2(0, 0);
 		
-	return DangerLevel;
-}
+	vec2 BestTarget = vec2(0, 0);
 	float BestScore = -1.0f;
 	float HookRange = 320.0f; // Maximum hook range
 	
@@ -404,12 +405,9 @@ bool CFujixGerosBot::DetectSuicideAttempt(vec2 Pos, vec2 Vel, int InputDirection
 }
 
 bool CFujixGerosBot::IsPlayerTryingToKillThemselves()
-	CCharacterCore *pCharacter = &GameClient()->m_PredictedChar;
-	// Character Core is always valid, no need to check for null
-	
-	CCharacterCore *pCharacter = &GameClient()->m_PredictedChar;
-	if(!pCharacter)
-		return false;
+{
+	// Analyze recent player behavior patterns
+	// This is a simplified version - real implementation would track behavior history
 bool CFujixGerosBot::IsPlayerTryingToKillThemselves()
 {
 	// Analyze recent player behavior patterns
@@ -433,12 +431,12 @@ bool CFujixGerosBot::IsInEmergencyState() const
 void CFujixGerosBot::ExecuteEmergencyRescue()
 {
 	if(GameClient()->Client()->GameTick() - m_LastRescueTick < 5) // Prevent spam rescues
-		return;
+	if(GameClient()->Client()->GameTick(0) - m_LastRescueTick < 5) // Prevent spam rescues
 		
 	m_EmergencyMode = true;
 	m_RescueAttempts++;
 	m_LastRescueTick = GameClient()->Client()->GameTick();
-	
+	m_LastRescueTick = GameClient()->Client()->GameTick(0);
 	// Force override player input to execute rescue
 	// This will be used by the input system
 }
@@ -451,7 +449,7 @@ bool CFujixGerosBot::ShouldOverrideInput() const
 		return false;
 		
 	m_LastRescueTick = GameClient()->Client()->GameTick();
-	
+	m_LastRescueTick = GameClient()->Client()->GameTick(0);
 	// Force override player input to execute rescue
 	// This will be used by the input system
 }
