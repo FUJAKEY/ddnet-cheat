@@ -62,7 +62,7 @@ void CFujixGerosBot::OnMessage(int MsgType, void *pRawMsg)
 
 bool CFujixGerosBot::IsActive() const
 {
-	return g_Config.m_FujixGerosBot && GameClient()->m_pControls;
+	return g_Config.m_FujixGerosBot && &GameClient()->m_Controls;
 }
 
 int CFujixGerosBot::GetAggressiveness() const
@@ -78,15 +78,13 @@ int CFujixGerosBot::GetPredictionTicks() const
 bool CFujixGerosBot::IsAntiSuicideEnabled() const
 {
 	return g_Config.m_FujixGerosAntiSuicide;
-}void CFujixGerosBot::Update()
+}
+
+void CFujixGerosBot::Update()
 {
+	CCharacterCore *pCharacter = &GameClient()->m_PredictedChar;
 	if(!IsActive())
 		return;
-		
-	CCharacter *pCharacter = GameClient()->m_PredictedChar.GetCharacter();
-	if(!pCharacter)
-		return;
-		
 	// Update prediction system
 	PredictMovement(m_aPredictions, GetPredictionTicks());
 	
@@ -106,16 +104,13 @@ bool CFujixGerosBot::IsAntiSuicideEnabled() const
 		m_PlayerTrustLevel = minimum(1.0f, m_PlayerTrustLevel + 0.01f);
 	}
 	
-	m_LastPredictionTick = GameClient()->m_GameTick;
+	m_LastPredictionTick = GameClient()->m_PredictedTick;
+}
+
 }
 
 void CFujixGerosBot::PredictMovement(SGerosBotPrediction *pPredictions, int NumTicks)
 {
-	CCharacter *pCharacter = GameClient()->m_PredictedChar.GetCharacter();
-	if(!pCharacter)
-		return;
-		
-	CCharacterCore Core = pCharacter->GetCore();
 	vec2 CurrentPos = Core.m_Pos;
 	vec2 CurrentVel = Core.m_Vel;
 	
@@ -167,7 +162,7 @@ bool CFujixGerosBot::IsPositionDangerous(vec2 Pos, vec2 Vel)
 		return false;
 		
 	// Check for collision with death tiles
-	int TileIndex = GameClient()->m_GameWorld.m_pCollision->GetTileIndex(Pos);
+	int TileIndex = GameClient()->m_GameWorld.m_pCollision->GetCollisionAt(Pos.x, Pos.y);
 	if(TileIndex == TILE_DEATH)
 		return true;
 		
@@ -181,7 +176,7 @@ bool CFujixGerosBot::IsPositionDangerous(vec2 Pos, vec2 Vel)
 		
 	// Predict if current velocity will lead to death
 	vec2 PredictedPos = Pos + Vel * 2.0f; // 2 ticks ahead
-	int PredictedTile = GameClient()->m_GameWorld.m_pCollision->GetTileIndex(PredictedPos);
+	int PredictedTile = GameClient()->m_GameWorld.m_pCollision->GetCollisionAt(PredictedPos.x, PredictedPos.y);
 	if(PredictedTile == TILE_DEATH)
 		return true;
 		
@@ -200,7 +195,7 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 		return DangerLevel;
 		
 	// Base danger from current tile
-	int TileIndex = GameClient()->m_GameWorld.m_pCollision->GetTileIndex(Pos);
+	int TileIndex = GameClient()->m_GameWorld.m_pCollision->GetCollisionAt(Pos.x, Pos.y);
 	if(TileIndex == TILE_DEATH)
 		DangerLevel += 10.0f;
 		
@@ -219,7 +214,7 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 		for(int y = -5; y <= 5; y++)
 		{
 			vec2 TestPos = Pos + vec2(x * 32.0f, y * 32.0f);
-			int TestTile = GameClient()->m_GameWorld.m_pCollision->GetTileIndex(TestPos);
+			int TestTile = GameClient()->m_GameWorld.m_pCollision->GetCollisionAt(TestPos.x, TestPos.y);
 			if(TestTile != TILE_DEATH && TestTile != TILE_FREEZE && TestTile != TILE_DFREEZE && TestTile != TILE_LFREEZE && GameClient()->m_GameWorld.m_pCollision->CheckPoint(TestPos.x, TestPos.y + 16))
 			{
 				float Distance = distance(Pos, TestPos);
@@ -232,15 +227,15 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 		DangerLevel += 5.0f;
 	else if(DistanceToSafety > 200.0f)
 		DangerLevel += 2.0f;
+	return DangerLevel;
+}
+
+vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
+	return DangerLevel;
+		DangerLevel += 2.0f;
 		
 	return DangerLevel;
 }
-vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
-{
-	if(!GameClient()->m_GameWorld.m_pCollision)
-		return vec2(0, 0);
-		
-	vec2 BestTarget = vec2(0, 0);
 	float BestScore = -1.0f;
 	float HookRange = 320.0f; // Maximum hook range
 	
@@ -410,21 +405,16 @@ bool CFujixGerosBot::DetectSuicideAttempt(vec2 Pos, vec2 Vel, int InputDirection
 }
 
 bool CFujixGerosBot::IsPlayerTryingToKillThemselves()
+	CCharacterCore *pCharacter = &GameClient()->m_PredictedChar;
+	// Character Core is always valid, no need to check for null
+	
+	CCharacterCore *pCharacter = &GameClient()->m_PredictedChar;
+	if(!pCharacter)
+		return false;
+bool CFujixGerosBot::IsPlayerTryingToKillThemselves()
 {
 	// Analyze recent player behavior patterns
 	// This is a simplified version - real implementation would track behavior history
-	
-	CCharacter *pCharacter = GameClient()->m_PredictedChar.GetCharacter();
-	if(!pCharacter)
-		return false;
-		
-	// Check if player is consistently moving toward danger
-	if(m_PlayerTrustLevel < 0.3f)
-		return true;
-		
-	return false;
-}
-
 bool CFujixGerosBot::IsInEmergencyState() const
 {
 	// Check if any of the near-future predictions show imminent death
@@ -443,14 +433,16 @@ bool CFujixGerosBot::IsInEmergencyState() const
 
 void CFujixGerosBot::ExecuteEmergencyRescue()
 {
-	if(GameClient()->m_GameTick - m_LastRescueTick < 5) // Prevent spam rescues
+	if(GameClient()->m_PredictedTick - m_LastRescueTick < 5) // Prevent spam rescues
 		return;
 		
 	m_EmergencyMode = true;
 	m_RescueAttempts++;
-	m_LastRescueTick = GameClient()->m_GameTick;
+	m_LastRescueTick = GameClient()->m_PredictedTick;
 	
 	// Force override player input to execute rescue
+	// This will be used by the input system
+}
 	// This will be used by the input system
 }
 
@@ -459,13 +451,11 @@ bool CFujixGerosBot::ShouldOverrideInput() const
 	if(!IsActive())
 		return false;
 		
-	// Override input when in emergency state
-	if(IsInEmergencyState())
-		return true;
-		
-	// Override input when detecting suicide attempts
-	if(IsAntiSuicideEnabled() && m_PlayerTrustLevel < 0.5f)
-		return true;
+	m_LastRescueTick = GameClient()->m_PredictedTick;
+	
+	// Force override player input to execute rescue
+	// This will be used by the input system
+}
 		
 	return false;
 }
