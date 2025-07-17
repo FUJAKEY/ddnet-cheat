@@ -134,7 +134,7 @@ void CFujixTas::CaptureCurrentState(SStateSnapshot *pSnapshot, int Tick)
 // 🆕 НОВЫЙ МЕТОД: Записать текущее состояние
 void CFujixTas::RecordCurrentState(int Tick)
 {
-    if(!m_Recording || !GameClient()->m_Snap.m_pLocalCharacter)
+    if((!m_Recording && !m_RecordingNoGhost) || !GameClient()->m_Snap.m_pLocalCharacter)
         return;
         
     SStateSnapshot Snapshot;
@@ -420,6 +420,7 @@ bool CFujixTas::FetchPlaybackInput(CNetObj_PlayerInput *pInput)
         return false;
 
     UpdatePlaybackInput();
+    UpdateStatePlayback();
     *pInput = m_CurrentInput;
 
     // also update the local control state so prediction uses the TAS input
@@ -437,9 +438,9 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
 
     // ПРОСТАЯ СИСТЕМА: Записываем каждый тик без оптимизации
     SEntry e = {Tick - m_StartTick, *pInput};
-    if(m_File)
-        io_write(m_File, &e, sizeof(e));
     m_vEntries.push_back(e);
+
+    RecordCurrentState(Tick);
     
     m_LastRecordTick = Tick;
     
@@ -482,6 +483,7 @@ void CFujixTas::StartRecord()
     // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX: только инпуты
     m_vEntries.clear();
     m_vEntries.reserve(60 * 60); // Резервируем место на 1 минуту (60 FPS)
+    m_vStates.clear();
     
     m_StartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
     m_LastRecordTick = m_StartTick - 1;
@@ -565,6 +567,7 @@ void CFujixTas::StartRecordNoGhost()
     // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX: только инпуты БЕЗ PHANTOM
     m_vEntries.clear();
     m_vEntries.reserve(60 * 60); // Резервируем место на 1 минуту (60 FPS)
+    m_vStates.clear();
     
     m_StartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
     m_LastRecordTick = m_StartTick - 1;
@@ -726,18 +729,22 @@ void CFujixTas::StartPlay()
         return;
     }
 
-    // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX: только инпуты
+    // Загружаем сохраненные состояния
     m_vEntries.clear();
-    SEntry e;
-    while(io_read(File, &e, sizeof(e)) == sizeof(e))
-        m_vEntries.push_back(e);
+    m_vStates.clear();
+    SStateSnapshot Snap;
+    while(io_read(File, &Snap, sizeof(Snap)) == sizeof(Snap))
+    {
+        m_vStates.push_back(Snap);
+        m_vEntries.push_back({Snap.m_Tick, Snap.m_Input});
+    }
     io_close(File);
 
-    if(m_vEntries.empty())
-	{
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "tas file is empty");
+    if(m_vStates.empty())
+    {
+        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "tas file is empty");
         return;
-	}
+    }
 
     m_PlayIndex = 0;
     m_PlayStartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
@@ -751,6 +758,7 @@ void CFujixTas::StopPlay()
     m_Playing = false;
     g_Config.m_ClFujixTasPlay = 0;
     m_vEntries.clear();
+    m_vStates.clear();
     m_PlayIndex = 0;
     m_PlayStartTick = 0;
     mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
@@ -771,18 +779,22 @@ void CFujixTas::StartTest()
         return;
     }
 
-    // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX: только инпуты
+    // Загружаем сохраненные состояния
     m_vEntries.clear();
-    SEntry e;
-    while(io_read(File, &e, sizeof(e)) == sizeof(e))
-        m_vEntries.push_back(e);
+    m_vStates.clear();
+    SStateSnapshot Snap;
+    while(io_read(File, &Snap, sizeof(Snap)) == sizeof(Snap))
+    {
+        m_vStates.push_back(Snap);
+        m_vEntries.push_back({Snap.m_Tick, Snap.m_Input});
+    }
     io_close(File);
 
-    if(m_vEntries.empty())
-	{
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "tas file is empty");
+    if(m_vStates.empty())
+    {
+        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "tas file is empty");
         return;
-	}
+    }
 
     if(GameClient()->m_Snap.m_LocalClientId >= 0)
     {
@@ -817,6 +829,7 @@ void CFujixTas::StopTest()
     g_Config.m_ClFujixTasTest = 0;
     m_PhantomActive = false;
     m_vEntries.clear();
+    m_vStates.clear();
     m_RageActive = false;
 }
 
@@ -889,6 +902,9 @@ void CFujixTas::OnUpdate()
         StartPlay();
     else if(!g_Config.m_ClFujixTasPlay && m_Playing)
         StopPlay();
+
+    if(m_Playing)
+        UpdateStatePlayback();
 
     if(g_Config.m_ClFujixTasTest && !m_Testing)
         StartTest();
