@@ -60,9 +60,18 @@ private:
         int m_Armor;                  // Броня
         int m_Weapon;                 // Текущее оружие
         
+        
         // Инпут который привел к этому состоянию
         CNetObj_PlayerInput m_Input;
     };
+
+    // 🆕 Старая структура для совместимости (простая система как в krx)
+    struct SEntry
+    {
+        int m_Tick;
+        CNetObj_PlayerInput m_Input;
+    };
+    
     // 🆕 Основные переменные новой TAS системы
     bool m_Recording;
     bool m_RecordingNoGhost;  // 🆕 Новая запись без phantom
@@ -73,22 +82,19 @@ private:
     int m_PlayStartTick;
     char m_aFilename[IO_MAX_PATH_LENGTH];
     IOHANDLE m_File;
-    std::vector<SStateSnapshot> m_vStates;  // Вектор состояний
+    std::vector<SEntry> m_vEntries;         // Вектор инпутов (старая система)
+    std::vector<SStateSnapshot> m_vStates;  // Вектор состояний (новая система)
     int m_PlayIndex;
     int m_LastRecordTick;
     bool m_StopPending;
     int m_StopTick;
-    
-    // 🆕 Старая система для совместимости
-    struct SEntry
-    {
-        int m_Tick;
-        CNetObj_PlayerInput m_Input;
-    };
-    std::vector<SEntry> m_vEntries;  // Старые записи инпута
-    CNetObj_PlayerInput m_CurrentInput;
-    CNetObj_PlayerInput m_LastInput;
-    CNetObj_PlayerInput m_PhantomInput;
+    CNetObj_PlayerInput m_CurrentInput;  // Текущий инпут для воспроизведения
+    CNetObj_PlayerInput m_LastInput;     // Последний записанный инпут
+
+	// 🆕 TAS Recording control (как в рабочей системе)
+	int m_TargetTps;                    // Целевой TPS для записи
+	int64_t m_LastTasRecordTickTime;    // Время последней записи
+	bool m_NeedTasTickRecording;        // Флаг необходимости записи тика
 
     // Phantom для предпросмотра
     bool m_PhantomActive;
@@ -103,6 +109,7 @@ private:
     std::unique_ptr<CSmartAutopilot> m_pSmartAutopilot;
     bool m_SmartAutopilotInitialized;
     
+    // 🆕 НОВЫЕ МЕТОДЫ: Работа с состояниями
     // Rage mode
     bool m_RageActive;
     vec2 m_RageTarget;

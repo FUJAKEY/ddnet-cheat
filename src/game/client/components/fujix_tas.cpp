@@ -21,53 +21,43 @@
 const char *CFujixTas::ms_pFujixDir = "fujix";
 
 // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX
-CFujixTas::CFujixTas()
+CFujixTas::CFujixTas() :
+    m_Recording(false),
+    m_RecordingNoGhost(false),
+    m_Playing(false), 
+    m_Testing(false),
+    m_StartTick(0),
+    m_TestStartTick(0),
+    m_PlayStartTick(0),
+    m_File(nullptr),
+    m_PlayIndex(0),
+    m_LastRecordTick(0),
+    m_StopPending(false),
+    m_StopTick(0),
+    m_TargetTps(25),                    // 🆕 Инициализация TPS
+    m_LastTasRecordTickTime(0),         // 🆕 Время последней записи
+    m_NeedTasTickRecording(false),      // 🆕 Флаг записи
+    m_PhantomActive(false),
+    m_PhantomTick(0),
+    m_PhantomStep(0),
+    m_PhantomPlayIndex(0),
+    m_SmartAutopilotInitialized(false),
+    m_RageActive(false),
+    m_RageTarget(0, 0),
+    m_RagePrevEnabled(false)
 {
-    // Инициализация основных переменных
-    m_Recording = false;
-    m_RecordingNoGhost = false; // 🆕 Новая переменная
-    m_Playing = false;
-    m_Testing = false;
-    m_StartTick = 0;
-    m_TestStartTick = 0;
-    m_PlayStartTick = 0;
-    m_File = nullptr;
-    m_PlayIndex = 0;
-    m_LastRecordTick = -1;
     m_aFilename[0] = '\0';
-    m_StopPending = false;
-    m_StopTick = -1;
     
-    // Phantom для предпросмотра
-    m_PhantomActive = false;
-    m_PhantomTick = 0;
-    m_PhantomStep = 1;
-    m_PhantomPlayIndex = 0;
-
-    // Rage mode
-    m_RageActive = false;
-    m_RageTarget = vec2(0.f, 0.f);
-    m_RagePrevEnabled = false;
-    
-    // Smart autopilot
-    m_pSmartAutopilot = std::make_unique<CSmartAutopilot>();
-    m_SmartAutopilotInitialized = false;
-    
-    // Input states
     mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
     mem_zero(&m_LastInput, sizeof(m_LastInput));
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
     
-    // 🆕 Резервируем память для состояний (оптимизация)
-    m_vStates.reserve(60 * 60 * 5); // 5 минут при 60 FPS
+    // Резервируем память для оптимизации
+    m_vEntries.reserve(60 * 60);        // ~1 минута инпутов
+    m_vStates.reserve(60 * 60 * 5);     // ~5 минут состояний
 }
 
-// 🆕 Деструктор для корректной работы с unique_ptr<CSmartAutopilot>
-CFujixTas::~CFujixTas()
-{
-    // Деструктор unique_ptr корректно удалит объект CSmartAutopilot
-    // когда определение CSmartAutopilot доступно через include
-}
+CFujixTas::~CFujixTas() = default;
 int CFujixTas::Sizeof() const
 {
     return sizeof(*this);
@@ -435,6 +425,13 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
     if((!m_Recording && !m_RecordingNoGhost) || Tick < m_StartTick)
         return;
 
+    // 🆕 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Записываем только когда TPS система разрешает
+    if(!m_NeedTasTickRecording)
+        return;
+        
+    // Сбрасываем флаг после записи
+    m_NeedTasTickRecording = false;
+
     // 🆕 УЛУЧШЕННАЯ СИСТЕМА: Записываем и инпут, и полное состояние
     SEntry e = {Tick - m_StartTick, *pInput};
     
@@ -443,8 +440,8 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
         io_write(m_File, &e, sizeof(e));
     m_vEntries.push_back(e);
     
-    // 🆕 НОВОЕ: Записываем полное состояние игрока
-    if(GameClient()->m_Snap.m_pLocalCharacter)
+    // 🆕 НОВОЕ: Записываем полное состояние игрока только в полном режиме
+    if(m_Recording && GameClient()->m_Snap.m_pLocalCharacter)
     {
         SStateSnapshot StateSnapshot;
         CaptureCurrentState(&StateSnapshot, Tick - m_StartTick);
@@ -907,6 +904,18 @@ void CFujixTas::CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *p
 
 void CFujixTas::OnUpdate()
 {
+    // 🆕 TAS Recording logic с контролем TPS (как в рабочей системе)
+    if(IsRecording())
+    {
+        int64_t Now = time_get();
+        int64_t TickInterval = time_freq() / m_TargetTps;
+        if(Now - m_LastTasRecordTickTime >= TickInterval)
+        {
+            m_NeedTasTickRecording = true;
+            m_LastTasRecordTickTime = Now;
+        }
+    }
+
     if(g_Config.m_ClFujixTasRecord && !m_Recording)
         StartRecord();
     else if(!g_Config.m_ClFujixTasRecord && m_Recording)
@@ -923,10 +932,8 @@ void CFujixTas::OnUpdate()
         StopTest();
 
     MaybeFinishRecord();
-    // УБРАНО: RecordHookState - используем только простые инпуты
     TickPhantom();
 }
-
 void CFujixTas::OnRender()
 {
     if(m_PhantomActive)
