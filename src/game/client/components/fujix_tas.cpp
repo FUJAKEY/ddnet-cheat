@@ -20,8 +20,7 @@
 
 const char *CFujixTas::ms_pFujixDir = "fujix";
 
-// 🆕 ПОЛНОСТЬЮ НОВЫЙ КОНСТРУКТОР - STATE-BASED TAS
-// 🆕 ПОЛНОСТЬЮ НОВЫЙ КОНСТРУКТОР - STATE-BASED TAS
+// 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX
 CFujixTas::CFujixTas()
 {
     // Инициализация основных переменных
@@ -32,12 +31,9 @@ CFujixTas::CFujixTas()
     m_TestStartTick = 0;
     m_PlayStartTick = 0;
     m_File = nullptr;
-    m_HookFile = nullptr;
     m_PlayIndex = 0;
-    m_HookPlayIndex = 0;
     m_LastRecordTick = -1;
     m_aFilename[0] = '\0';
-    m_aHookFilename[0] = '\0';
     m_StopPending = false;
     m_StopTick = -1;
     
@@ -52,9 +48,6 @@ CFujixTas::CFujixTas()
     m_RageTarget = vec2(0.f, 0.f);
     m_RagePrevEnabled = false;
     
-    // Hook state tracking
-    m_LastHookState = HOOK_IDLE;
-    m_LastHookedPlayer = -1;
     // Smart autopilot
     m_pSmartAutopilot = std::make_unique<CSmartAutopilot>();
     m_SmartAutopilotInitialized = false;
@@ -272,7 +265,7 @@ void CFujixTas::InterpolateAndApplyState(const SStateSnapshot &Prev, const SStat
     ApplyState(Interpolated);
 }
 
-// 🆕 ИСПРАВЛЕННЫЙ МЕТОД: UpdatePlaybackInput
+// 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX - БЕЗ ОТДЕЛЬНЫХ СОБЫТИЙ КРЮКА
 void CFujixTas::UpdatePlaybackInput()
 {
     if(!m_Playing && !m_Testing)
@@ -282,105 +275,30 @@ void CFujixTas::UpdatePlaybackInput()
     int BaseTick = m_Playing ? m_PlayStartTick : m_TestStartTick;
     int *pPlayIndex = m_Playing ? &m_PlayIndex : &m_PhantomPlayIndex;
 
-    // КРИТИЧЕСКИ ВАЖНО: Сначала применяем события крюка, ПОТОМ инпут!
-    if (m_Playing)
-        ApplyHookEvents(PredTick, false);
-    else if (m_Testing)
-        ApplyHookEvents(PredTick, true);
-
-    // Затем обновляем инпут
-    while(*pPlayIndex < (int)m_vEntries.size() && BaseTick + m_vEntries[*pPlayIndex].m_Tick <= PredTick)
+    // ПРОСТАЯ СИНХРОНИЗАЦИЯ: Ищем инпут для текущего тика
+    int RelativeTick = PredTick - BaseTick;
+    
+    // Находим последний подходящий инпут
+    CNetObj_PlayerInput *pTargetInput = m_Playing ? &m_CurrentInput : &m_PhantomInput;
+    
+    while(*pPlayIndex < (int)m_vEntries.size() && m_vEntries[*pPlayIndex].m_Tick <= RelativeTick)
     {
-        if (m_Playing)
-            m_CurrentInput = m_vEntries[*pPlayIndex].m_Input;
-        else // m_Testing
-            m_PhantomInput = m_vEntries[*pPlayIndex].m_Input;
-
+        *pTargetInput = m_vEntries[*pPlayIndex].m_Input;
         (*pPlayIndex)++;
     }
 
-    if (m_Playing)
+    // Проверяем завершение воспроизведения
+    if(*pPlayIndex >= (int)m_vEntries.size() && 
+       (m_vEntries.empty() || RelativeTick > m_vEntries.back().m_Tick + 10))
     {
-        if(m_PlayIndex >= (int)m_vEntries.size() && (m_vEntries.empty() || PredTick >= BaseTick + m_vEntries.back().m_Tick))
-        {
+        if(m_Playing)
             StopPlay();
-        }
-    }
-    else // m_Testing
-    {
-        if(m_PhantomPlayIndex >= (int)m_vEntries.size() && (m_vEntries.empty() || PredTick >= BaseTick + m_vEntries.back().m_Tick))
-        {
+        else if(m_Testing)
             StopTest();
-        }
     }
 }
 
-void CFujixTas::RecordHookState(int Tick)
-{
-    if(!m_Recording)
-        return;
-    const CCharacterCore &Core = GameClient()->m_PredictedChar;
-    
-    // Записываем состояние крюка только при изменениях для оптимизации
-    if(Core.m_HookState == m_LastHookState && Core.HookedPlayer() == m_LastHookedPlayer && 
-       Core.m_HookState == HOOK_IDLE)
-        return;
-    
-    SHookEvent Ev;
-    Ev.m_Tick = Tick - m_StartTick;
-    Ev.m_State = Core.m_HookState;
-    Ev.m_HookedPlayer = Core.HookedPlayer();
-    
-    // Записываем точные координаты крюка
-    Ev.m_HookX = round_to_int(Core.m_HookPos.x);
-    Ev.m_HookY = round_to_int(Core.m_HookPos.y);
-    Ev.m_HookTick = Core.m_HookTick;
-    
-    // Записываем направление крюка с высокой точностью
-    Ev.m_HookDirX = round_to_int(Core.m_HookDir.x * 256.0f);
-    Ev.m_HookDirY = round_to_int(Core.m_HookDir.y * 256.0f);
-    
-    // Записываем телепорт базу
-    Ev.m_HookTeleBaseX = round_to_int(Core.m_HookTeleBase.x);
-    Ev.m_HookTeleBaseY = round_to_int(Core.m_HookTeleBase.y);
-    
-    // Записываем флаги
-    Ev.m_NewHook = Core.m_NewHook;
-    Ev.m_TriggeredEvents = Core.m_TriggeredEvents;
-    
-    m_vHookEvents.push_back(Ev);
-    if(m_HookFile)
-        io_write(m_HookFile, &Ev, sizeof(Ev));
-        
-    m_LastHookState = Core.m_HookState;
-    m_LastHookedPlayer = Core.HookedPlayer();
-}
-
-void CFujixTas::ApplyHookEvents(int PredTick, bool ToPhantom)
-{
-    int BaseTick = m_Playing ? m_PlayStartTick : m_TestStartTick;
-    
-    // Применяем каждое событие крюка с максимальной точностью
-    while(m_HookPlayIndex < (int)m_vHookEvents.size() && BaseTick + m_vHookEvents[m_HookPlayIndex].m_Tick <= PredTick)
-    {
-        const SHookEvent &Ev = m_vHookEvents[m_HookPlayIndex];
-        CCharacterCore *pCore = ToPhantom ? &m_PhantomCore : &GameClient()->m_PredictedChar;
-        
-        // Применяем все параметры крюка точно как записали
-        pCore->m_HookState = Ev.m_State;
-        pCore->m_HookTick = Ev.m_HookTick;
-        pCore->m_HookPos = vec2((float)Ev.m_HookX, (float)Ev.m_HookY); // Точные координаты
-        pCore->m_HookDir = vec2(Ev.m_HookDirX / 256.0f, Ev.m_HookDirY / 256.0f); // Восстанавливаем направление
-        pCore->m_HookTeleBase = vec2((float)Ev.m_HookTeleBaseX, (float)Ev.m_HookTeleBaseY); // Телепорт база
-        pCore->SetHookedPlayer(Ev.m_HookedPlayer);
-        
-        // Применяем флаги
-        pCore->m_NewHook = Ev.m_NewHook;
-        pCore->m_TriggeredEvents = Ev.m_TriggeredEvents;
-        
-        m_HookPlayIndex++;
-    }
-}
+// УБРАНО: Отдельная система событий крюка - используем только простые инпуты как в krx
 
 void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
 {
@@ -523,18 +441,15 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
     if(!m_Recording || Tick < m_StartTick)
         return;
 
-    if(Tick == m_LastRecordTick)
-        return;
-
-    if(mem_comp(pInput, &m_LastInput, sizeof(*pInput)) != 0)
-    {
-        SEntry e = {Tick - m_StartTick, *pInput};
-        if(m_File)
-            io_write(m_File, &e, sizeof(e));
-        m_vEntries.push_back(e);
-        m_LastInput = *pInput;
-    }
+    // ПРОСТАЯ СИСТЕМА: Записываем каждый тик без оптимизации
+    SEntry e = {Tick - m_StartTick, *pInput};
+    if(m_File)
+        io_write(m_File, &e, sizeof(e));
+    m_vEntries.push_back(e);
+    
     m_LastRecordTick = Tick;
+    
+    // Phantom синхронизация
     if((m_Testing || m_Recording) && m_PhantomActive)
     {
         m_PhantomInput = *pInput;
@@ -554,7 +469,6 @@ void CFujixTas::StartRecord()
     s_StartingRecord = true;
 
     GetPath(m_aFilename, sizeof(m_aFilename));
-    GetHookPath(m_aHookFilename, sizeof(m_aHookFilename));
     
     if(!Storage()->CreateFolder(ms_pFujixDir, IStorage::TYPE_SAVE))
     {
@@ -570,32 +484,16 @@ void CFujixTas::StartRecord()
         s_StartingRecord = false;
         return;
     }
-    
-    m_HookFile = Storage()->OpenFile(m_aHookFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
-    if(!m_HookFile)
-    {
-        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "failed to open hook file for recording");
-        io_close(m_File);
-        m_File = nullptr;
-        s_StartingRecord = false;
-        return;
-    }
 
-    // Очищаем векторы сначала для экономии памяти
+    // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX: только инпуты
     m_vEntries.clear();
-    m_vHookEvents.clear();
     m_vEntries.reserve(60 * 60); // Резервируем место на 1 минуту (60 FPS)
-    m_vHookEvents.reserve(60 * 60); // Резервируем место на 1 минуту
     
     m_StartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
     m_LastRecordTick = m_StartTick - 1;
     mem_zero(&m_LastInput, sizeof(m_LastInput));
     m_Recording = true;
     g_Config.m_ClFujixTasRecord = 1;
-    
-    m_HookPlayIndex = 0;
-    m_LastHookState = GameClient()->m_PredictedChar.m_HookState;
-    m_LastHookedPlayer = GameClient()->m_PredictedChar.HookedPlayer();
 
     m_RageActive = false;
 
@@ -650,11 +548,6 @@ void CFujixTas::FinishRecord()
     {
         io_close(m_File);
         m_File = nullptr;
-    }
-    if(m_HookFile)
-    {
-        io_close(m_HookFile);
-        m_HookFile = nullptr;
     }
 
     m_Recording = false;
@@ -789,23 +682,12 @@ void CFujixTas::StartPlay()
         return;
     }
 
+    // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX: только инпуты
     m_vEntries.clear();
     SEntry e;
     while(io_read(File, &e, sizeof(e)) == sizeof(e))
         m_vEntries.push_back(e);
     io_close(File);
-
-    GetHookPath(aPath, sizeof(aPath));
-    IOHANDLE HookFile = Storage()->OpenFile(aPath, IOFLAG_READ, IStorage::TYPE_SAVE);
-    m_vHookEvents.clear();
-    if(HookFile)
-    {
-        SHookEvent Ev;
-        while(io_read(HookFile, &Ev, sizeof(Ev)) == sizeof(Ev))
-            m_vHookEvents.push_back(Ev);
-        io_close(HookFile);
-    }
-    m_HookPlayIndex = 0;
 
     if(m_vEntries.empty())
 	{
@@ -827,8 +709,6 @@ void CFujixTas::StopPlay()
     m_vEntries.clear();
     m_PlayIndex = 0;
     m_PlayStartTick = 0;
-    m_vHookEvents.clear();
-    m_HookPlayIndex = 0;
     mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
     m_RageActive = false;
 }
@@ -847,24 +727,12 @@ void CFujixTas::StartTest()
         return;
     }
 
+    // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX: только инпуты
     m_vEntries.clear();
     SEntry e;
     while(io_read(File, &e, sizeof(e)) == sizeof(e))
         m_vEntries.push_back(e);
     io_close(File);
-
-    // Загружаем события крюка для тестирования
-    GetHookPath(aPath, sizeof(aPath));
-    IOHANDLE HookFile = Storage()->OpenFile(aPath, IOFLAG_READ, IStorage::TYPE_SAVE);
-    m_vHookEvents.clear();
-    if(HookFile)
-    {
-        SHookEvent Ev;
-        while(io_read(HookFile, &Ev, sizeof(Ev)) == sizeof(Ev))
-            m_vHookEvents.push_back(Ev);
-        io_close(HookFile);
-    }
-    m_HookPlayIndex = 0;
 
     if(m_vEntries.empty())
 	{
@@ -905,8 +773,6 @@ void CFujixTas::StopTest()
     g_Config.m_ClFujixTasTest = 0;
     m_PhantomActive = false;
     m_vEntries.clear();
-    m_vHookEvents.clear();
-    m_HookPlayIndex = 0;
     m_RageActive = false;
 }
 
@@ -986,8 +852,7 @@ void CFujixTas::OnUpdate()
         StopTest();
 
     MaybeFinishRecord();
-    UpdateRageTarget();
-    RecordHookState(Client()->PredGameTick(g_Config.m_ClDummy));
+    // УБРАНО: RecordHookState - используем только простые инпуты
     TickPhantom();
 }
 

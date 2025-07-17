@@ -1,3 +1,5 @@
+#pragma once
+// Минимальные заглушки для base/vmath.h
 
 // Minimal vec2 definition for testing
 struct vec2 { 

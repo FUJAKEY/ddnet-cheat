@@ -71,32 +71,12 @@ private:
     int m_TestStartTick;
     int m_PlayStartTick;
     char m_aFilename[IO_MAX_PATH_LENGTH];
-    char m_aHookFilename[IO_MAX_PATH_LENGTH];
     IOHANDLE m_File;
-    IOHANDLE m_HookFile;
     std::vector<SStateSnapshot> m_vStates;  // Вектор состояний
     int m_PlayIndex;
     int m_LastRecordTick;
     bool m_StopPending;
     int m_StopTick;
-    
-    // 🆕 События крюка (отдельная система для точности)
-    struct SHookEvent
-    {
-        int m_Tick;                  // Тик события
-        int m_State;                 // Состояние крюка
-        int m_HookX, m_HookY;       // Позиция крюка (целые для экономии)
-        int m_HookDirX, m_HookDirY; // Направление (умноженное на 256)
-        int m_HookTick;             // Счетчик крюка
-        int m_HookedPlayer;         // К кому прицепился
-        int m_HookTeleBaseX, m_HookTeleBaseY; // Телепорт база
-        bool m_NewHook;             // Флаг нового крюка
-        int m_TriggeredEvents;      // Триггеры
-    };
-    std::vector<SHookEvent> m_vHookEvents;
-    int m_HookPlayIndex;
-    int m_LastHookState;
-    int m_LastHookedPlayer;
     
     // 🆕 Старая система для совместимости
     struct SEntry
@@ -128,7 +108,6 @@ private:
     bool m_RagePrevEnabled;
     // 🆕 Методы для работы с состояниями
     void GetPath(char *pBuf, int Size) const;
-    void GetHookPath(char *pBuf, int Size) const;
     void CaptureCurrentState(SStateSnapshot *pSnapshot, int Tick);
     void RestoreState(const SStateSnapshot &Snapshot, CCharacterCore *pCore);
     bool LoadStates(const char *pFilename);
@@ -136,11 +115,8 @@ private:
     void ApplyState(const SStateSnapshot &Snapshot);
     void InterpolateAndApplyState(const SStateSnapshot &Prev, const SStateSnapshot &Next, float Factor);
     
-    // Методы для записи/воспроизведения инпута (совместимость)
+    // Методы для записи/воспроизведения инпута (простая система как в krx)
     void UpdatePlaybackInput();
-    void RecordHookState(int Tick);
-    void ApplyHookEvents(int PredTick, bool ToPhantom);
-    
     void TickPhantom();
     void CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *pChar, int Tick);
     void FinishRecord();

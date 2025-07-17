@@ -1,3 +1,22 @@
+#pragma once
+// Минимальные заглушки для game/collision.h
+
+class ICollision 
+{
+public:
+    virtual ~ICollision() {}
+    virtual int GetPureMapIndex(float x, float y) { return 0; }
+    virtual int GetTileIndex(int Index) { return 0; }
+    virtual int GetFrontTileIndex(int Index) { return 0; }
+    virtual bool CheckPoint(float x, float y) { return false; }
+    virtual bool IntersectLine(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision) { return false; }
+    virtual int IntersectNoLaser(vec2 Pos0, vec2 Pos1, vec2 *pOutCollision, vec2 *pOutBeforeCollision) { return 0; }
+    virtual int GetCollisionAt(float x, float y) { return 0; }
+    virtual int GetMapIndex(vec2 Pos) { return 0; }
+    virtual vec2 GetPos(int Index) { return vec2(0, 0); }
+    virtual int GetTile(int x, int y) { return 0; }
+    virtual int GetFTile(int x, int y) { return 0; }
+};
 
 // Minimal tile definitions for testing
 enum {
