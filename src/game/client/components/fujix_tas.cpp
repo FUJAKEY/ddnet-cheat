@@ -78,14 +78,6 @@ void CFujixTas::GetPath(char *pBuf, int Size) const
     const char *pMap = Client()->GetCurrentMap();
     str_format(pBuf, Size, "%s/%s.fjx", ms_pFujixDir, pMap);
 }
-
-// 🆕 НОВЫЙ МЕТОД: Получить путь к файлу событий крюка
-void CFujixTas::GetHookPath(char *pBuf, int Size) const
-{
-    const char *pMap = Client()->GetCurrentMap();
-    str_format(pBuf, Size, "%s/%s_hook.fjx", ms_pFujixDir, pMap);
-}
-
 // 🆕 НОВЫЙ МЕТОД: Захват полного состояния персонажа
 void CFujixTas::CaptureCurrentState(SStateSnapshot *pSnapshot, int Tick)
 {
@@ -790,7 +782,7 @@ void CFujixTas::TickPhantomUpTo(int TargetTick)
         // ВАЖНО: Сначала применяем крюк, потом инпут, затем симулируем движение
         if(m_Testing || m_Playing)
         {
-            UpdatePlaybackInput(); // Это уже включает ApplyHookEvents
+            UpdatePlaybackInput(); // Простая система как в krx
         }
 
         m_PhantomCore.m_Input = m_PhantomInput;
