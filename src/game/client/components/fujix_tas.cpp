@@ -435,11 +435,25 @@ void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
     if((!m_Recording && !m_RecordingNoGhost) || Tick < m_StartTick)
         return;
 
-    // ПРОСТАЯ СИСТЕМА: Записываем каждый тик без оптимизации
+    // 🆕 УЛУЧШЕННАЯ СИСТЕМА: Записываем и инпут, и полное состояние
     SEntry e = {Tick - m_StartTick, *pInput};
+    
+    // Записываем инпут (для совместимости)
     if(m_File)
         io_write(m_File, &e, sizeof(e));
     m_vEntries.push_back(e);
+    
+    // 🆕 НОВОЕ: Записываем полное состояние игрока
+    if(GameClient()->m_Snap.m_pLocalCharacter)
+    {
+        SStateSnapshot StateSnapshot;
+        CaptureCurrentState(&StateSnapshot, Tick - m_StartTick);
+        
+        // Записываем состояние в тот же файл (после инпута)
+        if(m_File)
+            io_write(m_File, &StateSnapshot, sizeof(StateSnapshot));
+        m_vStates.push_back(StateSnapshot);
+    }
     
     m_LastRecordTick = Tick;
     
@@ -726,11 +740,24 @@ void CFujixTas::StartPlay()
         return;
     }
 
-    // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX: только инпуты
+    // 🆕 УЛУЧШЕННАЯ СИСТЕМА: Загружаем и инпуты, и состояния
     m_vEntries.clear();
+    m_vStates.clear();
+    
+    // Читаем файл парами: SEntry + SStateSnapshot
     SEntry e;
+    SStateSnapshot state;
+    
     while(io_read(File, &e, sizeof(e)) == sizeof(e))
+    {
         m_vEntries.push_back(e);
+        
+        // Пытаемся прочитать состояние (может отсутствовать в старых файлах)
+        if(io_read(File, &state, sizeof(state)) == sizeof(state))
+        {
+            m_vStates.push_back(state);
+        }
+    }
     io_close(File);
 
     if(m_vEntries.empty())
@@ -751,7 +778,7 @@ void CFujixTas::StopPlay()
     m_Playing = false;
     g_Config.m_ClFujixTasPlay = 0;
     m_vEntries.clear();
-    m_PlayIndex = 0;
+    m_vStates.clear();
     m_PlayStartTick = 0;
     mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
     m_RageActive = false;
