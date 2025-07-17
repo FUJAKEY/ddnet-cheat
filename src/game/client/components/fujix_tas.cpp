@@ -936,13 +936,13 @@ void CFujixTas::OnRender()
         GameClient()->m_Players.RenderHookCollLine(&Prev, &Curr, -2);
         GameClient()->m_Players.RenderPlayer(&Prev, &Curr, &PhantomRenderInfo, -2);
 
-        RenderFuturePath(g_Config.m_ClFujixTasPreviewTicks);
+        this->RenderFuturePath(g_Config.m_ClFujixTasPreviewTicks);
     }
     
     // Render smart autopilot planned path in rage mode
     if(m_RageActive && m_pSmartAutopilot && m_SmartAutopilotInitialized)
     {
-        RenderAutopilotPath();
+        this->RenderAutopilotPath();
     }
 }
 
@@ -1103,4 +1103,136 @@ void CFujixTas::OnMapLoad()
         m_pSmartAutopilot->Init(Collision());
         m_SmartAutopilotInitialized = true;
     }
+}
+
+// 🆕 ========== НОВЫЕ МЕТОДЫ ДЛЯ SERVER-STATE СИСТЕМЫ ==========
+
+void CFujixTas::CaptureServerState(SServerStateSnapshot *pSnapshot, int ServerTick)
+{
+    if(!GameClient()->m_Snap.m_pLocalCharacter || !pSnapshot)
+        return;
+
+    const CNetObj_Character *pChar = GameClient()->m_Snap.m_pLocalCharacter;
+    
+    // Записываем СЕРВЕРНОЕ состояние (из снапшота, не предикция!)
+    pSnapshot->m_ServerTick = ServerTick;
+    
+    // Серверная позиция и скорость (int как в протоколе)
+    pSnapshot->m_X = pChar->m_X;
+    pSnapshot->m_Y = pChar->m_Y;
+    pSnapshot->m_VelX = pChar->m_VelX;
+    pSnapshot->m_VelY = pChar->m_VelY;
+    pSnapshot->m_Angle = pChar->m_Angle;
+    pSnapshot->m_Direction = pChar->m_Direction;
+    pSnapshot->m_Jumped = pChar->m_Jumped;
+    
+    // СЕРВЕРНОЕ состояние крюка (критически важно!)
+    pSnapshot->m_HookState = pChar->m_HookState;
+    pSnapshot->m_HookTick = pChar->m_HookTick;
+    pSnapshot->m_HookX = pChar->m_HookX;
+    pSnapshot->m_HookY = pChar->m_HookY;
+    pSnapshot->m_HookDx = pChar->m_HookDx;
+    pSnapshot->m_HookDy = pChar->m_HookDy;
+    pSnapshot->m_HookedPlayer = pChar->m_HookedPlayer;
+    
+    // Игровое состояние
+    pSnapshot->m_Health = pChar->m_Health;
+    pSnapshot->m_Armor = pChar->m_Armor;
+    pSnapshot->m_Weapon = pChar->m_Weapon;
+    pSnapshot->m_Ammo = pChar->m_AmmoCount;
+    
+    // Инпут который привел к этому состоянию
+    pSnapshot->m_InputUsed = GameClient()->m_Controls.m_aInputData[g_Config.m_ClDummy];
+    
+    // Компенсация задержек
+    pSnapshot->m_Ping = GameClient()->m_Snap.m_pLocalInfo ? GameClient()->m_Snap.m_pLocalInfo->m_Latency : 0;
+    pSnapshot->m_PredictionTime = Client()->PredIntraGameTick(g_Config.m_ClDummy);
+}
+
+void CFujixTas::RestoreServerState(const SServerStateSnapshot &Snapshot)
+{
+    // Применяем серверное состояние напрямую к predicted character
+    CCharacterCore &Core = GameClient()->m_PredictedChar;
+    
+    // Восстанавливаем позицию (с конвертацией из int в float)
+    Core.m_Pos.x = (float)Snapshot.m_X;
+    Core.m_Pos.y = (float)Snapshot.m_Y;
+    Core.m_Vel.x = (float)Snapshot.m_VelX / 256.0f;
+    Core.m_Vel.y = (float)Snapshot.m_VelY / 256.0f;
+    Core.m_Angle = Snapshot.m_Angle;
+    Core.m_Direction = Snapshot.m_Direction;
+    Core.m_Jumped = Snapshot.m_Jumped;
+    
+    // КРИТИЧЕСКИ ВАЖНО: Восстанавливаем серверное состояние крюка
+    Core.m_HookState = Snapshot.m_HookState;
+    Core.m_HookTick = Snapshot.m_HookTick;
+    Core.m_HookPos.x = (float)Snapshot.m_HookX;
+    Core.m_HookPos.y = (float)Snapshot.m_HookY;
+    Core.m_HookDir.x = (float)Snapshot.m_HookDx / 256.0f;
+    Core.m_HookDir.y = (float)Snapshot.m_HookDy / 256.0f;
+    Core.SetHookedPlayer(Snapshot.m_HookedPlayer);
+    
+    // Восстанавливаем инпут
+    Core.m_Input = Snapshot.m_InputUsed;
+}
+
+bool CFujixTas::LoadServerStates(const char *pFilename)
+{
+    IOHANDLE File = Storage()->OpenFile(pFilename, IOFLAG_READ, IStorage::TYPE_SAVE);
+    if(!File)
+        return false;
+        
+    m_vServerStates.clear();
+    SServerStateSnapshot State;
+    while(io_read(File, &State, sizeof(State)) == sizeof(State))
+        m_vServerStates.push_back(State);
+        
+    io_close(File);
+    return !m_vServerStates.empty();
+}
+
+void CFujixTas::UpdateServerStatePlayback()
+{
+    if(!m_Playing || m_vServerStates.empty())
+        return;
+        
+    int ServerTick = Client()->GameTick(g_Config.m_ClDummy); // СЕРВЕРНЫЙ тик!
+    int RelativeTick = ServerTick - m_PlayStartTick;
+    
+    // Ищем ближайшее серверное состояние
+    for(size_t i = 0; i < m_vServerStates.size(); i++)
+    {
+        if(m_vServerStates[i].m_ServerTick >= RelativeTick)
+        {
+            ApplyServerState(m_vServerStates[i]);
+            break;
+        }
+    }
+}
+
+void CFujixTas::ApplyServerState(const SServerStateSnapshot &Snapshot)
+{
+    RestoreServerState(Snapshot);
+    m_CurrentInput = Snapshot.m_InputUsed;
+}
+
+void CFujixTas::RecordServerState(int ServerTick)
+{
+    if((!m_Recording && !m_RecordingNoGhost) || !GameClient()->m_Snap.m_pLocalCharacter)
+        return;
+        
+    // Проверяем что это новый тик (избегаем дублирования)
+    if(ServerTick <= m_LastServerTick)
+        return;
+        
+    SServerStateSnapshot Snapshot;
+    CaptureServerState(&Snapshot, ServerTick - m_StartTick);
+    
+    m_vServerStates.push_back(Snapshot);
+    
+    // Записываем в файл
+    if(m_File)
+        io_write(m_File, &Snapshot, sizeof(Snapshot));
+    
+    m_LastServerTick = ServerTick;
 }

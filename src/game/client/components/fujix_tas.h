@@ -168,6 +168,16 @@ private:
     void UpdateStatePlayback();
     void ApplyState(const SStateSnapshot &Snapshot);
     void InterpolateAndApplyState(const SStateSnapshot &Prev, const SStateSnapshot &Next, float Factor);
+    
+    // 🆕 НЕДОСТАЮЩИЕ МЕТОДЫ ИЗ .CPP ФАЙЛА
+    void UpdatePlaybackInput();                         // Обновление воспроизведения input
+    void UpdateRageTarget();                           // Обновление rage target
+    void FinishRecord();                              // Завершение записи
+    void TickPhantomUpTo(int TargetTick);             // Phantom до указанного тика
+    void TickPhantom();                               // Один тик phantom
+    void CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *pChar, int Tick); // Конвертация core в character
+    void RenderFuturePath(int TicksAhead);            // Рендеринг пути вперед
+    void RenderAutopilotPath();                       // Рендеринг autopilot пути
 
 public:
     // Методы, используемые в gameclient.cpp
