@@ -3492,7 +3492,7 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
 
         static CButtonContainer s_RecordBtn, s_RecordNoGhostBtn, s_PlayBtn, s_TestBtn;
         const char *pRecLabel = GameClient()->m_FujixTas.IsRecording() ? Localize("Stop") : Localize("Record");
-        const char *pRecNoGhostLabel = GameClient()->m_FujixTas.m_RecordingNoGhost ? Localize("Stop") : "Record (NoGhost)";
+        const char *pRecNoGhostLabel = GameClient()->m_FujixTas.IsRecordingNoGhost() ? Localize("Stop") : "Record (NoGhost)";
         const char *pPlayLabel = GameClient()->m_FujixTas.IsPlaying() ? Localize("Stop") : Localize("Play");
         const char *pTestLabel = GameClient()->m_FujixTas.IsTesting() ? Localize("Stop") : Localize("Play (test)");
 
