@@ -102,9 +102,9 @@ private:
     CCharacterCore m_PhantomCore;
     CCharacterCore m_PhantomPrevCore;
     CTeeRenderInfo m_PhantomRenderInfo;
+    CNetObj_PlayerInput m_PhantomInput;  // 🆕 Добавлено: отсутствующая переменная
     int m_PhantomStep;
     int m_PhantomPlayIndex;
-    
     // Smart autopilot integration
     std::unique_ptr<CSmartAutopilot> m_pSmartAutopilot;
     bool m_SmartAutopilotInitialized;
