@@ -48,7 +48,7 @@ private:
 	bool m_EmergencyMode;
 	
 	// Performance optimization
-	void OptimizePredictionAccuracy();
+	bool m_FullPredictionMode;
 	bool m_FullPredictionMode;
 	int m_LastFullPredictionTick;
 

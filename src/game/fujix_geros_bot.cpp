@@ -82,7 +82,6 @@ bool CFujixGerosBot::IsAntiSuicideEnabled() const
 
 void CFujixGerosBot::Update()
 {
-	CCharacterCore *pCharacter = &GameClient()->m_PredictedChar;
 	if(!IsActive())
 		return;
 	// Update prediction system
@@ -108,11 +107,11 @@ void CFujixGerosBot::Update()
 }
 
 
+
 void CFujixGerosBot::PredictMovement(SGerosBotPrediction *pPredictions, int NumTicks)
 {
 	CCharacterCore Core = GameClient()->m_PredictedChar;
-	vec2 CurrentPos = Core.m_Pos;
-	vec2 CurrentVel = Core.m_Vel;
+	
 	for(int i = 0; i < NumTicks && i < 16; i++)
 	{
 		// Simulate one tick ahead
@@ -408,10 +407,14 @@ bool CFujixGerosBot::IsPlayerTryingToKillThemselves()
 {
 	// Analyze recent player behavior patterns
 	// This is a simplified version - real implementation would track behavior history
-bool CFujixGerosBot::IsPlayerTryingToKillThemselves()
-{
-	// Analyze recent player behavior patterns
-	// This is a simplified version - real implementation would track behavior history
+	
+	// Check if player is consistently moving toward danger
+	if(m_PlayerTrustLevel < 0.3f)
+		return true;
+		
+	return false;
+}
+
 bool CFujixGerosBot::IsInEmergencyState() const
 {
 	// Check if any of the near-future predictions show imminent death
@@ -430,33 +433,30 @@ bool CFujixGerosBot::IsInEmergencyState() const
 
 void CFujixGerosBot::ExecuteEmergencyRescue()
 {
-	if(GameClient()->Client()->GameTick() - m_LastRescueTick < 5) // Prevent spam rescues
 	if(GameClient()->Client()->GameTick(0) - m_LastRescueTick < 5) // Prevent spam rescues
-		
+		return;
+	
 	m_EmergencyMode = true;
 	m_RescueAttempts++;
-	m_LastRescueTick = GameClient()->Client()->GameTick();
 	m_LastRescueTick = GameClient()->Client()->GameTick(0);
 	// Force override player input to execute rescue
 	// This will be used by the input system
 }
-	// This will be used by the input system
-}
-
 bool CFujixGerosBot::ShouldOverrideInput() const
 {
 	if(!IsActive())
 		return false;
-		
-	m_LastRescueTick = GameClient()->Client()->GameTick();
-	m_LastRescueTick = GameClient()->Client()->GameTick(0);
-	// Force override player input to execute rescue
-	// This will be used by the input system
-}
+	
+	// Check if we're in emergency mode and should override input
+	if(m_EmergencyMode && IsInEmergencyState())
+		return true;
+	
+	// Check if player is trying to suicide and anti-suicide is enabled
+	if(IsAntiSuicideEnabled() && IsPlayerTryingToKillThemselves())
+		return true;
 		
 	return false;
 }
-
 void CFujixGerosBot::GetBotInput(int *pInputDirection, int *pJump, int *pHook, vec2 *pTargetX)
 {
 	if(!ShouldOverrideInput())
