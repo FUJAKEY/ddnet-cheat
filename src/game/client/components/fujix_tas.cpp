@@ -25,6 +25,7 @@ CFujixTas::CFujixTas()
 {
     // Инициализация основных переменных
     m_Recording = false;
+    m_RecordingNoGhost = false; // 🆕 Новая переменная
     m_Playing = false;
     m_Testing = false;
     m_StartTick = 0;
@@ -430,7 +431,8 @@ bool CFujixTas::FetchPlaybackInput(CNetObj_PlayerInput *pInput)
 
 void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
 {
-    if(!m_Recording || Tick < m_StartTick)
+    // ✅ Исправлено: теперь работает с обоими режимами записи
+    if((!m_Recording && !m_RecordingNoGhost) || Tick < m_StartTick)
         return;
 
     // ПРОСТАЯ СИСТЕМА: Записываем каждый тик без оптимизации
@@ -531,9 +533,57 @@ void CFujixTas::StartRecord()
     Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "Recording started successfully");
 }
 
+// 🆕 НОВЫЙ МЕТОД: Запись без phantom для тестирования
+void CFujixTas::StartRecordNoGhost()
+{
+    if(m_RecordingNoGhost)
+        return;
+
+    // Защита от множественных попыток записи
+    static bool s_StartingRecord = false;
+    if(s_StartingRecord)
+        return;
+    s_StartingRecord = true;
+
+    GetPath(m_aFilename, sizeof(m_aFilename));
+    
+    if(!Storage()->CreateFolder(ms_pFujixDir, IStorage::TYPE_SAVE))
+    {
+        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "failed to create directory");
+        s_StartingRecord = false;
+        return;
+    }
+    
+    m_File = Storage()->OpenFile(m_aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
+    if(!m_File)
+    {
+        Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "failed to open file for recording");
+        s_StartingRecord = false;
+        return;
+    }
+
+    // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX: только инпуты БЕЗ PHANTOM
+    m_vEntries.clear();
+    m_vEntries.reserve(60 * 60); // Резервируем место на 1 минуту (60 FPS)
+    
+    m_StartTick = Client()->PredGameTick(g_Config.m_ClDummy) + 1;
+    m_LastRecordTick = m_StartTick - 1;
+    mem_zero(&m_LastInput, sizeof(m_LastInput));
+    m_RecordingNoGhost = true;
+    
+    m_RageActive = false;
+
+    // ❌ НЕ ИНИЦИАЛИЗИРУЕМ PHANTOM - это может быть причиной проблем
+    m_PhantomActive = false;
+    
+    s_StartingRecord = false;
+    Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "Recording (no ghost) started successfully");
+}
+
 void CFujixTas::FinishRecord()
 {
-    if(!m_Recording)
+    // ✅ Исправлено: обрабатываем оба режима записи
+    if(!m_Recording && !m_RecordingNoGhost)
         return;
 
     if(m_File)
@@ -543,6 +593,7 @@ void CFujixTas::FinishRecord()
     }
 
     m_Recording = false;
+    m_RecordingNoGhost = false; // ✅ Добавлено
     g_Config.m_ClFujixTasRecord = 0;
     m_LastRecordTick = -1;
     m_StopPending = false;
@@ -553,7 +604,8 @@ void CFujixTas::FinishRecord()
 
 void CFujixTas::StopRecord()
 {
-    if(!m_Recording || m_StopPending)
+    // ✅ Исправлено: обрабатываем оба режима записи
+    if((!m_Recording && !m_RecordingNoGhost) || m_StopPending)
         return;
 
     m_StopPending = true;
@@ -980,6 +1032,15 @@ void CFujixTas::ConRecord(IConsole::IResult *pResult, void *pUserData)
         pSelf->StartRecord();
 }
 
+// 🆕 Новая консольная команда для записи без phantom
+void CFujixTas::ConRecordNoGhost(IConsole::IResult *pResult, void *pUserData)
+{
+    CFujixTas *pSelf = static_cast<CFujixTas *>(pUserData);
+    if(pSelf->m_RecordingNoGhost)
+        pSelf->StopRecord();
+    else
+        pSelf->StartRecordNoGhost();
+}
 void CFujixTas::ConPlay(IConsole::IResult *pResult, void *pUserData)
 {
     CFujixTas *pSelf = static_cast<CFujixTas *>(pUserData);
@@ -1001,6 +1062,7 @@ void CFujixTas::ConTest(IConsole::IResult *pResult, void *pUserData)
 void CFujixTas::OnConsoleInit()
 {
     Console()->Register("fujix_record", "", CFGFLAG_CLIENT, ConRecord, this, "Start/stop FUJIX TAS recording");
+    Console()->Register("fujix_record_noghost", "", CFGFLAG_CLIENT, ConRecordNoGhost, this, "Start/stop FUJIX TAS recording without phantom");
     Console()->Register("fujix_play", "", CFGFLAG_CLIENT, ConPlay, this, "Play FUJIX TAS for current map");
     Console()->Register("fujix_test", "", CFGFLAG_CLIENT, ConTest, this, "Play FUJIX TAS as phantom");
 }
@@ -1009,7 +1071,8 @@ void CFujixTas::OnMapLoad()
 {
     Storage()->CreateFolder(ms_pFujixDir, IStorage::TYPE_SAVE);
     StopPlay();
-    if(m_Recording)
+    // ✅ Исправлено: останавливаем оба режима записи
+    if(m_Recording || m_RecordingNoGhost)
         FinishRecord();
     StopTest();
     m_RageActive = false;

@@ -65,6 +65,7 @@ private:
     };
     // 🆕 Основные переменные новой TAS системы
     bool m_Recording;
+    bool m_RecordingNoGhost;  // 🆕 Новая запись без phantom
     bool m_Playing;
     bool m_Testing;
     int m_StartTick;
@@ -133,9 +134,9 @@ public:
 
     // Console commands
     static void ConRecord(IConsole::IResult *pResult, void *pUserData);
+    static void ConRecordNoGhost(IConsole::IResult *pResult, void *pUserData); // 🆕 Новая команда
     static void ConPlay(IConsole::IResult *pResult, void *pUserData);
     static void ConTest(IConsole::IResult *pResult, void *pUserData);
-
     CFujixTas();
     ~CFujixTas(); // Кастомный деструктор для unique_ptr с forward declaration
     virtual int Sizeof() const override;
@@ -146,12 +147,13 @@ public:
     virtual void OnRender() override;
 
     void StartRecord();
+    void StartRecordNoGhost(); // 🆕 Новый метод записи без phantom
     void StopRecord();
     void StartPlay();
     void StopPlay();
     void StartTest();
     void StopTest();
-    bool IsRecording() const { return m_Recording; }
+    bool IsRecording() const { return m_Recording || m_RecordingNoGhost; } // 🆕 Проверяем оба типа записи
     bool IsPlaying() const { return m_Playing; }
     bool IsTesting() const { return m_Testing; }
     bool IsPhantomActive() const { return m_PhantomActive; }

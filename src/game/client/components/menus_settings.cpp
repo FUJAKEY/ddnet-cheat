@@ -3482,24 +3482,26 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
 
        if(m_FujixPage == 0)
        {
-               CUIRect RecordButton, PlayButton, TestButton;
-               MainView.HSplitTop(ms_ButtonHeight, &RecordButton, &MainView);
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &PlayButton, &MainView);
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &TestButton, &MainView);
+                CUIRect RecordButton, RecordNoGhostButton, PlayButton, TestButton;
+                MainView.HSplitTop(ms_ButtonHeight, &RecordButton, &MainView);
+                MainView.HSplitTop(5.0f, nullptr, &MainView);
+                MainView.HSplitTop(ms_ButtonHeight, &RecordNoGhostButton, &MainView);
+                MainView.HSplitTop(5.0f, nullptr, &MainView);
+                MainView.HSplitTop(ms_ButtonHeight, &PlayButton, &MainView);
+                MainView.HSplitTop(5.0f, nullptr, &MainView);
 
-       static CButtonContainer s_RecordBtn, s_PlayBtn, s_TestBtn;
-       const char *pRecLabel = GameClient()->m_FujixTas.IsRecording() ? Localize("Stop") : Localize("Record");
-       const char *pPlayLabel = GameClient()->m_FujixTas.IsPlaying() ? Localize("Stop") : Localize("Play");
-       const char *pTestLabel = GameClient()->m_FujixTas.IsTesting() ? Localize("Stop") : Localize("Play (test)");
+        static CButtonContainer s_RecordBtn, s_RecordNoGhostBtn, s_PlayBtn, s_TestBtn;
+        const char *pRecLabel = GameClient()->m_FujixTas.IsRecording() ? Localize("Stop") : Localize("Record");
+        const char *pRecNoGhostLabel = GameClient()->m_FujixTas.m_RecordingNoGhost ? Localize("Stop") : "Record (NoGhost)";
+        const char *pPlayLabel = GameClient()->m_FujixTas.IsPlaying() ? Localize("Stop") : Localize("Play");
+        const char *pTestLabel = GameClient()->m_FujixTas.IsTesting() ? Localize("Stop") : Localize("Play (test)");
 
-       if(DoButton_Menu(&s_RecordBtn, pRecLabel, 0, &RecordButton))
-               Console()->ExecuteLine("fujix_record");
-       if(DoButton_Menu(&s_PlayBtn, pPlayLabel, 0, &PlayButton))
-               Console()->ExecuteLine("fujix_play");
-       if(DoButton_Menu(&s_TestBtn, pTestLabel, 0, &TestButton))
-               Console()->ExecuteLine("fujix_test");
+        if(DoButton_Menu(&s_RecordBtn, pRecLabel, 0, &RecordButton))
+                Console()->ExecuteLine("fujix_record");
+        if(DoButton_Menu(&s_RecordNoGhostBtn, pRecNoGhostLabel, 0, &RecordNoGhostButton))
+                Console()->ExecuteLine("fujix_record_noghost");
+        if(DoButton_Menu(&s_PlayBtn, pPlayLabel, 0, &PlayButton))
+                Console()->ExecuteLine("fujix_play");
 
        CUIRect RewindBox, TicksBox;
        MainView.HSplitTop(5.0f, nullptr, &MainView);
