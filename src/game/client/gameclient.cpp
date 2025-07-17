@@ -557,13 +557,14 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                         m_FujixTas.ApplyRageInput(&LocalInput);
                     }
                     
-                    // Записываем правильный инпут в зависимости от режима
-                    if(m_FujixTas.IsRecordingNoGhost())
-                        m_FujixTas.RecordInput(&OriginalInput, Tick); // Чистый инпут игрока
-                    else
-                        m_FujixTas.RecordInput(&LocalInput, Tick);     // Модифицированный инпут
-                        
-                    m_FujixTas.MaybeFinishRecord();
+                     // 🆕 УБИРАЕМ СТАРУЮ INPUT-BASED ЗАПИСЬ (заменена на server-state)
+                     // Записываем правильный инпут в зависимости от режима
+                     // if(m_FujixTas.IsRecordingNoGhost())
+                     //     m_FujixTas.RecordInput(&OriginalInput, Tick); // УДАЛЕНО: старая input запись
+                     // else
+                     //     m_FujixTas.RecordInput(&LocalInput, Tick);     // УДАЛЕНО: старая input запись
+                         
+                     m_FujixTas.MaybeFinishRecord();
 
                       if(m_FujixTas.IsRecordingWithPhantom())
                      {
@@ -2536,10 +2537,9 @@ void CGameClient::OnPredict()
                CNetObj_PlayerInput *pDummyInputData = !pDummyChar ? nullptr : (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping ^ 1);
                bool DummyFirst = pInputData && pDummyInputData && pDummyChar->GetCid() < pLocalChar->GetCid();
 
-               // Record current local input each predicted tick. Use the input
-               // captured by the controls so we don't depend on what the engine
-               // sends to the server (which may be nulled while recording).
-               m_FujixTas.RecordInput(&m_Controls.m_aInputData[g_Config.m_ClDummy], Tick);
+                // 🆕 НОВАЯ АРХИТЕКТУРА: Server-state запись (заменяет старую input-based запись)
+                // Записываем серверное состояние вместо клиентского инпута
+                // m_FujixTas.RecordInput(&m_Controls.m_aInputData[g_Config.m_ClDummy], Tick); // УДАЛЕНО: старая двойная запись
 
 		if(DummyFirst)
 			pDummyChar->OnDirectInput(pDummyInputData);
@@ -2553,7 +2553,15 @@ void CGameClient::OnPredict()
 		if(pDummyInputData)
 			pDummyChar->OnPredictedInput(pDummyInputData);
 		m_PredictedWorld.Tick();
-
+        m_PredictedWorld.Tick();
+        
+        // 🆕 НОВАЯ SERVER-STATE ЗАПИСЬ: записываем серверное состояние после обработки тика
+        // Это заменяет старую input-based запись и дает идеальную точность
+        if(Tick == Client()->PredGameTick(g_Config.m_ClDummy) && pLocalChar)
+        {
+            // Записываем серверное состояние персонажа (не предикшн!)
+            m_FujixTas.RecordServerState(Tick);
+        }
 		// fetch the current characters
 		if(Tick == PredictionTick)
 		{

@@ -21,6 +21,7 @@
 const char *CFujixTas::ms_pFujixDir = "fujix";
 
 // 🆕 ПРОСТАЯ СИСТЕМА КАК В KRX
+// 🆕 РЕВОЛЮЦИОННАЯ SERVER-STATE СИСТЕМА 
 CFujixTas::CFujixTas() :
     m_Recording(false),
     m_RecordingNoGhost(false),
@@ -34,9 +35,8 @@ CFujixTas::CFujixTas() :
     m_LastRecordTick(0),
     m_StopPending(false),
     m_StopTick(0),
-    m_TargetTps(25),                    // 🆕 Инициализация TPS
-    m_LastTasRecordTickTime(0),         // 🆕 Время последней записи
-    m_NeedTasTickRecording(false),      // 🆕 Флаг записи
+    m_LastServerTick(-1),             // 🆕 Инициализация нового поля
+    m_RecordingServerStates(false),   // 🆕 Инициализация нового поля
     m_PhantomActive(false),
     m_PhantomTick(0),
     m_PhantomStep(0),
@@ -51,10 +51,11 @@ CFujixTas::CFujixTas() :
     mem_zero(&m_CurrentInput, sizeof(m_CurrentInput));
     mem_zero(&m_LastInput, sizeof(m_LastInput));
     mem_zero(&m_PhantomInput, sizeof(m_PhantomInput));
+    mem_zero(&m_LastServerState, sizeof(m_LastServerState)); // 🆕 Инициализация
     
-    // Резервируем память для оптимизации
-    m_vEntries.reserve(60 * 60);        // ~1 минута инпутов
-    m_vStates.reserve(60 * 60 * 5);     // ~5 минут состояний
+    // 🆕 РЕЗЕРВИРУЕМ ПАМЯТЬ ДЛЯ НОВОЙ СИСТЕМЫ
+    m_vEntries.reserve(60 * 60);           // Старая система (~1 минута)
+    m_vServerStates.reserve(60 * 60 * 10); // Новая система (~10 минут серверных состояний)
 }
 
 CFujixTas::~CFujixTas() = default;
@@ -414,24 +415,17 @@ bool CFujixTas::FetchPlaybackInput(CNetObj_PlayerInput *pInput)
 
     // also update the local control state so prediction uses the TAS input
     GameClient()->m_Controls.m_aInputData[g_Config.m_ClDummy] = m_CurrentInput;
-    GameClient()->m_Controls.m_aLastData[g_Config.m_ClDummy] = m_CurrentInput;
-
     return true;
 }
 
 void CFujixTas::RecordInput(const CNetObj_PlayerInput *pInput, int Tick)
 {
-    // ✅ Исправлено: теперь работает с обоими режимами записи
     if((!m_Recording && !m_RecordingNoGhost) || Tick < m_StartTick)
         return;
 
-    // 🆕 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Записываем только когда TPS система разрешает
-    if(!m_NeedTasTickRecording)
-        return;
-        
-    // Сбрасываем флаг после записи
-    m_NeedTasTickRecording = false;
-
+    // 🆕 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Записываем КАЖДЫЙ ТИК для идеальной точности
+    // Убрали TPS ограничения - записываем все тики подряд!
+    
     // 🆕 УЛУЧШЕННАЯ СИСТЕМА: Записываем и инпут, и полное состояние
     SEntry e = {Tick - m_StartTick, *pInput};
     
@@ -904,18 +898,7 @@ void CFujixTas::CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *p
 
 void CFujixTas::OnUpdate()
 {
-    // 🆕 TAS Recording logic с контролем TPS (как в рабочей системе)
-    if(IsRecording())
-    {
-        int64_t Now = time_get();
-        int64_t TickInterval = time_freq() / m_TargetTps;
-        if(Now - m_LastTasRecordTickTime >= TickInterval)
-        {
-            m_NeedTasTickRecording = true;
-            m_LastTasRecordTickTime = Now;
-        }
-    }
-
+    // ✅ УБРАЛИ TPS СИСТЕМУ - теперь записываем каждый тик без ограничений
     if(g_Config.m_ClFujixTasRecord && !m_Recording)
         StartRecord();
     else if(!g_Config.m_ClFujixTasRecord && m_Recording)
@@ -933,6 +916,9 @@ void CFujixTas::OnUpdate()
 
     MaybeFinishRecord();
     TickPhantom();
+    
+    // Обновление системы rage
+    UpdateRageTarget();
 }
 void CFujixTas::OnRender()
 {

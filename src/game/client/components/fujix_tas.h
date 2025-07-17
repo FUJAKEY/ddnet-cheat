@@ -24,6 +24,38 @@ struct SAutopilotState
     
     SAutopilotState() : m_Position(0, 0), m_Velocity(0, 0), m_Target(0, 0), m_OnGround(false) {}
 };
+
+// 🆕 НОВАЯ СТРУКТУРА: Состояние персонажа (для старой совместимости)
+struct SStateSnapshot 
+{
+    int m_Tick;
+    
+    // Позиция и движение
+    float m_PosX, m_PosY;
+    float m_VelX, m_VelY;
+    int m_Angle;
+    int m_Direction;
+    
+    // Состояние крюка
+    int m_HookState;
+    float m_HookPosX, m_HookPosY;
+    float m_HookDirX, m_HookDirY;
+    int m_HookTick;
+    int m_HookedPlayer;
+    bool m_NewHook;
+    
+    // Физические состояния
+    bool m_Grounded;
+    int m_Jumps;
+    bool m_Jumped;
+    
+    // Игровые параметры
+    int m_Health, m_Armor;
+    int m_Weapon;
+    
+    // Инпут
+    CNetObj_PlayerInput m_Input;
+};
 // 🆕 ПОЛНОСТЬЮ НОВАЯ STATE-BASED TAS СИСТЕМА
 class CFujixTas : public CComponent
 {
@@ -31,38 +63,36 @@ public:
     static const char *ms_pFujixDir;
 
 private:
-    // 🆕 Снимок полного состояния персонажа в один тик
-    struct SStateSnapshot
+    // 🆕 НОВАЯ АРХИТЕКТУРА: SERVER-STATE BASED TAS СИСТЕМА
+    struct SServerStateSnapshot
     {
-        int m_Tick;                    // Номер тика
+        int m_ServerTick;               // Серверный тик (не клиентский!)
         
-        // Основная позиция и движение
-        float m_PosX, m_PosY;         // Позиция (float для точности)
-        float m_VelX, m_VelY;         // Скорость
-        int m_Angle;                  // Угол взгляда
-        int m_Direction;              // Направление (-1/0/1)
+        // СЕРВЕРНОЕ состояние персонажа (то что видит сервер)
+        int m_X, m_Y;                   // Серверная позиция (int как в протоколе)
+        int m_VelX, m_VelY;             // Серверная скорость
+        int m_Angle;                    // Угол взгляда
+        int m_Direction;                // Направление (-1/0/1)
+        int m_Jumped;                   // Прыжки
         
-        // Состояние крюка
-        int m_HookState;              // Состояние крюка (HOOK_IDLE, HOOK_FLYING, etc.)
-        float m_HookPosX, m_HookPosY; // Позиция крюка
-        float m_HookDirX, m_HookDirY; // Направление крюка
-        int m_HookTick;               // Счетчик крюка
-        int m_HookedPlayer;           // К кому прицепился крюк
-        bool m_NewHook;               // Флаг нового крюка
+        // СЕРВЕРНОЕ состояние крюка (критически важно!)
+        int m_HookState;                // Состояние крюка на сервере
+        int m_HookTick;                 // Тик крюка на сервере  
+        int m_HookX, m_HookY;           // Позиция крюка на сервере
+        int m_HookDx, m_HookDy;         // Направление крюка на сервере
+        int m_HookedPlayer;             // К кому прицепился
         
-        // Физические состояния
-        bool m_Grounded;              // На земле ли
-        int m_Jumps;                  // Количество прыжков
-        bool m_Jumped;                // Прыгнул ли в этом тике
+        // Игровое состояние
+        int m_Health, m_Armor;          // Здоровье/броня
+        int m_Weapon;                   // Оружие
+        int m_Ammo;                     // Патроны
         
-        // Игровые параметры
-        int m_Health;                 // Здоровье
-        int m_Armor;                  // Броня
-        int m_Weapon;                 // Текущее оружие
+        // КЛИЕНТСКИЙ инпут который ПРИВЕЛ к этому серверному состоянию
+        CNetObj_PlayerInput m_InputUsed; // Инпут который обработал сервер
         
-        
-        // Инпут который привел к этому состоянию
-        CNetObj_PlayerInput m_Input;
+        // Компенсация задержек
+        int m_Ping;                     // Пинг в момент записи
+        int m_PredictionTime;           // Время предикции
     };
 
     // 🆕 Старая структура для совместимости (простая система как в krx)
@@ -82,19 +112,25 @@ private:
     int m_PlayStartTick;
     char m_aFilename[IO_MAX_PATH_LENGTH];
     IOHANDLE m_File;
-    std::vector<SEntry> m_vEntries;         // Вектор инпутов (старая система)
-    std::vector<SStateSnapshot> m_vStates;  // Вектор состояний (новая система)
+    std::vector<SEntry> m_vEntries;                     // Вектор инпутов (старая система)
+    std::vector<SStateSnapshot> m_vStates;              // 🆕 Вектор состояний (для новой совместимости)
+    std::vector<SServerStateSnapshot> m_vServerStates;  // 🆕 Вектор серверных состояний (НОВАЯ СИСТЕМА)
     int m_PlayIndex;
     int m_LastRecordTick;
     bool m_StopPending;
     int m_StopTick;
     CNetObj_PlayerInput m_CurrentInput;  // Текущий инпут для воспроизведения
     CNetObj_PlayerInput m_LastInput;     // Последний записанный инпут
+    
+    // 🆕 НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ SERVER-STATE ЗАПИСИ
+    int m_LastServerTick;                // Последний обработанный серверный тик
+    bool m_RecordingServerStates;        // Флаг записи серверных состояний  
+    SServerStateSnapshot m_LastServerState; // Последнее серверное состояние
 
-	// 🆕 TAS Recording control (как в рабочей системе)
-	int m_TargetTps;                    // Целевой TPS для записи
-	int64_t m_LastTasRecordTickTime;    // Время последней записи
-	bool m_NeedTasTickRecording;        // Флаг необходимости записи тика
+	// 🆕 TAS Recording control - УБИРАЕМ TPS ОГРАНИЧЕНИЯ!
+	// int m_TargetTps;                    // УДАЛЕНО: записываем КАЖДЫЙ тик
+	// int64_t m_LastTasRecordTickTime;    // УДАЛЕНО: записываем КАЖДЫЙ тик  
+	// bool m_NeedTasTickRecording;        // УДАЛЕНО: записываем КАЖДЫЙ тик
 
     // Phantom для предпросмотра
     bool m_PhantomActive;
@@ -116,22 +152,22 @@ private:
     bool m_RagePrevEnabled;
     // 🆕 Методы для работы с состояниями
     void GetPath(char *pBuf, int Size) const;
+    
+    // 🆕 НОВЫЕ МЕТОДЫ ДЛЯ SERVER-STATE СИСТЕМЫ
+    void CaptureServerState(SServerStateSnapshot *pSnapshot, int ServerTick);
+    void RestoreServerState(const SServerStateSnapshot &Snapshot);
+    bool LoadServerStates(const char *pFilename);
+    void UpdateServerStatePlayback();
+    void ApplyServerState(const SServerStateSnapshot &Snapshot);
+    void RecordServerState(int ServerTick);                // 🆕 Записать серверное состояние
+    
+    // 🆕 СТАРЫЕ МЕТОДЫ (для совместимости)
     void CaptureCurrentState(SStateSnapshot *pSnapshot, int Tick);
     void RestoreState(const SStateSnapshot &Snapshot, CCharacterCore *pCore);
     bool LoadStates(const char *pFilename);
     void UpdateStatePlayback();
     void ApplyState(const SStateSnapshot &Snapshot);
     void InterpolateAndApplyState(const SStateSnapshot &Prev, const SStateSnapshot &Next, float Factor);
-    
-    // Методы для записи/воспроизведения инпута (простая система как в krx)
-    void UpdatePlaybackInput();
-    void TickPhantom();
-    void CoreToCharacter(const CCharacterCore &Core, CNetObj_Character *pChar, int Tick);
-    void FinishRecord();
-    void RenderFuturePath(int TicksAhead);
-    void RenderAutopilotPath();
-    void TickPhantomUpTo(int TargetTick);
-    void UpdateRageTarget();
 
 public:
     // Методы, используемые в gameclient.cpp
