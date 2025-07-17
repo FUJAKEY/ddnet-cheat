@@ -2371,6 +2371,7 @@ if(CLIENT)
     components/menus_settings.cpp
     components/menus_settings7.cpp
     components/menus_settings_assets.cpp
+    components/menus_settings_fujix.cpp
     components/menus_start.cpp
     components/motd.cpp
     components/motd.h
@@ -2400,6 +2401,8 @@ if(CLIENT)
     components/touch_controls.h
     components/voting.cpp
     components/voting.h
+    fujix_geros_bot.cpp
+    fujix_geros_bot.h
     gameclient.cpp
     gameclient.h
     laser_data.cpp
