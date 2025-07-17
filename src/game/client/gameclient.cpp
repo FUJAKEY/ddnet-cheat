@@ -543,7 +543,6 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 
                 CNetObj_PlayerInput LocalInput;
                 int Size = m_Controls.SnapInput((int *)&LocalInput);
-                int Tick = Client()->PredGameTick(g_Config.m_ClDummy);
                 
                 // 🆕 Сохраняем оригинальный инпут для записи без ghost
                 CNetObj_PlayerInput OriginalInput = LocalInput;

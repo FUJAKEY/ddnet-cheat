@@ -159,7 +159,6 @@ private:
     bool LoadServerStates(const char *pFilename);
     void UpdateServerStatePlayback();
     void ApplyServerState(const SServerStateSnapshot &Snapshot);
-    void RecordServerState(int ServerTick);                // 🆕 Записать серверное состояние
     
     // 🆕 СТАРЫЕ МЕТОДЫ (для совместимости)
     void CaptureCurrentState(SStateSnapshot *pSnapshot, int Tick);
@@ -217,6 +216,7 @@ public:
     // 🆕 Новые интерфейсы для state-based TAS
     bool FetchPlaybackState(CCharacterCore *pCore);  // Получить состояние для воспроизведения
     void RecordCurrentState(int Tick);               // Записать текущее состояние
+    void RecordServerState(int ServerTick);          // 🆕 Записать серверное состояние (PUBLIC для gameclient.cpp)
     void MaybeFinishRecord();
     void BlockFreezeInput(CNetObj_PlayerInput *pInput);
     void UpdateFreezeInput(CNetObj_PlayerInput *pInput); // legacy compatibility
