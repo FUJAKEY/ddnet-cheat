@@ -62,7 +62,7 @@ void CFujixGerosBot::OnMessage(int MsgType, void *pRawMsg)
 
 bool CFujixGerosBot::IsActive() const
 {
-	return g_Config.m_FujixGerosBot && &GameClient()->m_Controls;
+	return g_Config.m_FujixGerosBot;
 }
 
 int CFujixGerosBot::GetAggressiveness() const
@@ -104,16 +104,15 @@ void CFujixGerosBot::Update()
 		m_PlayerTrustLevel = minimum(1.0f, m_PlayerTrustLevel + 0.01f);
 	}
 	
-	m_LastPredictionTick = GameClient()->m_PredictedTick;
+	m_LastPredictionTick = GameClient()->Client()->GameTick();
 }
 
-}
 
 void CFujixGerosBot::PredictMovement(SGerosBotPrediction *pPredictions, int NumTicks)
 {
+	CCharacterCore Core = GameClient()->m_PredictedChar;
 	vec2 CurrentPos = Core.m_Pos;
 	vec2 CurrentVel = Core.m_Vel;
-	
 	for(int i = 0; i < NumTicks && i < 16; i++)
 	{
 		// Simulate one tick ahead
@@ -433,12 +432,12 @@ bool CFujixGerosBot::IsInEmergencyState() const
 
 void CFujixGerosBot::ExecuteEmergencyRescue()
 {
-	if(GameClient()->m_PredictedTick - m_LastRescueTick < 5) // Prevent spam rescues
+	if(GameClient()->Client()->GameTick() - m_LastRescueTick < 5) // Prevent spam rescues
 		return;
 		
 	m_EmergencyMode = true;
 	m_RescueAttempts++;
-	m_LastRescueTick = GameClient()->m_PredictedTick;
+	m_LastRescueTick = GameClient()->Client()->GameTick();
 	
 	// Force override player input to execute rescue
 	// This will be used by the input system
@@ -451,7 +450,7 @@ bool CFujixGerosBot::ShouldOverrideInput() const
 	if(!IsActive())
 		return false;
 		
-	m_LastRescueTick = GameClient()->m_PredictedTick;
+	m_LastRescueTick = GameClient()->Client()->GameTick();
 	
 	// Force override player input to execute rescue
 	// This will be used by the input system
