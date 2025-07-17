@@ -541,16 +541,29 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                        return sizeof(TasInput);
                }
 
-               CNetObj_PlayerInput LocalInput;
-               int Size = m_Controls.SnapInput((int *)&LocalInput);
-               int Tick = Client()->PredGameTick(g_Config.m_ClDummy);
+                CNetObj_PlayerInput LocalInput;
+                int Size = m_Controls.SnapInput((int *)&LocalInput);
+                int Tick = Client()->PredGameTick(g_Config.m_ClDummy);
+                
+                // 🆕 Сохраняем оригинальный инпут для записи без ghost
+                CNetObj_PlayerInput OriginalInput = LocalInput;
 
-               if(Size > 0)
-               {
-                   m_FujixTas.BlockFreezeInput(&LocalInput);
-                   m_FujixTas.ApplyRageInput(&LocalInput);
-                   m_FujixTas.RecordInput(&LocalInput, Tick);
-                   m_FujixTas.MaybeFinishRecord();
+                 if(Size > 0)
+                 {
+                    // Применяем модификации только если НЕ записываем без ghost
+                    if(!m_FujixTas.IsRecordingNoGhost())
+                    {
+                        m_FujixTas.BlockFreezeInput(&LocalInput);
+                        m_FujixTas.ApplyRageInput(&LocalInput);
+                    }
+                    
+                    // Записываем правильный инпут в зависимости от режима
+                    if(m_FujixTas.IsRecordingNoGhost())
+                        m_FujixTas.RecordInput(&OriginalInput, Tick); // Чистый инпут игрока
+                    else
+                        m_FujixTas.RecordInput(&LocalInput, Tick);     // Модифицированный инпут
+                        
+                    m_FujixTas.MaybeFinishRecord();
 
                       if(m_FujixTas.IsRecordingWithPhantom())
                      {
@@ -602,12 +615,15 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                            }
                    }
 
+                    // 🆕 Отправляем правильный инпут в зависимости от режима записи
+                    if(m_FujixTas.IsRecordingNoGhost())
+                        mem_copy(pData, &OriginalInput, sizeof(OriginalInput)); // Чистый инпут игрока
+                    else
+                        mem_copy(pData, &LocalInput, sizeof(LocalInput));       // Модифицированный инпут
+                    return Size;
+                }
 
-                      mem_copy(pData, &LocalInput, sizeof(LocalInput));
-                      return Size;
-               }
-
-               if(m_FujixTas.IsRecording())
+               if(m_FujixTas.IsRecordingWithPhantom())
                {
                        CNetObj_PlayerInput NullInput;
                        mem_zero(&NullInput, sizeof(NullInput));
