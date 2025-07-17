@@ -171,6 +171,10 @@ bool CFujixGerosBot::IsPositionDangerous(vec2 Pos, vec2 Vel)
 	if(TileIndex == TILE_DEATH)
 		return true;
 		
+	// Check for freeze tiles (can be dangerous in certain situations)
+	if(TileIndex == TILE_FREEZE || TileIndex == TILE_DFREEZE || TileIndex == TILE_LFREEZE)
+		return true;
+		
 	// Check if falling into void
 	if(Pos.y > GameClient()->m_GameWorld.m_pCollision->GetHeight() * 32.0f)
 		return true;
@@ -179,6 +183,10 @@ bool CFujixGerosBot::IsPositionDangerous(vec2 Pos, vec2 Vel)
 	vec2 PredictedPos = Pos + Vel * 2.0f; // 2 ticks ahead
 	int PredictedTile = GameClient()->m_GameWorld.m_pCollision->GetTileIndex(PredictedPos);
 	if(PredictedTile == TILE_DEATH)
+		return true;
+		
+	// Check if predicted velocity will lead to freeze tiles
+	if(PredictedTile == TILE_FREEZE || PredictedTile == TILE_DFREEZE || PredictedTile == TILE_LFREEZE)
 		return true;
 		
 	return false;
@@ -196,6 +204,10 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 	if(TileIndex == TILE_DEATH)
 		DangerLevel += 10.0f;
 		
+	// Freeze tiles are also dangerous
+	if(TileIndex == TILE_FREEZE || TileIndex == TILE_DFREEZE || TileIndex == TILE_LFREEZE)
+		DangerLevel += 7.0f;
+		
 	// Velocity-based danger (high speed = higher danger)
 	float Speed = length(Vel);
 	DangerLevel += Speed * 0.01f;
@@ -208,7 +220,7 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 		{
 			vec2 TestPos = Pos + vec2(x * 32.0f, y * 32.0f);
 			int TestTile = GameClient()->m_GameWorld.m_pCollision->GetTileIndex(TestPos);
-			if(TestTile != TILE_DEATH && GameClient()->m_GameWorld.m_pCollision->CheckPoint(TestPos.x, TestPos.y + 16))
+			if(TestTile != TILE_DEATH && TestTile != TILE_FREEZE && TestTile != TILE_DFREEZE && TestTile != TILE_LFREEZE && GameClient()->m_GameWorld.m_pCollision->CheckPoint(TestPos.x, TestPos.y + 16))
 			{
 				float Distance = distance(Pos, TestPos);
 				DistanceToSafety = minimum(DistanceToSafety, Distance);
