@@ -157,6 +157,7 @@ public:
     bool IsPlaying() const { return m_Playing; }
     bool IsTesting() const { return m_Testing; }
     bool IsRecordingNoGhost() const { return m_RecordingNoGhost; } // 🆕 Геттер для записи без phantom
+    bool IsRecordingWithPhantom() const { return m_Recording; } // 🆕 Геттер для записи только с phantom (блокирует ввод)
     bool IsPhantomActive() const { return m_PhantomActive; }
     vec2 PhantomPos() const { return m_PhantomCore.m_Pos; }
 

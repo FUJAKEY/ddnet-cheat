@@ -552,7 +552,7 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                    m_FujixTas.RecordInput(&LocalInput, Tick);
                    m_FujixTas.MaybeFinishRecord();
 
-                     if(m_FujixTas.IsRecording())
+                      if(m_FujixTas.IsRecordingWithPhantom())
                      {
                              CNetObj_PlayerInput NullInput;
                              mem_zero(&NullInput, sizeof(NullInput));

@@ -3482,7 +3482,7 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
 
        if(m_FujixPage == 0)
        {
-                CUIRect RecordButton, RecordNoGhostButton, PlayButton, TestButton;
+                CUIRect RecordButton, RecordNoGhostButton, PlayButton;
                 MainView.HSplitTop(ms_ButtonHeight, &RecordButton, &MainView);
                 MainView.HSplitTop(5.0f, nullptr, &MainView);
                 MainView.HSplitTop(ms_ButtonHeight, &RecordNoGhostButton, &MainView);
@@ -3490,11 +3490,10 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
                 MainView.HSplitTop(ms_ButtonHeight, &PlayButton, &MainView);
                 MainView.HSplitTop(5.0f, nullptr, &MainView);
 
-        static CButtonContainer s_RecordBtn, s_RecordNoGhostBtn, s_PlayBtn, s_TestBtn;
+        static CButtonContainer s_RecordBtn, s_RecordNoGhostBtn, s_PlayBtn;
         const char *pRecLabel = GameClient()->m_FujixTas.IsRecording() ? Localize("Stop") : Localize("Record");
         const char *pRecNoGhostLabel = GameClient()->m_FujixTas.IsRecordingNoGhost() ? Localize("Stop") : "Record (NoGhost)";
         const char *pPlayLabel = GameClient()->m_FujixTas.IsPlaying() ? Localize("Stop") : Localize("Play");
-        const char *pTestLabel = GameClient()->m_FujixTas.IsTesting() ? Localize("Stop") : Localize("Play (test)");
 
         if(DoButton_Menu(&s_RecordBtn, pRecLabel, 0, &RecordButton))
                 Console()->ExecuteLine("fujix_record");
