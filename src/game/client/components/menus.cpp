@@ -73,8 +73,7 @@ CMenus::CMenus()
 	m_DemolistStorageType = IStorage::TYPE_ALL;
 
 	m_DemoPlayerState = DEMOPLAYER_NONE;
-        m_Dummy = false;
-        m_FujixPage = g_Config.m_UiFujixPage;
+	m_Dummy = false;
 
 	for(SUIAnimator &animator : m_aAnimatorsSettingsTab)
 	{

@@ -1961,10 +1961,10 @@ void CMenus::RenderSettings(CUIRect MainView)
 		Localize("Appearance"),
 		Localize("Controls"),
 		Localize("Graphics"),
-               Localize("Sound"),
-               Localize("DDNet"),
-               Localize("Assets"),
-               "FUJIX"};
+		Localize("Sound"),
+		Localize("DDNet"),
+		Localize("Assets"),
+		"FUJIX"};
 	static CButtonContainer s_aTabButtons[SETTINGS_LENGTH];
 
 	for(int i = 0; i < SETTINGS_LENGTH; i++)
@@ -2022,18 +2022,18 @@ void CMenus::RenderSettings(CUIRect MainView)
 	{
 		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_DDNET);
 		RenderSettingsDDNet(MainView);
+	else if(g_Config.m_UiSettingsPage == SETTINGS_ASSETS)
+	{
+		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
+		RenderSettingsCustom(MainView);
 	}
-       else if(g_Config.m_UiSettingsPage == SETTINGS_ASSETS)
-       {
-               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
-               RenderSettingsCustom(MainView);
-       }
-       else if(g_Config.m_UiSettingsPage == SETTINGS_FUJIX)
-       {
-               GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
-               RenderSettingsFujix(MainView);
-       }
-       else
+	else if(g_Config.m_UiSettingsPage == SETTINGS_FUJIX)
+	{
+		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
+		RenderSettingsFujix(MainView);
+	}
+	}
+	else
 	{
 		dbg_assert(false, "ui_settings_page invalid");
 	}
@@ -3459,120 +3459,6 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 #endif
-}
-
-void CMenus::RenderSettingsFujix(CUIRect MainView)
-{
-    CUIRect TabBar, TasTab, FreezeTab, OtherTab;
-    MainView.HSplitTop(20.0f, &TabBar, &MainView);
-    MainView.Draw(ColorRGBA(0.15f, 0.15f, 0.25f, 0.25f), IGraphics::CORNER_ALL, 10.0f);
-    TabBar.VSplitLeft(TabBar.w / 3, &TasTab, &TabBar);
-    TabBar.VSplitLeft(TabBar.w / 2, &FreezeTab, &OtherTab);
-
-    static CButtonContainer s_TasBtn, s_FreezeBtn, s_OtherBtn;
-    if(DoButton_MenuTab(&s_TasBtn, Localize("TAS"), m_FujixPage == 0, &TasTab, IGraphics::CORNER_L))
-            m_FujixPage = 0;
-    if(DoButton_MenuTab(&s_FreezeBtn, Localize("Freeze"), m_FujixPage == 1, &FreezeTab, 0))
-            m_FujixPage = 1;
-    if(DoButton_MenuTab(&s_OtherBtn, Localize("Other"), m_FujixPage == 2, &OtherTab, IGraphics::CORNER_R))
-            m_FujixPage = 2;
-
-       g_Config.m_UiFujixPage = m_FujixPage;
-       MainView.HSplitTop(10.0f, nullptr, &MainView);
-
-       if(m_FujixPage == 0)
-       {
-                CUIRect RecordButton, RecordNoGhostButton, PlayButton;
-                MainView.HSplitTop(ms_ButtonHeight, &RecordButton, &MainView);
-                MainView.HSplitTop(5.0f, nullptr, &MainView);
-                MainView.HSplitTop(ms_ButtonHeight, &RecordNoGhostButton, &MainView);
-                MainView.HSplitTop(5.0f, nullptr, &MainView);
-                MainView.HSplitTop(ms_ButtonHeight, &PlayButton, &MainView);
-                MainView.HSplitTop(5.0f, nullptr, &MainView);
-
-        static CButtonContainer s_RecordBtn, s_RecordNoGhostBtn, s_PlayBtn;
-        const char *pRecLabel = GameClient()->m_FujixTas.IsRecording() ? Localize("Stop") : Localize("Record");
-        const char *pRecNoGhostLabel = GameClient()->m_FujixTas.IsRecordingNoGhost() ? Localize("Stop") : "Record (NoGhost)";
-        const char *pPlayLabel = GameClient()->m_FujixTas.IsPlaying() ? Localize("Stop") : Localize("Play");
-
-        if(DoButton_Menu(&s_RecordBtn, pRecLabel, 0, &RecordButton))
-                Console()->ExecuteLine("fujix_record");
-        if(DoButton_Menu(&s_RecordNoGhostBtn, pRecNoGhostLabel, 0, &RecordNoGhostButton))
-                Console()->ExecuteLine("fujix_record_noghost");
-        if(DoButton_Menu(&s_PlayBtn, pPlayLabel, 0, &PlayButton))
-                Console()->ExecuteLine("fujix_play");
-
-       CUIRect RewindBox, TicksBox;
-       MainView.HSplitTop(5.0f, nullptr, &MainView);
-       MainView.HSplitTop(ms_ButtonHeight, &RewindBox, &MainView);
-       static int s_RewindChk = 0;
-       if(DoButton_CheckBox(&s_RewindChk, Localize("Rollback on tiles"), g_Config.m_ClFujixTasRewind, &RewindBox))
-               g_Config.m_ClFujixTasRewind ^= 1;
-
-       if(g_Config.m_ClFujixTasRewind)
-       {
-               MainView.HSplitTop(5.0f, nullptr, &MainView);
-               MainView.HSplitTop(ms_ButtonHeight, &TicksBox, &MainView);
-               char aBuf[64];
-               str_format(aBuf, sizeof(aBuf), Localize("Rollback ticks: %d"), g_Config.m_ClFujixTasRewindTicks);
-               Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasRewindTicks, &g_Config.m_ClFujixTasRewindTicks, &TicksBox, aBuf, 5, 50);
-       }
-
-       CUIRect TpsBox;
-       MainView.HSplitTop(5.0f, nullptr, &MainView);
-       MainView.HSplitTop(ms_ButtonHeight, &TpsBox, &MainView);
-       char aTpsBuf[64];
-       str_format(aTpsBuf, sizeof(aTpsBuf), Localize("Phantom tick rate: %d"), g_Config.m_ClFujixTasPhantomTps);
-       // Allow up to 50 TPS so the phantom can update every game tick if desired
-       Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasPhantomTps, &g_Config.m_ClFujixTasPhantomTps, &TpsBox, aTpsBuf, 1, 50);
-
-       CUIRect PreviewBox;
-       MainView.HSplitTop(5.0f, nullptr, &MainView);
-       MainView.HSplitTop(ms_ButtonHeight, &PreviewBox, &MainView);
-       char aPreviewBuf[64];
-       str_format(aPreviewBuf, sizeof(aPreviewBuf), Localize("Preview ticks: %d"), g_Config.m_ClFujixTasPreviewTicks);
-       Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasPreviewTicks, &g_Config.m_ClFujixTasPreviewTicks, &PreviewBox, aPreviewBuf, 0, 200);
-
-       CUIRect ShowPlayersBox;
-       MainView.HSplitTop(5.0f, nullptr, &MainView);
-       MainView.HSplitTop(ms_ButtonHeight, &ShowPlayersBox, &MainView);
-       static int s_ShowPlayersChk = 0;
-       if(DoButton_CheckBox(&s_ShowPlayersChk, Localize("Show players"), g_Config.m_ClFujixTasShowPlayers, &ShowPlayersBox))
-               g_Config.m_ClFujixTasShowPlayers ^= 1;
-
-       CUIRect RouteBox;
-       MainView.HSplitTop(5.0f, nullptr, &MainView);
-       MainView.HSplitTop(ms_ButtonHeight, &RouteBox, &MainView);
-       char aRouteBuf[64];
-       str_format(aRouteBuf, sizeof(aRouteBuf), Localize("Route ticks: %d"), g_Config.m_ClFujixTasRouteTicks);
-       Ui()->DoScrollbarOption(&g_Config.m_ClFujixTasRouteTicks, &g_Config.m_ClFujixTasRouteTicks, &RouteBox, aRouteBuf, 0, 200);
-       }
-    else if(m_FujixPage == 1)
-    {
-           CUIRect BlockBox, Icon;
-           MainView.HSplitTop(ms_ButtonHeight, &BlockBox, &MainView);
-           BlockBox.VSplitLeft(BlockBox.h, &Icon, &BlockBox);
-           Ui()->DoLabel(&Icon, FONT_ICON_LOCK, BlockBox.h * 0.7f, TEXTALIGN_MC);
-           static int s_BlockChk = 0;
-           DoButton_CheckBox(&s_BlockChk, Localize("Block freeze (legit)"), g_Config.m_ClFujixBlockFreezeLegit, &BlockBox);
-
-           MainView.HSplitTop(5.0f, nullptr, &MainView);
-           CUIRect RageBox;
-           MainView.HSplitTop(ms_ButtonHeight, &RageBox, &MainView);
-           static int s_RageChk = 0;
-           if(DoButton_CheckBox(&s_RageChk, Localize("Block freeze (rage)"), g_Config.m_ClFujixBlockFreezeRage, &RageBox))
-                   g_Config.m_ClFujixBlockFreezeRage ^= 1;
-    }
-       else if(m_FujixPage == 2)
-       {
-               CUIRect Box;
-               MainView.HSplitTop(ms_ButtonHeight, &Box, &MainView);
-               char aFpsBuf[64];
-               str_format(aFpsBuf, sizeof(aFpsBuf), Localize("FPS limit: %d"), g_Config.m_GfxRefreshRate);
-               Ui()->DoScrollbarOption(&g_Config.m_GfxRefreshRate, &g_Config.m_GfxRefreshRate, &Box, aFpsBuf, 40, 600);
-
-
-       }
 }
 
 CUi::EPopupMenuFunctionResult CMenus::PopupMapPicker(void *pContext, CUIRect View, bool Active)

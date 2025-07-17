@@ -52,7 +52,6 @@
 #include "components/particles.h"
 #include "components/players.h"
 #include "components/race_demo.h"
-#include "components/fujix_tas.h"
 #include "components/scoreboard.h"
 #include "components/skins.h"
 #include "components/skins7.h"
@@ -62,7 +61,7 @@
 #include "components/tooltips.h"
 #include "components/touch_controls.h"
 #include "components/voting.h"
-
+#include "../fujix_geros_bot.h"
 #include <vector>
 
 class CGameInfo
@@ -170,11 +169,13 @@ public:
 
 	CMapSounds m_MapSounds;
 
-        CRaceDemo m_RaceDemo;
-        CGhost m_Ghost;
-       CFujixTas m_FujixTas;
+	CRaceDemo m_RaceDemo;
+	CGhost m_Ghost;
 
-        CTooltips m_Tooltips;
+	CTooltips m_Tooltips;
+
+	// FUJIX GEROS BOT
+	CFujixGerosBot m_FujixGerosBot;
 
 private:
 	std::vector<class CComponent *> m_vpAll;
@@ -240,9 +241,7 @@ private:
 
 	static void ConTuneParam(IConsole::IResult *pResult, void *pUserData);
 	static void ConTuneZone(IConsole::IResult *pResult, void *pUserData);
-       static void ConMapbug(IConsole::IResult *pResult, void *pUserData);
-       static void ConDummyClick(IConsole::IResult *pResult, void *pUserData);
-       static void ConToggleDummyClick(IConsole::IResult *pResult, void *pUserData);
+	static void ConMapbug(IConsole::IResult *pResult, void *pUserData);
 
 	static void ConchainMenuMap(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 
@@ -643,12 +642,9 @@ public:
 
 	int m_aLocalIds[NUM_DUMMIES];
 	CNetObj_PlayerInput m_DummyInput;
-       CNetObj_PlayerInput m_HammerInput;
-       unsigned int m_DummyFire;
-       bool m_DummyAutoClick;
-       int m_DummyAutoTick;
-       int m_DeepflyCooldown;
-       bool m_ReceivedDDNetPlayer;
+	CNetObj_PlayerInput m_HammerInput;
+	unsigned int m_DummyFire;
+	bool m_ReceivedDDNetPlayer;
 
 	class CTeamsCore m_Teams;
 

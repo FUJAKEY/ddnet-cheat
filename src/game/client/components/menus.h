@@ -622,6 +622,7 @@ protected:
 	void RenderSettingsSound(CUIRect MainView);
 	void RenderSettings(CUIRect MainView);
 	void RenderSettingsCustom(CUIRect MainView);
+	void RenderSettingsFujix(CUIRect MainView);
 
 	std::vector<CButtonContainer> vButtonsContainersJoystickAbsolute = {{}, {}};
 	std::vector<CButtonContainer> vButtonsContainersNamePlateShow = {{}, {}, {}, {}};
@@ -716,19 +717,19 @@ public:
 
 		PAGE_LENGTH,
 
-		SETTINGS_LANGUAGE = 0,
-		SETTINGS_GENERAL,
-		SETTINGS_PLAYER,
-		SETTINGS_TEE,
-		SETTINGS_APPEARANCE,
-		SETTINGS_CONTROLS,
-		SETTINGS_GRAPHICS,
-		SETTINGS_SOUND,
-               SETTINGS_DDNET,
-               SETTINGS_ASSETS,
-               SETTINGS_FUJIX,
+	SETTINGS_LANGUAGE = 0,
+	SETTINGS_GENERAL,
+	SETTINGS_PLAYER,
+	SETTINGS_TEE,
+	SETTINGS_APPEARANCE,
+	SETTINGS_CONTROLS,
+	SETTINGS_GRAPHICS,
+	SETTINGS_SOUND,
+	SETTINGS_DDNET,
+	SETTINGS_ASSETS,
+	SETTINGS_FUJIX,
 
-               SETTINGS_LENGTH,
+	SETTINGS_LENGTH,
 
 		BIG_TAB_NEWS = 0,
 		BIG_TAB_INTERNET,
@@ -767,8 +768,7 @@ public:
 	void DemolistPopulate();
 	void RefreshFilteredDemos();
 	void DemoSeekTick(IDemoPlayer::ETickOffset TickOffset);
-        bool m_Dummy;
-        int m_FujixPage;
+	bool m_Dummy;
 
 	const char *GetCurrentDemoFolder() const { return m_aCurrentDemoFolder; }
 
@@ -853,9 +853,8 @@ private:
 	void RenderGhost(CUIRect MainView);
 
 	// found in menus_settings.cpp
-        void RenderSettingsDDNet(CUIRect MainView);
-       void RenderSettingsFujix(CUIRect MainView);
-        void RenderSettingsAppearance(CUIRect MainView);
+	void RenderSettingsDDNet(CUIRect MainView);
+	void RenderSettingsAppearance(CUIRect MainView);
 	bool RenderHslaScrollbars(CUIRect *pRect, unsigned int *pColor, bool Alpha, float DarkestLight);
 
 	CServerProcess m_ServerProcess;

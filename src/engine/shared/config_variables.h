@@ -647,27 +647,7 @@ MACRO_CONFIG_STR(ClMenuMap, cl_menu_map, 100, "auto", CFGFLAG_CLIENT | CFGFLAG_S
 MACRO_CONFIG_INT(ClRotationRadius, cl_rotation_radius, 30, 1, 500, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Menu camera rotation radius")
 MACRO_CONFIG_INT(ClRotationSpeed, cl_rotation_speed, 40, 1, 120, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Menu camera rotations in seconds")
 MACRO_CONFIG_INT(ClCameraSpeed, cl_camera_speed, 5, 1, 40, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Menu camera speed")
-MACRO_CONFIG_INT(ClFujixTasRecord, cl_fujix_tas_record, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Record FUJIX TAS")
-MACRO_CONFIG_INT(ClFujixTasPlay, cl_fujix_tas_play, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Play FUJIX TAS")
-MACRO_CONFIG_INT(ClFujixTasTest, cl_fujix_tas_test, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Play FUJIX TAS as phantom")
-MACRO_CONFIG_INT(ClFujixTasRewind, cl_fujix_tas_rewind, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Rollback phantom on tiles")
-MACRO_CONFIG_INT(ClFujixTasRewindTicks, cl_fujix_tas_rewind_ticks, 10, 5, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks to rollback phantom")
-// Increased default and range to allow up to one phantom update per game tick
-// for improved accuracy when recording TAS runs. The previous default of 10 TPS
-// caused noticeable desync when using slow motion recording.
-MACRO_CONFIG_INT(ClFujixTasPhantomTps, cl_fujix_tas_phantom_tps, 50, 1, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Phantom ticks per second while recording")
-// Number of future ticks to visualize while playing TAS. Allows estimating the
-// upcoming path of the phantom on the HUD.
-MACRO_CONFIG_INT(ClFujixTasPreviewTicks, cl_fujix_tas_preview_ticks, 40, 0, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks of phantom path preview")
-MACRO_CONFIG_INT(ClFujixTasShowPlayers, cl_fujix_tas_show_players, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show players while recording TAS")
-MACRO_CONFIG_INT(ClFujixTasRouteTicks, cl_fujix_tas_route_ticks, 0, 0, 200, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks ahead for recommended route (0 to disable)")
-MACRO_CONFIG_INT(ClFujixBlockFreezeLegit, cl_fujix_block_freeze_legit, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Prevent collisions with freeze tiles")
-MACRO_CONFIG_INT(ClFujixBlockFreezeRage, cl_fujix_block_freeze_rage, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Autopilot movement to clicked location")
-MACRO_CONFIG_INT(ClFujixDeepfly, cl_fujix_deepfly, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable automatic hammerfly for dummy")
-MACRO_CONFIG_INT(ClFujixDeepflyHoldTicks, cl_fujix_deepfly_hold_ticks, 2, 1, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks to hold hook when deepfly")
-MACRO_CONFIG_INT(ClFujixDeepflyReleaseTicks, cl_fujix_deepfly_release_ticks, 1, 1, 50, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Ticks to release hook when deepfly")
-MACRO_CONFIG_INT(ClDummyAutoClick, cl_dummy_auto_click, 0, 0, 1, CFGFLAG_CLIENT, "Dummy hits repeatedly while held")
-MACRO_CONFIG_INT(UiFujixPage, ui_fujix_page, 0, 0, 2, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Fujix settings sub page")
+
 MACRO_CONFIG_INT(ClBackgroundShowTilesLayers, cl_background_show_tiles_layers, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Whether draw tiles layers when using custom background (entities)")
 MACRO_CONFIG_INT(SvShowOthers, sv_show_others, 1, 0, 1, CFGFLAG_SERVER, "Whether players can use the command showothers or not")
 MACRO_CONFIG_INT(SvShowOthersDefault, sv_show_others_default, 0, 0, 2, CFGFLAG_SERVER | CFGFLAG_GAME, "Whether players see others by default (2 for own team)")
@@ -784,6 +764,12 @@ MACRO_CONFIG_INT(GfxRenderThreadCount, gfx_render_thread_count, 3, 0, 0, CFGFLAG
 MACRO_CONFIG_INT(GfxDriverIsBlocked, gfx_driver_is_blocked, 0, 0, 1, CFGFLAG_SAVE | CFGFLAG_CLIENT, "If 1, the current driver is in a blocked error state.")
 
 MACRO_CONFIG_INT(ClVideoRecorderFPS, cl_video_recorder_fps, 60, 1, 1000, CFGFLAG_SAVE | CFGFLAG_CLIENT, "At which FPS the videorecorder should record demos.")
+
+// FUJIX - GEROS BOT Configuration
+MACRO_CONFIG_INT(FujixGerosBot, fujix_geros_bot, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable GEROS BOT - Advanced prediction and auto-rescue system")
+MACRO_CONFIG_INT(FujixGerosAggressiveness, fujix_geros_aggressiveness, 7, 1, 10, CFGFLAG_CLIENT | CFGFLAG_SAVE, "GEROS BOT rescue aggressiveness level (1=passive, 10=very aggressive)")
+MACRO_CONFIG_INT(FujixGerosPredictionTicks, fujix_geros_prediction_ticks, 8, 4, 12, CFGFLAG_CLIENT | CFGFLAG_SAVE, "How many ticks ahead GEROS BOT predicts (4-12 ticks)")
+MACRO_CONFIG_INT(FujixGerosAntiSuicide, fujix_geros_anti_suicide, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Prevent intentional suicide attempts when GEROS BOT is active")
 
 /*
  * Add config variables for mods below this comment to avoid merge conflicts.

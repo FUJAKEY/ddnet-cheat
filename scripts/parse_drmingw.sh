@@ -41,7 +41,7 @@ ADDR_BASE=0x$(objdump -x "$EXE_FILE" | grep -E -o -m 1 "^ImageBase\s+[0-9A-Fa-f]
 echo "Image base: $ADDR_BASE"
 echo
 
-function print_line_for_address() {
+function prine_line_for_address() {
 	addr2line -e "$EXE_FILE" -a -p -f -C -i "$1" | sed 's/ [^ ]*\/src\// src\//g'
 }
 
@@ -51,7 +51,7 @@ while read -r line; do
 		# Check for main executable file with address information
 		EXE_FILE_RELATIVE_ADDR=$(echo "$line" | grep -E -o -m 1 "\s${EXE_FILE_FILENAME_REGEX}!.*0x[0-9A-Fa-f]+" | grep -E -o "0x[0-9A-Fa-f]+" | head -1)
 		if [ -n "$EXE_FILE_RELATIVE_ADDR" ]; then
-			print_line_for_address "$(printf '0x%X\n' "$((EXE_FILE_RELATIVE_ADDR + ADDR_BASE))")"
+			prine_line_for_address "$(printf '0x%X\n' "$((EXE_FILE_RELATIVE_ADDR + ADDR_BASE))")"
 			continue
 		fi
 
@@ -64,6 +64,6 @@ while read -r line; do
 
 		# Compatibilty with old crash logs: use the raw address and assume it belongs to the main executable
 		RAW_ADDR=$(echo "$line" | grep -E -o -m 1 "[0-9A-Fa-f]+ " | head -1)
-		print_line_for_address "$(printf '0x%X\n' "$(((0x$RAW_ADDR - 0x$MODULE_OFFSET) + ADDR_BASE))")"
+		prine_line_for_address "$(printf '0x%X\n' "$(((0x$RAW_ADDR - 0x$MODULE_OFFSET) + ADDR_BASE))")"
 	fi
 done < "$CRASH_LOG_FILE"

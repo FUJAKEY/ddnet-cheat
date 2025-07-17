@@ -125,16 +125,15 @@ void CGameClient::OnConsoleInit()
 					      &m_Sounds,
 					      &m_Voting,
 					      &m_Particles, // doesn't render anything, just updates all the particles
-                                              &m_RaceDemo,
-                                              &m_MapSounds,
-                                              &m_Background, // render instead of m_MapLayersBackground when g_Config.m_ClOverlayEntities == 100
-                                              &m_MapLayersBackground, // first to render
-                                              &m_Particles.m_RenderTrail,
-                                              &m_Particles.m_RenderTrailExtra,
-                                              &m_Items,
-                                              &m_Ghost,
-                                             &m_FujixTas,
-                                              &m_Players,
+					      &m_RaceDemo,
+					      &m_MapSounds,
+					      &m_Background, // render instead of m_MapLayersBackground when g_Config.m_ClOverlayEntities == 100
+					      &m_MapLayersBackground, // first to render
+					      &m_Particles.m_RenderTrail,
+					      &m_Particles.m_RenderTrailExtra,
+					      &m_Items,
+					      &m_Ghost,
+					      &m_Players,
 					      &m_MapLayersForeground,
 					      &m_Particles.m_RenderExplosions,
 					      &m_NamePlates,
@@ -155,6 +154,7 @@ void CGameClient::OnConsoleInit()
 					      &m_Motd,
 					      &m_Menus,
 					      &m_Tooltips,
+					      &m_FujixGerosBot,
 					      &CMenus::m_Binder,
 					      &m_GameConsole,
 					      &m_MenuBackground});
@@ -187,10 +187,8 @@ void CGameClient::OnConsoleInit()
 
 	// register game commands to allow the client prediction to load settings from the map
 	Console()->Register("tune", "s[tuning] ?f[value]", CFGFLAG_GAME, ConTuneParam, this, "Tune variable to value");
-        Console()->Register("tune_zone", "i[zone] s[tuning] f[value]", CFGFLAG_GAME, ConTuneZone, this, "Tune in zone a variable to value");
-        Console()->Register("mapbug", "s[mapbug]", CFGFLAG_GAME, ConMapbug, this, "Enable map compatibility mode using the specified bug (example: grenade-doubleexplosion@ddnet.tw)");
-       Console()->Register("+click_d", "", CFGFLAG_CLIENT, ConDummyClick, this, "Dummy hammer toward player while held");
-       Console()->Register("click_d", "", CFGFLAG_CLIENT, ConToggleDummyClick, this, "Toggle dummy hammering every 0.3s");
+	Console()->Register("tune_zone", "i[zone] s[tuning] f[value]", CFGFLAG_GAME, ConTuneZone, this, "Tune in zone a variable to value");
+	Console()->Register("mapbug", "s[mapbug]", CFGFLAG_GAME, ConMapbug, this, "Enable map compatibility mode using the specified bug (example: grenade-doubleexplosion@ddnet.tw)");
 
 	for(auto &pComponent : m_vpAll)
 		pComponent->m_pClient = this;
@@ -486,29 +484,11 @@ void CGameClient::OnUpdate()
 		}
 	});
 
-        if(g_Config.m_ClSubTickAiming && m_Binds.m_MouseOnAction)
-        {
-                m_Controls.m_aMousePosOnAction[g_Config.m_ClDummy] = m_Controls.m_aMousePos[g_Config.m_ClDummy];
-                m_Binds.m_MouseOnAction = false;
-        }
-
-       if(g_Config.m_ClFujixDeepfly && Client()->DummyConnected())
-       {
-               vec2 DummyPos = m_aClients[m_aLocalIds[!g_Config.m_ClDummy]].m_Predicted.m_Pos;
-               bool HasAbove = false;
-               for(int i = 0; i < MAX_CLIENTS; i++)
-               {
-                       if(i == m_aLocalIds[!g_Config.m_ClDummy] || !m_aClients[i].m_Active)
-                               continue;
-                       vec2 Pos = m_aClients[i].m_Predicted.m_Pos;
-                       if(fabs(Pos.x - DummyPos.x) < 48 && Pos.y < DummyPos.y && DummyPos.y - Pos.y < 96)
-                       {
-                               HasAbove = true;
-                               break;
-                       }
-               }
-               g_Config.m_ClDummyHammer = HasAbove ? 1 : 0;
-       }
+	if(g_Config.m_ClSubTickAiming && m_Binds.m_MouseOnAction)
+	{
+		m_Controls.m_aMousePosOnAction[g_Config.m_ClDummy] = m_Controls.m_aMousePos[g_Config.m_ClDummy];
+		m_Binds.m_MouseOnAction = false;
+	}
 
 	for(auto &pComponent : m_vpAll)
 	{
@@ -532,144 +512,27 @@ void CGameClient::OnDummySwap()
 
 int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 {
-       if(!Dummy)
-       {
-               CNetObj_PlayerInput TasInput;
-               if(m_FujixTas.FetchPlaybackInput(&TasInput))
-               {
-                       mem_copy(pData, &TasInput, sizeof(TasInput));
-                       return sizeof(TasInput);
-               }
-
-                CNetObj_PlayerInput LocalInput;
-                int Size = m_Controls.SnapInput((int *)&LocalInput);
-                
-                // 🆕 Сохраняем оригинальный инпут для записи без ghost
-                CNetObj_PlayerInput OriginalInput = LocalInput;
-
-                 if(Size > 0)
-                 {
-                    // Применяем модификации только если НЕ записываем без ghost
-                    if(!m_FujixTas.IsRecordingNoGhost())
-                    {
-                        m_FujixTas.BlockFreezeInput(&LocalInput);
-                        m_FujixTas.ApplyRageInput(&LocalInput);
-                    }
-                    
-                     // 🆕 УБИРАЕМ СТАРУЮ INPUT-BASED ЗАПИСЬ (заменена на server-state)
-                     // Записываем правильный инпут в зависимости от режима
-                     // if(m_FujixTas.IsRecordingNoGhost())
-                     //     m_FujixTas.RecordInput(&OriginalInput, Tick); // УДАЛЕНО: старая input запись
-                     // else
-                     //     m_FujixTas.RecordInput(&LocalInput, Tick);     // УДАЛЕНО: старая input запись
-                         
-                     m_FujixTas.MaybeFinishRecord();
-
-                      if(m_FujixTas.IsRecordingWithPhantom())
-                     {
-                             CNetObj_PlayerInput NullInput;
-                             mem_zero(&NullInput, sizeof(NullInput));
-                             mem_copy(pData, &NullInput, sizeof(NullInput));
-                             return sizeof(NullInput);
-                     }
-
-                   if(g_Config.m_ClFujixDeepfly && Client()->DummyConnected())
-                   {
-                           int DummyID = m_aLocalIds[!g_Config.m_ClDummy];
-                           vec2 DummyPos = m_aClients[DummyID].m_Predicted.m_Pos;
-                           const CTuningParams *pTuning = GetTuning(g_Config.m_ClDummy);
-
-                           bool Hooked = m_PredictedChar.m_HookState == HOOK_GRABBED &&
-                                         m_PredictedChar.HookedPlayer() == DummyID;
-
-                           if(Hooked)
-                           {
-                                   if(m_DeepflyCooldown > 0)
-                                   {
-                                           LocalInput.m_Hook = 0;
-                                           m_DeepflyCooldown--;
-                                   }
-                                   else
-                                   {
-                                           LocalInput.m_Hook = 1;
-                                           if(m_LocalCharacterPos.y < DummyPos.y - 32 || m_PredictedChar.m_Vel.y < -1.0f)
-                                                   m_DeepflyCooldown = 2;
-                                   }
-                           }
-                           else
-                           {
-                                   m_DeepflyCooldown = 0;
-                                   if(DummyPos.y > m_LocalCharacterPos.y &&
-                                      fabs(DummyPos.x - m_LocalCharacterPos.x) < 48 &&
-                                      DummyPos.y - m_LocalCharacterPos.y < pTuning->m_HookLength)
-                                   {
-                                           LocalInput.m_Hook = 1;
-                                           vec2 Dir = DummyPos - m_LocalCharacterPos;
-                                           if(length(Dir) > 0.0f)
-                                           {
-                                                   Dir = normalize(Dir) * pTuning->m_HookLength;
-                                                   LocalInput.m_TargetX = (int)(Dir.x * 256);
-                                                   LocalInput.m_TargetY = (int)(Dir.y * 256);
-                                           }
-                                   }
-                           }
-                   }
-
-                    // 🆕 Отправляем правильный инпут в зависимости от режима записи
-                    if(m_FujixTas.IsRecordingNoGhost())
-                        mem_copy(pData, &OriginalInput, sizeof(OriginalInput)); // Чистый инпут игрока
-                    else
-                        mem_copy(pData, &LocalInput, sizeof(LocalInput));       // Модифицированный инпут
-                    return Size;
-                }
-
-               if(m_FujixTas.IsRecordingWithPhantom())
-               {
-                       CNetObj_PlayerInput NullInput;
-                       mem_zero(&NullInput, sizeof(NullInput));
-                       m_FujixTas.MaybeFinishRecord();
-                       mem_copy(pData, &NullInput, sizeof(NullInput));
-                       return sizeof(NullInput);
-               }
-
-               return 0;
-       }
+	if(!Dummy)
+	{
+		// Интегрируем GEROS BOT для обработки ввода
+		if(g_Config.m_FujixGerosBot)
+		{
+			m_FujixGerosBot.OnSnapInput(pData, &m_Snap, &m_PredictedChar, Collision(), Client()->PredGameTick());
+		}
+		return m_Controls.SnapInput(pData);
+	}
 	if(m_aLocalIds[!g_Config.m_ClDummy] < 0)
 	{
 		return 0;
 	}
 
-        if(!g_Config.m_ClDummyHammer)
-        {
-               if(m_DummyAutoClick)
-               {
-                        int Period = Client()->GameTickSpeed() * 3 / 10; // 0.3 sec
-                        if(m_DummyAutoTick % Period == 0)
-                                m_DummyInput.m_Fire = 1;
-                        else
-                                m_DummyInput.m_Fire = 0;
-                        m_DummyInput.m_WantedWeapon = WEAPON_HAMMER + 1;
-                        vec2 Dir = m_LocalCharacterPos - m_aClients[m_aLocalIds[!g_Config.m_ClDummy]].m_Predicted.m_Pos;
-                        if(length(Dir) > 0.0f)
-                        {
-                                Dir = normalize(Dir);
-                                Dir *= GetTuning(g_Config.m_ClDummy)->m_HookLength;
-                                m_DummyInput.m_TargetX = (int)(Dir.x * 256);
-                                m_DummyInput.m_TargetY = (int)(Dir.y * 256);
-                        }
-                        m_DummyAutoTick++;
-               }
-               else
-               {
-                        m_DummyAutoTick = 0;
-                        m_DummyInput.m_Fire = 0;
-               }
-
-                if(m_DummyFire != 0)
-                {
-                        m_DummyInput.m_Fire = (m_HammerInput.m_Fire + 1) & ~1;
-                        m_DummyFire = 0;
-                }
+	if(!g_Config.m_ClDummyHammer)
+	{
+		if(m_DummyFire != 0)
+		{
+			m_DummyInput.m_Fire = (m_HammerInput.m_Fire + 1) & ~1;
+			m_DummyFire = 0;
+		}
 
 		if(!Force && (!m_DummyInput.m_Direction && !m_DummyInput.m_Jump && !m_DummyInput.m_Hook))
 		{
@@ -804,13 +667,10 @@ void CGameClient::OnReset()
 
 	m_NextChangeInfo = 0;
 	std::fill(std::begin(m_aLocalIds), std::end(m_aLocalIds), -1);
-       m_DummyInput = {};
-       m_HammerInput = {};
-       m_DummyFire = 0;
-       m_DummyAutoClick = false;
-       m_DummyAutoTick = 0;
-       m_DeepflyCooldown = 0;
-       m_ReceivedDDNetPlayer = false;
+	m_DummyInput = {};
+	m_HammerInput = {};
+	m_DummyFire = 0;
+	m_ReceivedDDNetPlayer = false;
 
 	m_Teams.Reset();
 	m_GameWorld.Clear();
@@ -857,12 +717,9 @@ void CGameClient::OnReset()
 
 void CGameClient::UpdatePositions()
 {
-       if(m_FujixTas.IsPhantomActive())
-       {
-               m_LocalCharacterPos = m_FujixTas.PhantomPos();
-       }
-       else if(g_Config.m_ClPredict && Client()->State() != IClient::STATE_DEMOPLAYBACK)
-       {
+	// local character position
+	if(g_Config.m_ClPredict && Client()->State() != IClient::STATE_DEMOPLAYBACK)
+	{
 		if(!AntiPingPlayers())
 		{
 			if(!m_Snap.m_pLocalCharacter || (m_Snap.m_pGameInfoObj && m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_GAMEOVER))
@@ -2531,14 +2388,10 @@ void CGameClient::OnPredict()
 		if(g_Config.m_ClPredictFreeze == 2 && Client()->PredGameTick(g_Config.m_ClDummy) - 1 - Client()->PredGameTick(g_Config.m_ClDummy) % 2 <= Tick)
 			pLocalChar->m_CanMoveInFreeze = true;
 
-               // apply inputs and tick
-               CNetObj_PlayerInput *pInputData = (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping);
-               CNetObj_PlayerInput *pDummyInputData = !pDummyChar ? nullptr : (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping ^ 1);
-               bool DummyFirst = pInputData && pDummyInputData && pDummyChar->GetCid() < pLocalChar->GetCid();
-
-                // 🆕 НОВАЯ АРХИТЕКТУРА: Server-state запись (заменяет старую input-based запись)
-                // Записываем серверное состояние вместо клиентского инпута
-                // m_FujixTas.RecordInput(&m_Controls.m_aInputData[g_Config.m_ClDummy], Tick); // УДАЛЕНО: старая двойная запись
+		// apply inputs and tick
+		CNetObj_PlayerInput *pInputData = (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping);
+		CNetObj_PlayerInput *pDummyInputData = !pDummyChar ? nullptr : (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping ^ 1);
+		bool DummyFirst = pInputData && pDummyInputData && pDummyChar->GetCid() < pLocalChar->GetCid();
 
 		if(DummyFirst)
 			pDummyChar->OnDirectInput(pDummyInputData);
@@ -2552,15 +2405,7 @@ void CGameClient::OnPredict()
 		if(pDummyInputData)
 			pDummyChar->OnPredictedInput(pDummyInputData);
 		m_PredictedWorld.Tick();
-        m_PredictedWorld.Tick();
-        
-        // 🆕 НОВАЯ SERVER-STATE ЗАПИСЬ: записываем серверное состояние после обработки тика
-        // Это заменяет старую input-based запись и дает идеальную точность
-        if(Tick == Client()->PredGameTick(g_Config.m_ClDummy) && pLocalChar)
-        {
-            // Записываем серверное состояние персонажа (не предикшн!)
-            m_FujixTas.RecordServerState(Tick);
-        }
+
 		// fetch the current characters
 		if(Tick == PredictionTick)
 		{
@@ -3630,8 +3475,8 @@ void CGameClient::UpdateRenderedCharacters()
 		}
 		m_Snap.m_aCharacters[i].m_Position = Pos;
 		m_aClients[i].m_RenderPos = Pos;
-               if(Predict() && i == m_Snap.m_LocalClientId && !m_FujixTas.IsPhantomActive())
-                       m_LocalCharacterPos = Pos;
+		if(Predict() && i == m_Snap.m_LocalClientId)
+			m_LocalCharacterPos = Pos;
 	}
 }
 
@@ -4549,22 +4394,6 @@ void CGameClient::ConMapbug(IConsole::IResult *pResult, void *pUserData)
 	default:
 		dbg_assert(false, "unreachable");
 	}
-}
-
-void CGameClient::ConDummyClick(IConsole::IResult *pResult, void *pUserData)
-{
-    CGameClient *pSelf = static_cast<CGameClient *>(pUserData);
-    pSelf->m_DummyAutoClick = pResult->GetInteger(0) != 0;
-    if(!pSelf->m_DummyAutoClick)
-        pSelf->m_DummyAutoTick = 0;
-}
-
-void CGameClient::ConToggleDummyClick(IConsole::IResult *pResult, void *pUserData)
-{
-    CGameClient *pSelf = static_cast<CGameClient *>(pUserData);
-    pSelf->m_DummyAutoClick = !pSelf->m_DummyAutoClick;
-    if(!pSelf->m_DummyAutoClick)
-        pSelf->m_DummyAutoTick = 0;
 }
 
 void CGameClient::ConchainMenuMap(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
