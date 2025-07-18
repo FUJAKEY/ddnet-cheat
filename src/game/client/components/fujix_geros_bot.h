@@ -112,7 +112,6 @@ private:
     bool IsHookTargetFloor(vec2 Target);
     float CalculateUltraSafeHookScore(vec2 Pos, vec2 Target, vec2 Vel);
     bool IsHookTrajectorysSafe(vec2 From, vec2 To);
-    bool IsHookTrajectorysSafe(vec2 From, vec2 To);
     vec2 FindHookableInDirection(vec2 Pos, vec2 Direction, float MaxRange);
     float CalculateHookScore(vec2 Pos, vec2 Target, vec2 Vel);
     bool CanDoCeilingRiding(vec2 Pos, vec2 Target);
