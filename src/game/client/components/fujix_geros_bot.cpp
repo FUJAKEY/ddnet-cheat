@@ -36,12 +36,12 @@ CFujixGerosBot::CFujixGerosBot()
 	}
 }
 
-void CFujixGerosBotg_Config::OnInit()
+void CFujixGerosBot::OnInit()
 {
 	// Initialize GEROS BOT system
 }
 
-void CFujixGerosBotg_Config.OnRender()
+void CFujixGerosBot::OnRender()
 {
 	if(!IsActive())
 		return;
@@ -60,32 +60,32 @@ void CFujixGerosBotg_Config.OnRender()
 	}
 }
 
-void CFujixGerosBotg_Config.OnMessage(int MsgType, void *pRawMsg)
+void CFujixGerosBot::OnMessage(int MsgType, void *pRawMsg)
 {
 	// Handle game messages if needed
 }
 
-bool CFujixGerosBotg_Config.IsActive() const
+bool CFujixGerosBot::IsActive() const
 {
 	return g_Config.m_FujixGerosBot;
 }
 
-int CFujixGerosBotg_Config.GetAggressiveness() const
+int CFujixGerosBot::GetAggressiveness() const
 {
 	return g_Config.m_FujixGerosAggressiveness;
 }
 
-int CFujixGerosBotg_Config.GetPredictionTicks() const
+int CFujixGerosBot::GetPredictionTicks() const
 {
 	return g_Config.m_FujixGerosPredictionTicks;
 }
 
-bool CFujixGerosBotg_Config.IsAntiSuicideEnabled() const
+bool CFujixGerosBot::IsAntiSuicideEnabled() const
 {
 	return g_Config.m_FujixGerosAntiSuicide;
 }
 
-void CFujixGerosBotg_Config.Update()
+void CFujixGerosBot::Update()
 {
 	if(!IsActive())
 		return;
@@ -113,7 +113,7 @@ void CFujixGerosBotg_Config.Update()
 }
 
 // GameClient() наследуется от CComponent
-void CFujixGerosBotg_Config.PredictMovement(SGerosBotPrediction *pPredictions, int NumTicks)
+void CFujixGerosBot::PredictMovement(SGerosBotPrediction *pPredictions, int NumTicks)
 {
 	CGameClient *pGameClient = GameClient();
 	CCharacterCore Core = GameClient()->m_PredictedChar;
@@ -146,7 +146,7 @@ void CFujixGerosBotg_Config.PredictMovement(SGerosBotPrediction *pPredictions, i
 	}
 }
 
-void CFujixGerosBotg_Config.SimulateCharacterCore(CCharacterCore *pCore, int Ticks)
+void CFujixGerosBot::SimulateCharacterCore(CCharacterCore *pCore, int Ticks)
 {
 	CGameClient *pGameClient = GameClient();
 	if(!pCore || !pGameClient->Collision())
@@ -161,7 +161,7 @@ void CFujixGerosBotg_Config.SimulateCharacterCore(CCharacterCore *pCore, int Tic
 	}
 }
 
-bool CFujixGerosBotg_Config.IsPositionDangerous(vec2 Pos, vec2 Vel)
+bool CFujixGerosBot::IsPositionDangerous(vec2 Pos, vec2 Vel)
 {
 	CGameClient *pGameClient = GameClient();
 	if(!pGameClient || !pGameClient->Collision())
@@ -193,7 +193,7 @@ bool CFujixGerosBotg_Config.IsPositionDangerous(vec2 Pos, vec2 Vel)
 	return false;
 }
 
-float CFujixGerosBotg_Config.CalculateDangerLevel(vec2 Pos, vec2 Vel)
+float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 {
 	float DangerLevel = 0.0f;
 	CGameClient *pGameClient = GameClient();
@@ -208,7 +208,6 @@ float CFujixGerosBotg_Config.CalculateDangerLevel(vec2 Pos, vec2 Vel)
 		DangerLevel += 7.0f;
 		
 	// Velocity-based danger (high speed = higher danger)
-	float Speed = length(Vel);
 	DangerLevel += Speed * 0.01f;
 
 	// Distance to nearest safe ground
@@ -234,7 +233,7 @@ float CFujixGerosBotg_Config.CalculateDangerLevel(vec2 Pos, vec2 Vel)
 	return DangerLevel;
 }
 
-vec2 CFujixGerosBotg_Config.FindBestHookTarget(vec2 Pos, vec2 Vel)
+vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 {
 	CGameClient *pGameClient = GameClient();
 		
@@ -286,7 +285,7 @@ vec2 CFujixGerosBotg_Config.FindBestHookTarget(vec2 Pos, vec2 Vel)
 	return BestTarget;
 }
 
-vec2 CFujixGerosBotg_Config.CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLevel)
+vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLevel)
 {
 	CGameClient *pGameClient = GameClient();
 		
@@ -331,7 +330,7 @@ vec2 CFujixGerosBotg_Config.CalculateEscapeDirection(vec2 Pos, vec2 Vel, float D
 	return normalize(BestDirection);
 }
 
-bool CFujixGerosBotg_Config.CanReachSafetyWithHook(vec2 From, vec2 HookTarget)
+bool CFujixGerosBot::CanReachSafetyWithHook(vec2 From, vec2 HookTarget)
 {
 	CGameClient *pGameClient = GameClient();
 	// Simple simulation: check if hooking to target would allow reaching safe ground
@@ -359,7 +358,7 @@ bool CFujixGerosBotg_Config.CanReachSafetyWithHook(vec2 From, vec2 HookTarget)
 	return false;
 }
 
-bool CFujixGerosBotg_Config.ShouldUseJump(vec2 Pos, vec2 Vel, vec2 DesiredDir)
+bool CFujixGerosBot::ShouldUseJump(vec2 Pos, vec2 Vel, vec2 DesiredDir)
 {
 	CGameClient *pGameClient = GameClient();
 	// Jump if we need to go upward
@@ -378,7 +377,7 @@ bool CFujixGerosBotg_Config.ShouldUseJump(vec2 Pos, vec2 Vel, vec2 DesiredDir)
 	return false;
 }
 
-bool CFujixGerosBotg_Config.DetectSuicideAttempt(vec2 Pos, vec2 Vel, int InputDirection)
+bool CFujixGerosBot::DetectSuicideAttempt(vec2 Pos, vec2 Vel, int InputDirection)
 {
 	if(!IsAntiSuicideEnabled())
 		return false;
@@ -404,7 +403,7 @@ bool CFujixGerosBotg_Config.DetectSuicideAttempt(vec2 Pos, vec2 Vel, int InputDi
 	return false;
 }
 
-bool CFujixGerosBotg_Config.IsPlayerTryingToKillThemselves()
+bool CFujixGerosBot::IsPlayerTryingToKillThemselves()
 {
 	// Analyze recent player behavior patterns
 	// This is a simplified version - real implementation would track behavior history
@@ -416,7 +415,7 @@ bool CFujixGerosBotg_Config.IsPlayerTryingToKillThemselves()
 	return false;
 }
 
-bool CFujixGerosBotg_Config.IsInEmergencyState()
+bool CFujixGerosBot::IsInEmergencyState()
 {
 	// Check if any of the near-future predictions show imminent death
 	for(int i = 0; i < minimum(4, GetPredictionTicks()); i++)
@@ -432,7 +431,7 @@ bool CFujixGerosBotg_Config.IsInEmergencyState()
 	return false;
 }
 
-void CFujixGerosBotg_Config.ExecuteEmergencyRescue()
+void CFujixGerosBot::ExecuteEmergencyRescue()
 {
 	CGameClient *pGameClient = GameClient();
 	if(pGameClient->Client()->GameTick(0) - m_LastRescueTick < 5) // Prevent spam rescues
@@ -445,7 +444,7 @@ void CFujixGerosBotg_Config.ExecuteEmergencyRescue()
 	// This will be used by the input system
 }
 
-bool CFujixGerosBotg_Config.ShouldOverrideInput()
+bool CFujixGerosBot::ShouldOverrideInput()
 {
 	if(!IsActive())
 		return false;
@@ -461,7 +460,7 @@ bool CFujixGerosBotg_Config.ShouldOverrideInput()
 	return false;
 }
 
-void CFujixGerosBotg_Config.GetBotInput(int *pInputDirection, int *pJump, int *pHook, vec2 *pTargetX)
+void CFujixGerosBot::GetBotInput(int *pInputDirection, int *pJump, int *pHook, vec2 *pTargetX)
 {
 	if(!ShouldOverrideInput())
 		return;
