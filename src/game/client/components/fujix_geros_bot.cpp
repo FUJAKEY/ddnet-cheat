@@ -118,17 +118,29 @@ void CFujixGerosBot::PredictMovement(SGerosBotPrediction *pPredictions, int NumT
 	CGameClient *pGameClient = GameClient();
 	CCharacterCore Core = GameClient()->m_PredictedChar;
 	
+	// 🎯 ПОЛУЧАЕМ ТЕКУЩИЙ ВВОД ИГРОКА для реалистичной симуляции
+	CNetObj_PlayerInput *pCurrentInput = &pGameClient->m_Controls.m_aInputData[g_Config.m_ClDummy];
+	
 	for(int i = 0; i < NumTicks && i < 16; i++)
 	{
-		// Simulate one tick ahead
+		// 🔮 СИМУЛИРУЕМ РЕАЛЬНОЕ ДВИЖЕНИЕ с текущим вводом игрока
+		Core.m_Input.m_Direction = pCurrentInput->m_Direction;
+		Core.m_Input.m_Jump = pCurrentInput->m_Jump;
+		Core.m_Input.m_Hook = pCurrentInput->m_Hook;
+		Core.m_Input.m_TargetX = pCurrentInput->m_TargetX;
+		Core.m_Input.m_TargetY = pCurrentInput->m_TargetY;
+		
+		// Simulate one tick ahead с РЕАЛЬНЫМ вводом
 		SimulateCharacterCore(&Core, 1);
 		
 		pPredictions[i].m_Pos = Core.m_Pos;
 		pPredictions[i].m_Vel = Core.m_Vel;
+		
+		// 🚨 ПРОВЕРЯЕМ: попадет ли игрок в freeze через i+1 тиков?
 		pPredictions[i].m_InDanger = IsPositionDangerous(Core.m_Pos, Core.m_Vel);
 		pPredictions[i].m_DangerLevel = CalculateDangerLevel(Core.m_Pos, Core.m_Vel);
 		
-		// Calculate time until potential death
+		// ⏰ КРИТИЧЕСКИ ВАЖНО: сколько тиков до freeze?
 		if(pPredictions[i].m_InDanger)
 		{
 			pPredictions[i].m_TicksUntilDeath = i + 1;
@@ -138,7 +150,7 @@ void CFujixGerosBot::PredictMovement(SGerosBotPrediction *pPredictions, int NumT
 			pPredictions[i].m_TicksUntilDeath = -1;
 		}
 		
-		// Calculate rescue options
+		// 🛡️ РАССЧИТЫВАЕМ ПРЕВЕНТИВНЫЕ ДЕЙСТВИЯ для этого тика
 		pPredictions[i].m_HookTarget = FindBestHookTarget(Core.m_Pos, Core.m_Vel);
 		pPredictions[i].m_DesiredDir = CalculateEscapeDirection(Core.m_Pos, Core.m_Vel, pPredictions[i].m_DangerLevel);
 		pPredictions[i].m_CanUseHook = pPredictions[i].m_HookTarget.x != 0 || pPredictions[i].m_HookTarget.y != 0;
@@ -198,9 +210,13 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 	float DangerLevel = 0.0f;
 	CGameClient *pGameClient = GameClient();
 	
+	
 	// Base danger from current tile
 	int TileIndex = pGameClient->Collision()->GetCollisionAt(Pos.x, Pos.y);
 	float Speed = length(Vel);
+	
+	// Death tiles are extremely dangerous
+	if(TileIndex == TILE_DEATH)
 		DangerLevel += 10.0f;
 		
 	// Freeze tiles are also dangerous
@@ -239,7 +255,7 @@ vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 		
 	vec2 BestTarget = vec2{0, 0};
 	float BestScore = -1.0f;
-	float HookRange = 320.0f; // Maximum hook range
+	float HookRange = 400.0f; // Увеличенная дальность крюка для freeze rescue
 	
 	// Search in multiple directions for hookable surfaces
 	for(int angle = 0; angle < 360; angle += 15)
@@ -304,12 +320,37 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 			vec2 TestPos = Pos + TestDirection * 64.0f; // Test position 64 units away
 			
 			float Score = 0.0f;
+			CGameClient *pGameClient = GameClient();
+			
+			// 🎯 ПРЕВЕНТИВНАЯ ПРОВЕРКА: анализируем путь к TestPos на наличие freeze
+			bool PathHasFreeze = false;
+			for(float step = 16.0f; step <= 64.0f; step += 16.0f)
+			{
+				vec2 PathPos = Pos + TestDirection * step;
+				int PathTile = pGameClient->Collision()->GetCollisionAt(PathPos.x, PathPos.y);
+				if(PathTile == TILE_FREEZE || PathTile == TILE_DFREEZE || PathTile == TILE_LFREEZE)
+				{
+					PathHasFreeze = true;
+					break;
+				}
+			}
 			
 			// Higher score for directions that lead away from danger
-			if(!IsPositionDangerous(TestPos, vec2{0, 0}))
-				Score += 10.0f;
+			if(!IsPositionDangerous(TestPos, vec2{0, 0}) && !PathHasFreeze)
+				Score += 15.0f; // Увеличили бонус за безопасный путь
+			else if(PathHasFreeze)
+				Score -= 10.0f; // Штраф за freeze на пути
 			else
 				Score -= 5.0f;
+			
+			// 🧊 СПЕЦИАЛЬНАЯ ЛОГИКА ДЛЯ ТЕКУЩИХ FREEZE TILES
+			int CurrentTile = pGameClient->Collision()->GetCollisionAt(Pos.x, Pos.y);
+			if(CurrentTile == TILE_FREEZE || CurrentTile == TILE_DFREEZE || CurrentTile == TILE_LFREEZE)
+			{
+				// При заморозке приоритет - движение вверх и в стороны
+				if(y < 0) Score += 8.0f; // Вверх - высший приоритет
+				if(x != 0) Score += 5.0f; // В стороны - средний приоритет
+			}
 				
 			// Prefer upward movement when in danger
 			if(DangerLevel > 3.0f && y < 0)
@@ -361,6 +402,15 @@ bool CFujixGerosBot::CanReachSafetyWithHook(vec2 From, vec2 HookTarget)
 bool CFujixGerosBot::ShouldUseJump(vec2 Pos, vec2 Vel, vec2 DesiredDir)
 {
 	CGameClient *pGameClient = GameClient();
+	
+	// 🧊 ПРИОРИТЕТ ПРЫЖКА ДЛЯ FREEZE TILES
+	int CurrentTile = pGameClient->Collision()->GetCollisionAt(Pos.x, Pos.y);
+	if(CurrentTile == TILE_FREEZE || CurrentTile == TILE_DFREEZE || CurrentTile == TILE_LFREEZE)
+	{
+		// В freeze tile всегда пытаемся прыгнуть для побега
+		return true;
+	}
+	
 	// Jump if we need to go upward
 	if(DesiredDir.y < -0.5f)
 		return true;
@@ -417,20 +467,47 @@ bool CFujixGerosBot::IsPlayerTryingToKillThemselves()
 
 bool CFujixGerosBot::IsInEmergencyState()
 {
-	// Check if any of the near-future predictions show imminent death
-	for(int i = 0; i < minimum(4, GetPredictionTicks()); i++)
+	CGameClient *pGameClient = GameClient();
+	
+	// ⚡ ПРЕВЕНТИВНАЯ ЛОГИКА: проверяем БУДУЩИЕ позиции на 8 тиков вперед
+	for(int i = 0; i < GetPredictionTicks(); i++)
 	{
-		if(m_aPredictions[i].m_InDanger && m_aPredictions[i].m_TicksUntilDeath <= 3)
-			return true;
+		// 🎯 КРИТЕРИЙ АКТИВАЦИИ: freeze через 2-8 тиков = EMERGENCY!
+		if(m_aPredictions[i].m_InDanger && m_aPredictions[i].m_TicksUntilDeath >= 2 && m_aPredictions[i].m_TicksUntilDeath <= 8)
+		{
+			return true; // Активируем bot ЗАРАНЕЕ!
+		}
+		
+		// 🧊 СПЕЦИАЛЬНАЯ ПРОВЕРКА: freeze tiles на пути движения
+		CGameClient *pGameClient = GameClient();
+		if(pGameClient && pGameClient->Collision())
+		{
+			vec2 FuturePos = m_aPredictions[i].m_Pos;
+			int FutureTile = pGameClient->Collision()->GetCollisionAt(FuturePos.x, FuturePos.y);
+			if(FutureTile == TILE_FREEZE || FutureTile == TILE_DFREEZE || FutureTile == TILE_LFREEZE)
+			{
+				return true; // Видим freeze впереди - активируем bot!
+			}
+		}
 	}
 	
-	// Check if danger level is critically high
+	// 🚨 РЕЗЕРВНАЯ ПРОВЕРКА: уже в freeze (последний шанс)
+	if(pGameClient && pGameClient->m_Snap.m_pLocalCharacter)
+	{
+		vec2 PlayerPos = vec2(pGameClient->m_Snap.m_pLocalCharacter->m_X, pGameClient->m_Snap.m_pLocalCharacter->m_Y);
+		int CurrentTile = pGameClient->Collision()->GetCollisionAt(PlayerPos.x, PlayerPos.y);
+		if(CurrentTile == TILE_FREEZE || CurrentTile == TILE_DFREEZE || CurrentTile == TILE_LFREEZE)
+		{
+			return true; // Freeze tile = немедленная emergency
+		}
+	}
+	
+	// ⚠️ ДОПОЛНИТЕЛЬНО: критически высокий уровень опасности
 	if(m_aPredictions[0].m_DangerLevel > 8.0f)
 		return true;
 		
 	return false;
 }
-
 void CFujixGerosBot::ExecuteEmergencyRescue()
 {
 	CGameClient *pGameClient = GameClient();
@@ -440,9 +517,15 @@ void CFujixGerosBot::ExecuteEmergencyRescue()
 	m_EmergencyMode = true;
 	m_RescueAttempts++;
 	m_LastRescueTick = pGameClient->Client()->GameTick(0);
+	
+	// Проверяем, вышли ли мы из опасности
+	if(!IsInEmergencyState())
+	{
+		m_EmergencyMode = false;
+	}
+	
 	// Force override player input to execute rescue
 	// This will be used by the input system
-}
 
 bool CFujixGerosBot::ShouldOverrideInput()
 {

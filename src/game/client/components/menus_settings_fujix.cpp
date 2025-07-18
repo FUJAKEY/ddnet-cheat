@@ -42,9 +42,19 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
 	
 	GerosSection.HSplitTop(10.0f, nullptr, &GerosSection);
 	
-	// Enable checkbox
+	// Enable checkbox - УВЕЛИЧЕННАЯ КНОПКА
 	static int s_GerosEnable = 0;
-	DoButton_CheckBoxAutoVMarginAndSet(&s_GerosEnable, "Enable GEROS BOT", &g_Config.m_FujixGerosBot, &GerosSection, 5.0f);
+	CUIRect BigButton;
+	GerosSection.HSplitTop(45.0f, &BigButton, &GerosSection);
+	BigButton.Draw(g_Config.m_FujixGerosBot ? ColorRGBA(0.2f, 0.8f, 0.2f, 0.3f) : ColorRGBA(0.8f, 0.2f, 0.2f, 0.3f), IGraphics::CORNER_ALL, 8.0f);
+	BigButton.Margin(5.0f, &BigButton);
+	
+	char aBufButton[128];
+	str_format(aBufButton, sizeof(aBufButton), "%s GEROS BOT", g_Config.m_FujixGerosBot ? "🟢 DISABLE" : "🔴 ENABLE");
+	if(DoButton_Menu(&s_GerosEnable, aBufButton, 0, &BigButton, 0, IGraphics::CORNER_ALL))
+	{
+		g_Config.m_FujixGerosBot ^= 1;
+	}
 	
 	// Status indicator
 	GerosSection.HSplitTop(10.0f, nullptr, &GerosSection);
