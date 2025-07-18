@@ -1,13 +1,10 @@
 #ifndef GAME_CLIENT_FUJIX_GEROS_BOT_H
 #define GAME_CLIENT_FUJIX_GEROS_BOT_H
 
-// Forward declarations only - will be resolved by real headers in project
-struct vec2 { 
-	float x, y; 
-	vec2() : x(0), y(0) {}
-	vec2(float x_, float y_) : x(x_), y(y_) {}
-};
-class CCharacterCore;
+// This file will use system headers when integrated into DDNet project
+// Forward declarations for standalone compilation
+typedef struct { float x, y; } vec2;
+struct CCharacterCore;
 class CGameClient;
 class CComponent { 
 public: 

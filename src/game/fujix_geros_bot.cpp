@@ -1,13 +1,12 @@
 #include "fujix_geros_bot.h"
 #include <cmath>
 
-// vec2 operators for standalone compilation
+// Math functions for vec2
 vec2 operator+(const vec2& a, const vec2& b) { return {a.x + b.x, a.y + b.y}; }
 vec2 operator-(const vec2& a, const vec2& b) { return {a.x - b.x, a.y - b.y}; }
 vec2 operator*(const vec2& a, float f) { return {a.x * f, a.y * f}; }
 vec2& operator+=(vec2& a, const vec2& b) { a.x += b.x; a.y += b.y; return a; }
 
-// Math functions
 float length(const vec2& v) { return sqrtf(v.x*v.x + v.y*v.y); }
 float distance(const vec2& a, const vec2& b) { vec2 d = a - b; return length(d); }
 vec2 normalize(const vec2& v) { float l = length(v); return l > 0 ? v * (1.0f/l) : vec2{0,0}; }
@@ -20,21 +19,19 @@ float maximum(float a, float b) { return a > b ? a : b; }
 #define TILE_DFREEZE 3  
 #define TILE_LFREEZE 4
 
-// Mock structures for standalone compilation
+// Mock structures for standalone compilation  
 struct CCharacterCore { vec2 m_Pos, m_Vel; void Tick(bool, bool) {} void Move() {} void Quantize() {} };
 struct CCollision { int GetCollisionAt(float, float) { return 0; } bool CheckPoint(float, float) { return true; } float GetHeight() { return 1000.0f; } };
 struct CGameWorld { CCollision *m_pCollision = new CCollision(); };  
 struct CClient { int GameTick(int) { return 0; } };
 class CGameClient { public: CGameWorld m_GameWorld; CCharacterCore m_PredictedChar; CClient* Client() { return &m_Client; } private: CClient m_Client; };
 
-// Configuration
-struct { 
-	bool m_FujixGerosBot = true;
-	bool m_Debug = false;
-	int m_FujixGerosAggressiveness = 5;
-	int m_FujixGerosPredictionTicks = 8;
-	bool m_FujixGerosAntiSuicide = true;
-} g_Config;
+// External configuration (will be defined in real project)
+bool g_Config_m_FujixGerosBot = true;
+bool g_Config_m_Debug = false;
+int g_Config_m_FujixGerosAggressiveness = 5;
+int g_Config_m_FujixGerosPredictionTicks = 8;
+bool g_Config_m_FujixGerosAntiSuicide = true;
 CFujixGerosBot::CFujixGerosBot()
 {
 	m_LastPredictionTick = 0;
@@ -47,15 +44,15 @@ CFujixGerosBot::CFujixGerosBot()
 	
 	for(int i = 0; i < 16; i++)
 	{
-		m_aPredictions[i].m_Pos = vec2(0, 0);
-		m_aPredictions[i].m_Vel = vec2(0, 0);
+		m_aPredictions[i].m_Pos = vec2{0, 0};
+		m_aPredictions[i].m_Vel = vec2{0, 0};
 		m_aPredictions[i].m_InDanger = false;
 		m_aPredictions[i].m_DangerLevel = 0.0f;
 		m_aPredictions[i].m_TicksUntilDeath = -1;
 		m_aPredictions[i].m_CanUseHook = false;
 		m_aPredictions[i].m_ShouldJump = false;
-		m_aPredictions[i].m_HookTarget = vec2(0, 0);
-		m_aPredictions[i].m_DesiredDir = vec2(0, 0);
+		m_aPredictions[i].m_HookTarget = vec2{0, 0};
+		m_aPredictions[i].m_DesiredDir = vec2{0, 0};
 	}
 }
 
@@ -70,7 +67,7 @@ void CFujixGerosBot::OnRender()
 		return;
 		
 	// Optional: Render prediction debug information
-	if(g_Config.m_Debug)
+	if(g_Config_m_Debug)
 	{
 		// Render predicted positions and danger zones
 		for(int i = 0; i < GetPredictionTicks(); i++)
@@ -90,22 +87,22 @@ void CFujixGerosBot::OnMessage(int MsgType, void *pRawMsg)
 
 bool CFujixGerosBot::IsActive() const
 {
-	return g_Config.m_FujixGerosBot;
+	return g_Config_m_FujixGerosBot;
 }
 
 int CFujixGerosBot::GetAggressiveness() const
 {
-	return g_Config.m_FujixGerosAggressiveness;
+	return g_Config_m_FujixGerosAggressiveness;
 }
 
 int CFujixGerosBot::GetPredictionTicks() const
 {
-	return g_Config.m_FujixGerosPredictionTicks;
+	return g_Config_m_FujixGerosPredictionTicks;
 }
 
 bool CFujixGerosBot::IsAntiSuicideEnabled() const
 {
-	return g_Config.m_FujixGerosAntiSuicide;
+	return g_Config_m_FujixGerosAntiSuicide;
 }
 
 void CFujixGerosBot::Update()
@@ -247,7 +244,7 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 	{
 		for(int y = -5; y <= 5; y++)
 		{
-			vec2 TestPos = Pos + vec2(x * 32.0f, y * 32.0f);
+			vec2 TestPos = Pos + vec2{x * 32.0f, y * 32.0f};
 			int TestTile = pGameClient->m_GameWorld.m_pCollision->GetCollisionAt(TestPos.x, TestPos.y);
 			if(TestTile != TILE_DEATH && TestTile != TILE_FREEZE && TestTile != TILE_DFREEZE && TestTile != TILE_LFREEZE && pGameClient->m_GameWorld.m_pCollision->CheckPoint(TestPos.x, TestPos.y + 16))
 			{
@@ -268,9 +265,9 @@ vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 {
 	CGameClient *pGameClient = GetGameClient();
 	if(!pGameClient->m_GameWorld.m_pCollision)
-		return vec2(0, 0);
+		return vec2{0, 0};
 		
-	vec2 BestTarget = vec2(0, 0);
+	vec2 BestTarget = vec2{0, 0};
 	float BestScore = -1.0f;
 	float HookRange = 320.0f; // Maximum hook range
 	
@@ -278,7 +275,7 @@ vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 	for(int angle = 0; angle < 360; angle += 15)
 	{
 		float rad = angle * 3.14159265f / 180.0f;
-		vec2 Direction = vec2(cosf(rad), sinf(rad));
+		vec2 Direction = vec2{cosf(rad), sinf(rad)};
 		
 		for(float distance = 32.0f; distance <= HookRange; distance += 16.0f)
 		{
@@ -291,7 +288,7 @@ vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 				float Score = 0.0f;
 				
 				// Higher score for positions that get us further from danger
-				if(!IsPositionDangerous(TestPos, vec2(0, 0)))
+				if(!IsPositionDangerous(TestPos, vec2{0, 0}))
 					Score += 5.0f;
 					
 				// Higher score for positions above us (easier to reach safety)
@@ -322,9 +319,9 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 {
 	CGameClient *pGameClient = GetGameClient();
 	if(!pGameClient->m_GameWorld.m_pCollision)
-		return vec2(0, 0);
+		return vec2{0, 0};
 		
-	vec2 BestDirection = vec2(0, 0);
+	vec2 BestDirection = vec2{0, 0};
 	float BestScore = -999.0f;
 
 	// Test different movement directions
@@ -335,13 +332,13 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 			if(x == 0 && y == 0)
 				continue;
 				
-			vec2 TestDirection = vec2(x, y);
+			vec2 TestDirection = vec2{(float)x, (float)y};
 			vec2 TestPos = Pos + TestDirection * 64.0f; // Test position 64 units away
 			
 			float Score = 0.0f;
 			
 			// Higher score for directions that lead away from danger
-			if(!IsPositionDangerous(TestPos, vec2(0, 0)))
+			if(!IsPositionDangerous(TestPos, vec2{0, 0}))
 				Score += 10.0f;
 			else
 				Score -= 5.0f;
@@ -350,7 +347,7 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 			if(DangerLevel > 3.0f && y < 0)
 				Score += 3.0f;
 			// Check if this direction has walkable ground
-			vec2 GroundCheck = TestPos + vec2(0, 16);
+			vec2 GroundCheck = TestPos + vec2{0, 16};
 			if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(GroundCheck.x, GroundCheck.y))
 				Score += 2.0f;
 				
@@ -378,9 +375,9 @@ bool CFujixGerosBot::CanReachSafetyWithHook(vec2 From, vec2 HookTarget)
 		SimulatedPos += HookDirection * 8.0f;
 		
 		// Check if we've reached a safe position
-		if(!IsPositionDangerous(SimulatedPos, vec2(0, 0)))
+		if(!IsPositionDangerous(SimulatedPos, vec2{0, 0}))
 		{
-			vec2 GroundCheck = SimulatedPos + vec2(0, 16);
+			vec2 GroundCheck = SimulatedPos + vec2{0, 16};
 			if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(GroundCheck.x, GroundCheck.y))
 				return true;
 		}
@@ -403,7 +400,7 @@ bool CFujixGerosBot::ShouldUseJump(vec2 Pos, vec2 Vel, vec2 DesiredDir)
 		return true;
 		
 	// Jump if there's an obstacle in front of us
-	vec2 FrontCheck = Pos + vec2(DesiredDir.x * 32.0f, 0);
+	vec2 FrontCheck = Pos + vec2{DesiredDir.x * 32.0f, 0};
 	if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(FrontCheck.x, FrontCheck.y))
 		return true;
 		
@@ -420,7 +417,7 @@ bool CFujixGerosBot::DetectSuicideAttempt(vec2 Pos, vec2 Vel, int InputDirection
 		return false;
 		
 	// Check if player is deliberately moving toward death tiles
-	vec2 InputDir = vec2(InputDirection, 0);
+	vec2 InputDir = vec2{(float)InputDirection, 0};
 	vec2 FuturePos = Pos + InputDir * 64.0f;
 	
 	if(IsPositionDangerous(FuturePos, Vel))
@@ -431,7 +428,7 @@ bool CFujixGerosBot::DetectSuicideAttempt(vec2 Pos, vec2 Vel, int InputDirection
 			if(dir == InputDirection)
 				continue;
 				
-			vec2 SafePos = Pos + vec2(dir * 64.0f, 0);
+			vec2 SafePos = Pos + vec2{(float)dir * 64.0f, 0};
 			if(!IsPositionDangerous(SafePos, Vel))
 				return true; // Player chose dangerous direction when safer ones exist
 		}
