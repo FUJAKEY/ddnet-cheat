@@ -287,7 +287,7 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 
 vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 {
-	CGameClient *pGameClient = GameClient();
+	
 	
 	vec2 BestTarget = vec2{0, 0};
 	float BestScore = -1.0f;
@@ -296,8 +296,7 @@ vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 	// 🧠 ЖЕСТКАЯ ЛОГИКА: анализ ситуации и выбор стратегии
 	bool FreezeAbove = IsFreezeInDirection(Pos, vec2{0, -1}, 4); // Потолок
 	bool FreezeBelow = IsFreezeInDirection(Pos, vec2{0, 1}, 4);  // Пол
-	bool FreezeLeft = IsFreezeInDirection(Pos, vec2{-1, 0}, 4);  // Левая стена
-	bool FreezeRight = IsFreezeInDirection(Pos, vec2{1, 0}, 4);  // Правая стена
+	// Переменные FreezeLeft и FreezeRight не используются в этой функции
 	
 	// 🎯 СТРАТЕГИЯ 1: CEILING RIDING (если сверху и снизу freeze)
 	if(FreezeAbove && FreezeBelow)
@@ -636,6 +635,7 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 	
 	return normalize(BestDirection);
 }
+bool CFujixGerosBot::IsGoodForRiding(vec2 Pos, vec2 Target)
 {
 	// Хорошие позиции для riding:
 	// 1. Стена на 3-4 тайла выше и в стороне
@@ -854,7 +854,6 @@ void CFujixGerosBot::GetBotInput(int *pInputDirection, int *pJump, int *pHook, v
 	
 	// 🎯 ОБЫЧНАЯ ЛОГИКА УПРАВЛЕНИЯ (если не riding)
 	// Use the first prediction to determine immediate action
-	SGerosBotPrediction *pPred = &m_aPredictions[0];
 	
 	// Set movement direction
 	if(pPred->m_DesiredDir.x > 0.1f)
@@ -1023,8 +1022,7 @@ bool CFujixGerosBot::ShouldJumpForWallRiding(vec2 PlayerPos, vec2 PlayerVel, int
 
 int CFujixGerosBot::CalculateCeilingRidingDirection(vec2 PlayerPos, vec2 PlayerVel, int RidingDuration)
 {
-	CGameClient *pGameClient = GameClient();
-	
+	// Проверяем что впереди нет freeze
 	// Проверяем что впереди нет freeze
 	bool FreezeLeft = IsFreezeInDirection(PlayerPos, vec2{-1, 0}, 3);
 	bool FreezeRight = IsFreezeInDirection(PlayerPos, vec2{1, 0}, 3);
