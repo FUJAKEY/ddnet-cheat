@@ -1,21 +1,37 @@
 #include "fujix_geros_bot.h"
 #include <cmath>
+#include <cmath>
 
-// Basic math functions
-inline float length(const vec2& v) { return sqrtf(v.x*v.x + v.y*v.y); }
-inline float distance(const vec2& a, const vec2& b) { vec2 d = {b.x-a.x, b.y-a.y}; return length(d); }
-inline vec2 normalize(const vec2& v) { float l = length(v); return l > 0 ? vec2{v.x/l, v.y/l} : vec2{0,0}; }
-inline float minimum(float a, float b) { return a < b ? a : b; }
-inline float maximum(float a, float b) { return a > b ? a : b; }
+vec2 operator+(const vec2& a, const vec2& b) { return {a.x + b.x, a.y + b.y}; }
+vec2 operator-(const vec2& a, const vec2& b) { return {a.x - b.x, a.y - b.y}; }
+vec2 operator*(const vec2& a, float f) { return {a.x * f, a.y * f}; }
+vec2& operator+=(vec2& a, const vec2& b) { a.x += b.x; a.y += b.y; return a; }
 
-// Tile constants
+// Math functions
+float length(const vec2& v) { return sqrtf(v.x*v.x + v.y*v.y); }
+float distance(const vec2& a, const vec2& b) { vec2 d = a - b; return length(d); }
+vec2 normalize(const vec2& v) { float l = length(v); return l > 0 ? v * (1.0f/l) : vec2{0,0}; }
+float minimum(float a, float b) { return a < b ? a : b; }
+float maximum(float a, float b) { return a > b ? a : b; }
+
+// Dummy CComponent base class  
+class CComponent { 
+public:
+	virtual ~CComponent() {}
+	virtual int Sizeof() const { return 0; }
+	virtual void OnInit() {}
+	virtual void OnRender() {}
+	virtual void OnMessage(int, void*) {}
+};
+
+// Game constants
 #define TILE_DEATH 1
-#define TILE_FREEZE 2  
-#define TILE_DFREEZE 3
+#define TILE_FREEZE 2
+#define TILE_DFREEZE 3  
 #define TILE_LFREEZE 4
 
-// Config mock
-struct ConfigMock { 
+// Mock config
+struct { 
 	bool m_FujixGerosBot = true;
 	bool m_Debug = false;
 	int m_FujixGerosAggressiveness = 5;
@@ -23,6 +39,13 @@ struct ConfigMock {
 	bool m_FujixGerosAntiSuicide = true;
 } g_Config;
 
+// Mock game classes
+class CCharacterCore { public: vec2 m_Pos, m_Vel; void Tick(bool, bool) {} void Move() {} void Quantize() {} };
+class CCollision { public: int GetCollisionAt(float, float) { return 0; } bool CheckPoint(float, float) { return true; } float GetHeight() { return 1000.0f; } };
+class CGameWorld { public: CCollision *m_pCollision = new CCollision(); };  
+class CClient { public: int GameTick(int) { return 0; } };
+class CGameClient { public: CGameWorld m_GameWorld; CCharacterCore m_PredictedChar; CClient* Client() { return &m_Client; } private: CClient m_Client; };
+	CGameClient* GameClient() { return nullptr; }
 CFujixGerosBot::CFujixGerosBot()
 {
 	m_LastPredictionTick = 0;
@@ -124,9 +147,7 @@ void CFujixGerosBot::Update()
 
 CGameClient *CFujixGerosBot::GetGameClient()
 {
-	// Return pointer to global GameClient instance
-	extern CGameClient *g_pGameClient;
-	return g_pGameClient;
+	return GameClient();
 }
 
 
