@@ -166,14 +166,6 @@ private:
     // Analysis methods
     bool AnalyzeHookTrajectory(vec2 From, vec2 To);
     void AvoidFloorHooks();
-    // Analysis methods
-    bool AnalyzeHookTrajectory(vec2 From, vec2 To);
-    void AvoidFloorHooks();
-    int m_LastPredictionTick;
-    int m_RescueAttempts;
-    int m_LastRescueTick;
-    float m_PlayerTrustLevel;
-    bool m_EmergencyMode;
     
 public:
     CFujixGerosBot();
