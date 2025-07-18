@@ -43,7 +43,7 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
 	GerosSection.HSplitTop(10.0f, nullptr, &GerosSection);
 	
 	// Enable checkbox - УВЕЛИЧЕННАЯ КНОПКА
-	static int s_GerosEnable = 0;
+	static CButtonContainer s_GerosEnable;
 	CUIRect BigButton;
 	GerosSection.HSplitTop(45.0f, &BigButton, &GerosSection);
 	BigButton.Draw(g_Config.m_FujixGerosBot ? ColorRGBA(0.2f, 0.8f, 0.2f, 0.3f) : ColorRGBA(0.8f, 0.2f, 0.2f, 0.3f), IGraphics::CORNER_ALL, 8.0f);
