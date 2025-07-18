@@ -189,7 +189,6 @@ bool CFujixGerosBot::IsPositionDangerous(vec2 Pos, vec2 Vel)
 		
 	return false;
 }
-}
 
 float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 {
@@ -219,10 +218,7 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 		{
 			vec2 TestPos = Pos + vec2(x * 32.0f, y * 32.0f);
 			int TestTile = pGameClient->m_GameWorld.m_pCollision->GetCollisionAt(TestPos.x, TestPos.y);
-				float Distance = distance(Pos, TestPos);
-				DistanceToSafety = minimum(DistanceToSafety, Distance);
-			}
-		}
+			if(TestTile != TILE_DEATH && TestTile != TILE_FREEZE && TestTile != TILE_DFREEZE && TestTile != TILE_LFREEZE && pGameClient->m_GameWorld.m_pCollision->CheckPoint(TestPos.x, TestPos.y + 16))
 			{
 				float Distance = distance(Pos, TestPos);
 				DistanceToSafety = minimum(DistanceToSafety, Distance);
@@ -231,17 +227,18 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 	}
 	
 	if(DistanceToSafety > 500.0f)
+	
+	if(DistanceToSafety > 500.0f)
 		DangerLevel += 5.0f;
+	else if(DistanceToSafety > 200.0f)
+		DangerLevel += 2.0f;
 	return DangerLevel;
 }
 
 vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
-vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 {
 	CGameClient *pGameClient = GetGameClient();
-		
-	vec2 BestTarget = vec2(0, 0);
-	if(!GetGameClient()->m_GameWorld.m_pCollision)
+	if(!pGameClient->m_GameWorld.m_pCollision)
 		return vec2(0, 0);
 		
 	vec2 BestTarget = vec2(0, 0);
@@ -252,15 +249,14 @@ vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 	for(int angle = 0; angle < 360; angle += 15)
 	{
 		float rad = angle * pi / 180.0f;
+		vec2 Direction = vec2(cosf(rad), sinf(rad));
+		
 		for(float distance = 32.0f; distance <= HookRange; distance += 16.0f)
 		{
 			vec2 TestPos = Pos + Direction * distance;
 			
 			// Check if this position is hookable
 			if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(TestPos.x, TestPos.y))
-			
-			// Check if this position is hookable
-			if(GetGameClient()->m_GameWorld.m_pCollision->CheckPoint(TestPos.x, TestPos.y))
 			{
 				// Calculate score based on safety and reachability
 				float Score = 0.0f;
@@ -284,31 +280,31 @@ vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 				{
 					BestScore = Score;
 					BestTarget = TestPos;
+				if(Score > BestScore)
+				{
+					BestScore = Score;
+					BestTarget = TestPos;
 				}
+				break; // Found a hookable surface in this direction
+			}
+		}
 	}
 	
 	return BestTarget;
 }
-	}
-	
+
 vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLevel)
+{
+	CGameClient *pGameClient = GetGameClient();
 	if(!pGameClient->m_GameWorld.m_pCollision)
 		return vec2(0, 0);
 		
 	vec2 BestDirection = vec2(0, 0);
-{
-	if(!GetGameClient()->m_GameWorld.m_pCollision)
-		return vec2(0, 0);
-		
-	vec2 BestDirection = vec2(0, 0);
 	float BestScore = -999.0f;
-	
+
 	// Test different movement directions
 	for(int x = -1; x <= 1; x++)
 	{
-		for(int y = -1; y <= 1; y++)
-		{
-			if(x == 0 && y == 0)
 				continue;
 				
 			vec2 TestDirection = vec2(x, y);
@@ -321,27 +317,29 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 				Score += 10.0f;
 			// Prefer upward movement when in danger
 			if(DangerLevel > 3.0f && y < 0)
-				Score += 3.0f;
+			if(!IsPositionDangerous(TestPos, vec2(0, 0)))
+				Score += 10.0f;
+			else
+				Score -= 5.0f;
+				
 			// Prefer upward movement when in danger
-			if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(GroundCheck.x, GroundCheck.y))
-			vec2 GroundCheck = TestPos + vec2(0, 16);
-			if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(GroundCheck.x, GroundCheck.y))
+			if(DangerLevel > 3.0f && y < 0)
+				Score += 3.0f;
+				
 			// Check if this direction has walkable ground
 			vec2 GroundCheck = TestPos + vec2(0, 16);
-			if(GetGameClient()->m_GameWorld.m_pCollision->CheckPoint(GroundCheck.x, GroundCheck.y))
+			if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(GroundCheck.x, GroundCheck.y))
 				Score += 2.0f;
 				
 			if(Score > BestScore)
 			{
+				BestScore = Score;
+				BestDirection = TestDirection;
+			}
 		}
 	}
 	
 	return normalize(BestDirection);
-}
-			}
-	vec2 HookDirection = normalize(HookTarget - From);
-	vec2 SimulatedPos = From;
-	
 	// Simulate hook swing
 	for(int i = 0; i < 50; i++)
 	{
