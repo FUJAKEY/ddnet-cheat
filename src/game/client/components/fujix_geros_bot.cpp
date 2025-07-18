@@ -815,7 +815,7 @@ vec2 CFujixGerosBot::FindEscapeRoute(vec2 Pos, vec2 Vel, int MaxTicks)
         {
             if(x == 0 && y == 0) continue;
             
-            vec2 TestDirection = vec2{x, y};
+            vec2 TestDirection = vec2{(float)x, (float)y};
             float Score = 0.0f;
             
             // Симулируем движение в этом направлении
@@ -1893,4 +1893,49 @@ void CFujixGerosBot::OptimizeRescueStrategy()
         m_AdaptiveThreshold = minimum(0.3f, m_AdaptiveThreshold + 0.02f);
         m_DangerDetectionRange = maximum(8, m_DangerDetectionRange - 1);
     }
+}
+
+// 🔧 НЕДОСТАЮЩИЕ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+
+bool CFujixGerosBot::CanDoCeilingRiding(vec2 Pos, vec2 Target)
+{
+    CGameClient *pGameClient = GameClient();
+    if(!pGameClient)
+        return false;
+    
+    // Проверяем что цель выше игрока (потолок)
+    if(Target.y >= Pos.y)
+        return false;
+    
+    // Проверяем что это solid блок
+    if(!pGameClient->Collision()->CheckPoint(Target.x, Target.y))
+        return false;
+    
+    // Проверяем что под блоком есть свободное место
+    if(pGameClient->Collision()->CheckPoint(Target.x, Target.y + 32.0f))
+        return false;
+    
+    return true;
+}
+
+bool CFujixGerosBot::CanDoWallRiding(vec2 Pos, vec2 Target, int Side)
+{
+    CGameClient *pGameClient = GameClient();
+    if(!pGameClient)
+        return false;
+    
+    // Проверяем что цель сбоку от игрока
+    if(Side > 0 && Target.x <= Pos.x) return false;
+    if(Side < 0 && Target.x >= Pos.x) return false;
+    
+    // Проверяем что это solid блок
+    if(!pGameClient->Collision()->CheckPoint(Target.x, Target.y))
+        return false;
+    
+    // Проверяем что рядом с блоком есть свободное место
+    float CheckX = Target.x + (Side > 0 ? -32.0f : 32.0f);
+    if(pGameClient->Collision()->CheckPoint(CheckX, Target.y))
+        return false;
+    
+    return true;
 }
