@@ -2033,7 +2033,6 @@ void CMenus::RenderSettings(CUIRect MainView)
 		GameClient()->m_MenuBackground.ChangePosition(CMenuBackground::POS_SETTINGS_ASSETS);
 		RenderSettingsFujix(MainView);
 	}
-	}
 	else
 	{
 		dbg_assert(false, "ui_settings_page invalid");
