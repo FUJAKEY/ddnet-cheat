@@ -63,6 +63,10 @@ public:
     bool IsActive() const;
     bool ShouldOverrideInput();
     void GetBotInput(int *pInputDirection, int *pJump, int *pHook, vec2 *pTargetX);
+    
+    // 🧪 ТЕСТОВЫЕ ФУНКЦИИ
+    void ForceEmergencyMode() { m_EmergencyMode = true; }
+    bool IsInEmergencyMode() const { return m_EmergencyMode; }
 
     // Emergency rescue system
     void ExecuteEmergencyRescue();

@@ -56,6 +56,20 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
 		g_Config.m_FujixGerosBot ^= 1;
 	}
 	
+	// 🧪 ТЕСТОВАЯ КНОПКА ДЛЯ ПРОВЕРКИ РАБОТЫ БОТА
+	GerosSection.HSplitTop(5.0f, nullptr, &GerosSection);
+	GerosSection.HSplitTop(30.0f, &Button, &GerosSection);
+	static CButtonContainer s_TestBot;
+	if(DoButton_Menu(&s_TestBot, "🧪 TEST BOT (Force Emergency Mode)", 0, &Button, 0, nullptr, IGraphics::CORNER_ALL))
+	{
+		if(pGameClient && g_Config.m_FujixGerosBot)
+		{
+			// Принудительно активируем emergency mode для теста
+			pGameClient->m_FujixGerosBot.ForceEmergencyMode();
+		}
+			pGameClient->m_FujixGerosBot.m_EmergencyMode = true;
+		}
+	}
 	// Status indicator
 	GerosSection.HSplitTop(10.0f, nullptr, &GerosSection);
 	GerosSection.HSplitTop(20.0f, &Label, &GerosSection);
@@ -63,17 +77,42 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
 	{
 		TextRender()->TextColor(0.3f, 1.0f, 0.3f, 1.0f);
 		str_format(aBuf, sizeof(aBuf), "● Status: ACTIVE - Protecting player from death");
+		if(pGameClient && pGameClient->m_FujixGerosBot.IsActive())
+		{
+			bool EmergencyState = pGameClient->m_FujixGerosBot.IsInEmergencyState();
+			bool ShouldOverride = pGameClient->m_FujixGerosBot.ShouldOverrideInput();
+			bool EmergencyMode = pGameClient->m_FujixGerosBot.IsInEmergencyMode();
+			
+			char aDebugBuf[256];
+			str_format(aDebugBuf, sizeof(aDebugBuf), "  🤖 Emergency: %s | Override: %s | Mode: %s", 
+				EmergencyState ? "YES" : "NO",
+				ShouldOverride ? "YES" : "NO", 
+				EmergencyMode ? "ACTIVE" : "STANDBY"
+			);
+			bool ShouldOverride = pGameClient->m_FujixGerosBot.ShouldOverrideInput();
+			
+			char aDebugBuf[256];
+			str_format(aDebugBuf, sizeof(aDebugBuf), "  🤖 Bot State: %s | Input Override: %s", 
+				EmergencyState ? "EMERGENCY" : "MONITORING",
+				ShouldOverride ? "YES" : "NO"
+			);
+			
+			Ui()->DoLabel(&Label, aBuf, 12.0f, TEXTALIGN_ML);
+			GerosSection.HSplitTop(15.0f, &Label, &GerosSection);
+			TextRender()->TextColor(0.7f, 0.7f, 1.0f, 1.0f);
+			Ui()->DoLabel(&Label, aDebugBuf, 10.0f, TEXTALIGN_ML);
+		}
+		else
+		{
+			Ui()->DoLabel(&Label, aBuf, 12.0f, TEXTALIGN_ML);
+		}
 	}
 	else
 	{
 		TextRender()->TextColor(1.0f, 0.3f, 0.3f, 1.0f);
-		str_format(aBuf, sizeof(aBuf), "● Status: INACTIVE - Manual control");
+		str_format(aBuf, sizeof(aBuf), "● Status: DISABLED - Click button above to enable");
+		Ui()->DoLabel(&Label, aBuf, 12.0f, TEXTALIGN_ML);
 	}
-	Ui()->DoLabel(&Label, aBuf, 12.0f, TEXTALIGN_ML);
-	TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
-	
-	// Features description
-	GerosSection.HSplitTop(20.0f, nullptr, &GerosSection);
 	GerosSection.HSplitTop(20.0f, &Label, &GerosSection);
 	str_format(aBuf, sizeof(aBuf), "Features:");
 	Ui()->DoLabel(&Label, aBuf, 14.0f, TEXTALIGN_ML);
