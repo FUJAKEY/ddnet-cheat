@@ -51,7 +51,7 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
 	
 	char aBufButton[128];
 	str_format(aBufButton, sizeof(aBufButton), "%s GEROS BOT", g_Config.m_FujixGerosBot ? "🟢 DISABLE" : "🔴 ENABLE");
-	if(DoButton_Menu(&s_GerosEnable, aBufButton, 0, &BigButton, 0, IGraphics::CORNER_ALL))
+	if(DoButton_Menu(&s_GerosEnable, aBufButton, 0, &BigButton, 0, nullptr, IGraphics::CORNER_ALL))
 	{
 		g_Config.m_FujixGerosBot ^= 1;
 	}
