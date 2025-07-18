@@ -2143,8 +2143,6 @@ set_src(GAME_SHARED GLOB src/game
   alloc.h
   collision.cpp
   collision.h
-  fujix_geros_bot.cpp
-  fujix_geros_bot.h
   gamecore.cpp
   gamecore.h
   layers.cpp
@@ -2347,8 +2345,12 @@ if(CLIENT)
     components/emoticon.h
     components/flow.cpp
     components/flow.h
+    components/flow.cpp
+    components/flow.h
     components/freezebars.cpp
     components/freezebars.h
+    components/fujix_geros_bot.cpp
+    components/fujix_geros_bot.h
     components/ghost.cpp
     components/ghost.h
     components/hud.cpp
