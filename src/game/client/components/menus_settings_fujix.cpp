@@ -62,12 +62,11 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
 	static CButtonContainer s_TestBot;
 	if(DoButton_Menu(&s_TestBot, "🧪 TEST BOT (Force Emergency Mode)", 0, &Button, 0, nullptr, IGraphics::CORNER_ALL))
 	{
+		CGameClient *pGameClient = GameClient();
 		if(pGameClient && g_Config.m_FujixGerosBot)
 		{
 			// Принудительно активируем emergency mode для теста
 			pGameClient->m_FujixGerosBot.ForceEmergencyMode();
-		}
-			pGameClient->m_FujixGerosBot.m_EmergencyMode = true;
 		}
 	}
 	// Status indicator
@@ -77,6 +76,9 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
 	{
 		TextRender()->TextColor(0.3f, 1.0f, 0.3f, 1.0f);
 		str_format(aBuf, sizeof(aBuf), "● Status: ACTIVE - Protecting player from death");
+		
+		// 🔍 ДОБАВЛЯЕМ ОТЛАДОЧНУЮ ИНФОРМАЦИЮ
+		CGameClient *pGameClient = GameClient();
 		if(pGameClient && pGameClient->m_FujixGerosBot.IsActive())
 		{
 			bool EmergencyState = pGameClient->m_FujixGerosBot.IsInEmergencyState();
@@ -88,13 +90,6 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
 				EmergencyState ? "YES" : "NO",
 				ShouldOverride ? "YES" : "NO", 
 				EmergencyMode ? "ACTIVE" : "STANDBY"
-			);
-			bool ShouldOverride = pGameClient->m_FujixGerosBot.ShouldOverrideInput();
-			
-			char aDebugBuf[256];
-			str_format(aDebugBuf, sizeof(aDebugBuf), "  🤖 Bot State: %s | Input Override: %s", 
-				EmergencyState ? "EMERGENCY" : "MONITORING",
-				ShouldOverride ? "YES" : "NO"
 			);
 			
 			Ui()->DoLabel(&Label, aBuf, 12.0f, TEXTALIGN_ML);
@@ -113,7 +108,7 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
 		str_format(aBuf, sizeof(aBuf), "● Status: DISABLED - Click button above to enable");
 		Ui()->DoLabel(&Label, aBuf, 12.0f, TEXTALIGN_ML);
 	}
-	GerosSection.HSplitTop(20.0f, &Label, &GerosSection);
+	GerosSection.HSplitTop(20.0f, nullptr, &GerosSection);
 	str_format(aBuf, sizeof(aBuf), "Features:");
 	Ui()->DoLabel(&Label, aBuf, 14.0f, TEXTALIGN_ML);
 	
