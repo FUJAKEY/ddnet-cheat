@@ -53,16 +53,45 @@ void CFujixGerosBot::OnRender()
 	if(!IsActive())
 		return;
 		
-	// Optional: Render prediction debug information
-	if(g_Config.m_Debug)
+	// 🎯 ОТЛАДОЧНАЯ ВИЗУАЛИЗАЦИЯ В РЕАЛЬНОМ ВРЕМЕНИ
+	CGameClient *pGameClient = GameClient();
+	if(pGameClient && g_Config.m_Debug)
 	{
-		// Render predicted positions and danger zones
+		// Рендер предсказанных позиций и опасных зон
 		for(int i = 0; i < GetPredictionTicks(); i++)
 		{
 			if(m_aPredictions[i].m_InDanger)
 			{
-				// Render danger indicators
+				// Красные точки = опасность
+				Graphics()->TextureClear();
+				Graphics()->QuadsBegin();
+				Graphics()->SetColor(1.0f, 0.2f, 0.2f, 0.8f);
+				IGraphics::CQuadItem QuadItem(m_aPredictions[i].m_Pos.x - 8, m_aPredictions[i].m_Pos.y - 8, 16, 16);
+				Graphics()->QuadsDrawTL(&QuadItem, 1);
+				Graphics()->QuadsEnd();
 			}
+			
+			// Линии к целям крюка
+			if(m_aPredictions[i].m_CanUseHook)
+			{
+				Graphics()->LinesBegin();
+				Graphics()->SetColor(0.2f, 1.0f, 0.2f, 0.6f);
+				IGraphics::CLineItem LineItem(m_aPredictions[i].m_Pos.x, m_aPredictions[i].m_Pos.y, 
+											  m_aPredictions[i].m_HookTarget.x, m_aPredictions[i].m_HookTarget.y);
+				Graphics()->LinesDraw(&LineItem, 1);
+				Graphics()->LinesEnd();
+			}
+		}
+		
+		// 🕷️ ВИЗУАЛИЗАЦИЯ WALL/CEILING RIDING
+		if(m_IsWallRiding || m_IsCeilingRiding)
+		{
+			Graphics()->TextureClear();
+			Graphics()->QuadsBegin();
+			Graphics()->SetColor(1.0f, 1.0f, 0.0f, 0.5f); // Желтый = riding mode
+			IGraphics::CQuadItem RidingQuad(m_CurrentRidingTarget.x - 12, m_CurrentRidingTarget.y - 12, 24, 24);
+			Graphics()->QuadsDrawTL(&RidingQuad, 1);
+			Graphics()->QuadsEnd();
 		}
 	}
 }
@@ -334,7 +363,10 @@ vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 		}
 	}
 	
+	
 	return BestTarget;
+}
+
 // 🧠 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ЖЕСТКОЙ ЛОГИКИ КРЮКА
 
 bool CFujixGerosBot::IsFreezeInDirection(vec2 Pos, vec2 Dir, int TileDistance)
@@ -535,29 +567,11 @@ bool CFujixGerosBot::IsHookTrajectorysSafe(vec2 From, vec2 To)
 	return true;
 }
 
-bool CFujixGerosBot::IsGoodForRiding(vec2 Pos, vec2 Target)
-{
-	// Хорошие позиции для riding:
-	// 1. Стена на 3-4 тайла выше и в стороне
-	// 2. Потолок выше нас
-	
-	vec2 Diff = Target - Pos;
-	
-	// Стена для wall riding
-	if(abs(Diff.x) >= 64.0f && abs(Diff.x) <= 128.0f && Diff.y < -64.0f && Diff.y > -160.0f)
-		return true;
-	
-	// Потолок для ceiling riding
-	if(Diff.y < -32.0f && abs(Diff.x) <= 160.0f)
-		return true;
-	
-	return false;
-}
-
+// 🧠 УЛУЧШЕННАЯ ЛОГИКА ESCAPE DIRECTION
 vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLevel)
 {
 	CGameClient *pGameClient = GameClient();
-		
+	
 	vec2 BestDirection = vec2{0, 0};
 	float BestScore = -999.0f;
 
@@ -622,6 +636,24 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 	
 	return normalize(BestDirection);
 }
+{
+	// Хорошие позиции для riding:
+	// 1. Стена на 3-4 тайла выше и в стороне
+	// 2. Потолок выше нас
+	
+	vec2 Diff = Target - Pos;
+	
+	// Стена для wall riding
+	if(abs(Diff.x) >= 64.0f && abs(Diff.x) <= 128.0f && Diff.y < -64.0f && Diff.y > -160.0f)
+		return true;
+	
+	// Потолок для ceiling riding
+	if(Diff.y < -32.0f && abs(Diff.x) <= 160.0f)
+		return true;
+	
+	return false;
+}
+
 
 bool CFujixGerosBot::CanReachSafetyWithHook(vec2 From, vec2 HookTarget)
 {
@@ -838,6 +870,7 @@ void CFujixGerosBot::GetBotInput(int *pInputDirection, int *pJump, int *pHook, v
 	// Set hook
 	*pHook = pPred->m_CanUseHook ? 1 : 0;
 	*pTargetX = pPred->m_HookTarget;
+}
 
 // 🕷️ МАКСИМАЛЬНО ЖЕСТКАЯ WALL/CEILING RIDING ЛОГИКА
 
