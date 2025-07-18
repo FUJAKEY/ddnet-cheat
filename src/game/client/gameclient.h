@@ -61,7 +61,7 @@
 #include "components/tooltips.h"
 #include "components/touch_controls.h"
 #include "components/voting.h"
-#include "../fujix_geros_bot.h"
+#include "components/fujix_geros_bot.h"
 #include <vector>
 
 class CGameInfo

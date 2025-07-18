@@ -1,37 +1,17 @@
 #include "fujix_geros_bot.h"
-#include <cmath>
 
-// Math functions for vec2
-vec2 operator+(const vec2& a, const vec2& b) { return {a.x + b.x, a.y + b.y}; }
-vec2 operator-(const vec2& a, const vec2& b) { return {a.x - b.x, a.y - b.y}; }
-vec2 operator*(const vec2& a, float f) { return {a.x * f, a.y * f}; }
-vec2& operator+=(vec2& a, const vec2& b) { a.x += b.x; a.y += b.y; return a; }
+#include <base/math.h>
+#include <engine/shared/config.h>
+#include <game/client/gameclient.h>
+#include <game/client/prediction/entities/character.h>
+#include <game/collision.h>
+#include <engine/client.h>
 
-float length(const vec2& v) { return sqrtf(v.x*v.x + v.y*v.y); }
-float distance(const vec2& a, const vec2& b) { vec2 d = a - b; return length(d); }
-vec2 normalize(const vec2& v) { float l = length(v); return l > 0 ? v * (1.0f/l) : vec2{0,0}; }
-float minimum(float a, float b) { return a < b ? a : b; }
-float maximum(float a, float b) { return a > b ? a : b; }
-
-// Game constants
+// Game constants from game/collision.h 
 #define TILE_DEATH 1
-#define TILE_FREEZE 2
-#define TILE_DFREEZE 3  
+#define TILE_FREEZE 2  
+#define TILE_DFREEZE 3
 #define TILE_LFREEZE 4
-
-// Mock structures for standalone compilation  
-struct CCharacterCore { vec2 m_Pos, m_Vel; void Tick(bool, bool) {} void Move() {} void Quantize() {} };
-struct CCollision { int GetCollisionAt(float, float) { return 0; } bool CheckPoint(float, float) { return true; } float GetHeight() { return 1000.0f; } };
-struct CGameWorld { CCollision *m_pCollision = new CCollision(); };  
-struct CClient { int GameTick(int) { return 0; } };
-class CGameClient { public: CGameWorld m_GameWorld; CCharacterCore m_PredictedChar; CClient* Client() { return &m_Client; } private: CClient m_Client; };
-
-// External configuration (will be defined in real project)
-bool g_Config_m_FujixGerosBot = true;
-bool g_Config_m_Debug = false;
-int g_Config_m_FujixGerosAggressiveness = 5;
-int g_Config_m_FujixGerosPredictionTicks = 8;
-bool g_Config_m_FujixGerosAntiSuicide = true;
 CFujixGerosBot::CFujixGerosBot()
 {
 	m_LastPredictionTick = 0;
@@ -56,18 +36,18 @@ CFujixGerosBot::CFujixGerosBot()
 	}
 }
 
-void CFujixGerosBot::OnInit()
+void CFujixGerosBotg_Config.OnInit()
 {
 	// Initialize GEROS BOT system
 }
 
-void CFujixGerosBot::OnRender()
+void CFujixGerosBotg_Config.OnRender()
 {
 	if(!IsActive())
 		return;
 		
 	// Optional: Render prediction debug information
-	if(g_Config_m_Debug)
+	if(g_Config.m_Debug)
 	{
 		// Render predicted positions and danger zones
 		for(int i = 0; i < GetPredictionTicks(); i++)
@@ -80,32 +60,32 @@ void CFujixGerosBot::OnRender()
 	}
 }
 
-void CFujixGerosBot::OnMessage(int MsgType, void *pRawMsg)
+void CFujixGerosBotg_Config.OnMessage(int MsgType, void *pRawMsg)
 {
 	// Handle game messages if needed
 }
 
-bool CFujixGerosBot::IsActive() const
+bool CFujixGerosBotg_Config.IsActive() const
 {
-	return g_Config_m_FujixGerosBot;
+	return g_Config.m_FujixGerosBot;
 }
 
-int CFujixGerosBot::GetAggressiveness() const
+int CFujixGerosBotg_Config.GetAggressiveness() const
 {
-	return g_Config_m_FujixGerosAggressiveness;
+	return g_Config.m_FujixGerosAggressiveness;
 }
 
-int CFujixGerosBot::GetPredictionTicks() const
+int CFujixGerosBotg_Config.GetPredictionTicks() const
 {
-	return g_Config_m_FujixGerosPredictionTicks;
+	return g_Config.m_FujixGerosPredictionTicks;
 }
 
-bool CFujixGerosBot::IsAntiSuicideEnabled() const
+bool CFujixGerosBotg_Config.IsAntiSuicideEnabled() const
 {
-	return g_Config_m_FujixGerosAntiSuicide;
+	return g_Config.m_FujixGerosAntiSuicide;
 }
 
-void CFujixGerosBot::Update()
+void CFujixGerosBotg_Config.Update()
 {
 	if(!IsActive())
 		return;
@@ -128,20 +108,15 @@ void CFujixGerosBot::Update()
 		m_PlayerTrustLevel = minimum(1.0f, m_PlayerTrustLevel + 0.01f);
 	}
 	
-	CGameClient *pGameClient = GetGameClient();
+	CGameClient *pGameClient = GameClient();
 	m_LastPredictionTick = pGameClient->Client()->GameTick(0);
 }
 
-CGameClient *CFujixGerosBot::GetGameClient()
+// GameClient() наследуется от CComponent
+void CFujixGerosBotg_Config.PredictMovement(SGerosBotPrediction *pPredictions, int NumTicks)
 {
-	return GameClient();
-}
-
-
-void CFujixGerosBot::PredictMovement(SGerosBotPrediction *pPredictions, int NumTicks)
-{
-	CGameClient *pGameClient = GetGameClient();
-	CCharacterCore Core = pGameClient->m_PredictedChar;
+	CGameClient *pGameClient = GameClient();
+	CCharacterCore Core = GameClient()->m_PredictedChar;
 	
 	for(int i = 0; i < NumTicks && i < 16; i++)
 	{
@@ -171,10 +146,10 @@ void CFujixGerosBot::PredictMovement(SGerosBotPrediction *pPredictions, int NumT
 	}
 }
 
-void CFujixGerosBot::SimulateCharacterCore(CCharacterCore *pCore, int Ticks)
+void CFujixGerosBotg_Config.SimulateCharacterCore(CCharacterCore *pCore, int Ticks)
 {
-	CGameClient *pGameClient = GetGameClient();
-	if(!pCore || !pGameClient->m_GameWorld.m_pCollision)
+	CGameClient *pGameClient = GameClient();
+	if(!pCore || !pGameClient->Collision())
 		return;
 		
 	for(int i = 0; i < Ticks; i++)
@@ -186,14 +161,14 @@ void CFujixGerosBot::SimulateCharacterCore(CCharacterCore *pCore, int Ticks)
 	}
 }
 
-bool CFujixGerosBot::IsPositionDangerous(vec2 Pos, vec2 Vel)
+bool CFujixGerosBotg_Config.IsPositionDangerous(vec2 Pos, vec2 Vel)
 {
-	CGameClient *pGameClient = GetGameClient();
-	if(!pGameClient || !pGameClient->m_GameWorld.m_pCollision)
+	CGameClient *pGameClient = GameClient();
+	if(!pGameClient || !pGameClient->Collision())
 		return false;
 		
 	// Check for collision with death tiles
-	int TileIndex = pGameClient->m_GameWorld.m_pCollision->GetCollisionAt(Pos.x, Pos.y);
+	int TileIndex = pGameClient->Collision()->GetCollisionAt(Pos.x, Pos.y);
 	if(TileIndex == TILE_DEATH)
 		return true;
 		
@@ -202,12 +177,12 @@ bool CFujixGerosBot::IsPositionDangerous(vec2 Pos, vec2 Vel)
 		return true;
 		
 	// Check if falling into void
-	if(Pos.y > pGameClient->m_GameWorld.m_pCollision->GetHeight() * 32.0f)
+	if(Pos.y > pGameClient->Collision()->GetHeight() * 32.0f)
 		return true;
 		
 	// Predict if current velocity will lead to death
 	vec2 PredictedPos = Pos + Vel * 2.0f; // 2 ticks ahead
-	int PredictedTile = pGameClient->m_GameWorld.m_pCollision->GetCollisionAt(PredictedPos.x, PredictedPos.y);
+	int PredictedTile = pGameClient->Collision()->GetCollisionAt(PredictedPos.x, PredictedPos.y);
 	if(PredictedTile == TILE_DEATH)
 		return true;
 		
@@ -218,16 +193,14 @@ bool CFujixGerosBot::IsPositionDangerous(vec2 Pos, vec2 Vel)
 	return false;
 }
 
-float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
+float CFujixGerosBotg_Config.CalculateDangerLevel(vec2 Pos, vec2 Vel)
 {
 	float DangerLevel = 0.0f;
-	CGameClient *pGameClient = GetGameClient();
+	CGameClient *pGameClient = GameClient();
 	
-	if(!pGameClient->m_GameWorld.m_pCollision)
-		return DangerLevel;
 	// Base danger from current tile
-	int TileIndex = pGameClient->m_GameWorld.m_pCollision->GetCollisionAt(Pos.x, Pos.y);
-	if(TileIndex == TILE_DEATH)
+	int TileIndex = pGameClient->Collision()->GetCollisionAt(Pos.x, Pos.y);
+	float Speed = length(Vel);
 		DangerLevel += 10.0f;
 		
 	// Freeze tiles are also dangerous
@@ -245,8 +218,8 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 		for(int y = -5; y <= 5; y++)
 		{
 			vec2 TestPos = Pos + vec2{x * 32.0f, y * 32.0f};
-			int TestTile = pGameClient->m_GameWorld.m_pCollision->GetCollisionAt(TestPos.x, TestPos.y);
-			if(TestTile != TILE_DEATH && TestTile != TILE_FREEZE && TestTile != TILE_DFREEZE && TestTile != TILE_LFREEZE && pGameClient->m_GameWorld.m_pCollision->CheckPoint(TestPos.x, TestPos.y + 16))
+			int TestTile = pGameClient->Collision()->GetCollisionAt(TestPos.x, TestPos.y);
+			if(TestTile != TILE_DEATH && TestTile != TILE_FREEZE && TestTile != TILE_DFREEZE && TestTile != TILE_LFREEZE && pGameClient->Collision()->CheckPoint(TestPos.x, TestPos.y + 16))
 			{
 				float Distance = distance(Pos, TestPos);
 				DistanceToSafety = minimum(DistanceToSafety, Distance);
@@ -261,11 +234,9 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 	return DangerLevel;
 }
 
-vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
+vec2 CFujixGerosBotg_Config.FindBestHookTarget(vec2 Pos, vec2 Vel)
 {
-	CGameClient *pGameClient = GetGameClient();
-	if(!pGameClient->m_GameWorld.m_pCollision)
-		return vec2{0, 0};
+	CGameClient *pGameClient = GameClient();
 		
 	vec2 BestTarget = vec2{0, 0};
 	float BestScore = -1.0f;
@@ -282,7 +253,7 @@ vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 			vec2 TestPos = Pos + Direction * distance;
 			
 			// Check if this position is hookable
-			if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(TestPos.x, TestPos.y))
+			if(pGameClient->Collision()->CheckPoint(TestPos.x, TestPos.y))
 			{
 				// Calculate score based on safety and reachability
 				float Score = 0.0f;
@@ -315,11 +286,9 @@ vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 	return BestTarget;
 }
 
-vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLevel)
+vec2 CFujixGerosBotg_Config.CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLevel)
 {
-	CGameClient *pGameClient = GetGameClient();
-	if(!pGameClient->m_GameWorld.m_pCollision)
-		return vec2{0, 0};
+	CGameClient *pGameClient = GameClient();
 		
 	vec2 BestDirection = vec2{0, 0};
 	float BestScore = -999.0f;
@@ -348,7 +317,7 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 				Score += 3.0f;
 			// Check if this direction has walkable ground
 			vec2 GroundCheck = TestPos + vec2{0, 16};
-			if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(GroundCheck.x, GroundCheck.y))
+			if(pGameClient->Collision()->CheckPoint(GroundCheck.x, GroundCheck.y))
 				Score += 2.0f;
 				
 			if(Score > BestScore)
@@ -362,9 +331,9 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 	return normalize(BestDirection);
 }
 
-bool CFujixGerosBot::CanReachSafetyWithHook(vec2 From, vec2 HookTarget)
+bool CFujixGerosBotg_Config.CanReachSafetyWithHook(vec2 From, vec2 HookTarget)
 {
-	CGameClient *pGameClient = GetGameClient();
+	CGameClient *pGameClient = GameClient();
 	// Simple simulation: check if hooking to target would allow reaching safe ground
 	vec2 HookDirection = normalize(HookTarget - From);
 	vec2 SimulatedPos = From;
@@ -378,30 +347,28 @@ bool CFujixGerosBot::CanReachSafetyWithHook(vec2 From, vec2 HookTarget)
 		if(!IsPositionDangerous(SimulatedPos, vec2{0, 0}))
 		{
 			vec2 GroundCheck = SimulatedPos + vec2{0, 16};
-			if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(GroundCheck.x, GroundCheck.y))
+			if(pGameClient->Collision()->CheckPoint(GroundCheck.x, GroundCheck.y))
 				return true;
 		}
 		
 		// Stop if we hit a wall
-		if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(SimulatedPos.x, SimulatedPos.y))
+		if(pGameClient->Collision()->CheckPoint(SimulatedPos.x, SimulatedPos.y))
 			break;
 	}
 	
 	return false;
 }
 
-bool CFujixGerosBot::ShouldUseJump(vec2 Pos, vec2 Vel, vec2 DesiredDir)
+bool CFujixGerosBotg_Config.ShouldUseJump(vec2 Pos, vec2 Vel, vec2 DesiredDir)
 {
-	CGameClient *pGameClient = GetGameClient();
-	if(!pGameClient->m_GameWorld.m_pCollision)
-		return false;
+	CGameClient *pGameClient = GameClient();
 	// Jump if we need to go upward
 	if(DesiredDir.y < -0.5f)
 		return true;
 		
 	// Jump if there's an obstacle in front of us
 	vec2 FrontCheck = Pos + vec2{DesiredDir.x * 32.0f, 0};
-	if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(FrontCheck.x, FrontCheck.y))
+	if(pGameClient->Collision()->CheckPoint(FrontCheck.x, FrontCheck.y))
 		return true;
 		
 	// Jump if we're moving fast downward and in danger
@@ -411,7 +378,7 @@ bool CFujixGerosBot::ShouldUseJump(vec2 Pos, vec2 Vel, vec2 DesiredDir)
 	return false;
 }
 
-bool CFujixGerosBot::DetectSuicideAttempt(vec2 Pos, vec2 Vel, int InputDirection)
+bool CFujixGerosBotg_Config.DetectSuicideAttempt(vec2 Pos, vec2 Vel, int InputDirection)
 {
 	if(!IsAntiSuicideEnabled())
 		return false;
@@ -437,7 +404,7 @@ bool CFujixGerosBot::DetectSuicideAttempt(vec2 Pos, vec2 Vel, int InputDirection
 	return false;
 }
 
-bool CFujixGerosBot::IsPlayerTryingToKillThemselves()
+bool CFujixGerosBotg_Config.IsPlayerTryingToKillThemselves()
 {
 	// Analyze recent player behavior patterns
 	// This is a simplified version - real implementation would track behavior history
@@ -449,7 +416,7 @@ bool CFujixGerosBot::IsPlayerTryingToKillThemselves()
 	return false;
 }
 
-bool CFujixGerosBot::IsInEmergencyState()
+bool CFujixGerosBotg_Config.IsInEmergencyState()
 {
 	// Check if any of the near-future predictions show imminent death
 	for(int i = 0; i < minimum(4, GetPredictionTicks()); i++)
@@ -465,9 +432,9 @@ bool CFujixGerosBot::IsInEmergencyState()
 	return false;
 }
 
-void CFujixGerosBot::ExecuteEmergencyRescue()
+void CFujixGerosBotg_Config.ExecuteEmergencyRescue()
 {
-	CGameClient *pGameClient = GetGameClient();
+	CGameClient *pGameClient = GameClient();
 	if(pGameClient->Client()->GameTick(0) - m_LastRescueTick < 5) // Prevent spam rescues
 		return;
 
@@ -478,7 +445,7 @@ void CFujixGerosBot::ExecuteEmergencyRescue()
 	// This will be used by the input system
 }
 
-bool CFujixGerosBot::ShouldOverrideInput()
+bool CFujixGerosBotg_Config.ShouldOverrideInput()
 {
 	if(!IsActive())
 		return false;
@@ -494,7 +461,7 @@ bool CFujixGerosBot::ShouldOverrideInput()
 	return false;
 }
 
-void CFujixGerosBot::GetBotInput(int *pInputDirection, int *pJump, int *pHook, vec2 *pTargetX)
+void CFujixGerosBotg_Config.GetBotInput(int *pInputDirection, int *pJump, int *pHook, vec2 *pTargetX)
 {
 	if(!ShouldOverrideInput())
 		return;

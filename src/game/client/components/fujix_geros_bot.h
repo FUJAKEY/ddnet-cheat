@@ -1,22 +1,12 @@
 #ifndef GAME_CLIENT_FUJIX_GEROS_BOT_H
 #define GAME_CLIENT_FUJIX_GEROS_BOT_H
 
-// This file will use system headers when integrated into DDNet project
-// Forward declarations for standalone compilation
-typedef struct { float x, y; } vec2;
-struct CCharacterCore;
-class CGameClient;
-class CComponent { 
-public: 
-	virtual ~CComponent() {} 
-	virtual int Sizeof() const { return 0; }
-	virtual void OnInit() {}
-	virtual void OnRender() {} 
-	virtual void OnMessage(int, void*) {}
-protected:
-	CGameClient* GameClient() { return nullptr; }
-};
+#include <base/vmath.h>
+#include <game/client/component.h>
+#include <game/client/component.h>
 
+// Forward declarations
+class CCharacterCore;
 struct SGerosBotPrediction
 {
 	vec2 m_Pos;
@@ -33,12 +23,9 @@ struct SGerosBotPrediction
 class CFujixGerosBot : public CComponent
 {
 private:
-	// Helper method
-	CGameClient *GetGameClient();
-	
 	// Core prediction and simulation
-	void PredictMovement(SGerosBotPrediction *pPredictions, int NumTicks);
 	void SimulateCharacterCore(CCharacterCore *pCore, int Ticks);
+	void SimulateCharacterCore(class CCharacterCore *pCore, int Ticks);
 	bool IsPositionDangerous(vec2 Pos, vec2 Vel);
 	float CalculateDangerLevel(vec2 Pos, vec2 Vel);
 	
