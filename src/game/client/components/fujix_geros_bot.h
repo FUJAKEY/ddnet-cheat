@@ -25,7 +25,6 @@ class CFujixGerosBot : public CComponent
 private:
 	// Core prediction and simulation
 	void SimulateCharacterCore(CCharacterCore *pCore, int Ticks);
-	void SimulateCharacterCore(class CCharacterCore *pCore, int Ticks);
 	bool IsPositionDangerous(vec2 Pos, vec2 Vel);
 	float CalculateDangerLevel(vec2 Pos, vec2 Vel);
 	
