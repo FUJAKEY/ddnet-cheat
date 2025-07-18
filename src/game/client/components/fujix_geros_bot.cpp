@@ -99,7 +99,16 @@ CFujixGerosBot::CFujixGerosBot()
     m_HookAnalysis.m_WillHitWall = false;
     m_HookAnalysis.m_WillHitCeiling = false;
     m_HookAnalysis.m_TrajectoryLength = 0;
+    m_HookAnalysis.m_TrajectoryLength = 0;
     m_HookAnalysis.m_IsEmergencyOnly = false;
+    
+    // Инициализация riding переменных
+    m_IsWallRiding = false;
+    m_IsCeilingRiding = false;
+    m_RidingSide = 0;
+    m_CurrentRidingTarget = vec2{0, 0};
+    m_RidingStartTick = 0;
+    m_LastHookReleaseTick = 0;
 }
 
 void CFujixGerosBot::OnInit()
@@ -768,33 +777,7 @@ void CFujixGerosBot::OverridePlayerInput(int *pInputDirection, int *pJump, int *
 }
 
 // 🎯 УЛУЧШЕННЫЙ ГЛАВНЫЙ МЕТОД GetBotInput
-void CFujixGerosBot::GetBotInput(int *pInputDirection, int *pJump, int *pHook, vec2 *pTargetX)
-{
-    if(!IsActive())
-        return;
-    
-    // 🚀 РЕЖИМ ПОЛНОЙ АВТОНОМИИ
-    if(m_FullAutonomyMode)
-    {
-        ExecuteAutonomousControl(pInputDirection, pJump, pHook, pTargetX);
-        return; // AI полностью управляет!
-    }
-    
-    // 🛡️ РЕЖИМ БЛОКИРОВКИ ОПАСНЫХ ДЕЙСТВИЙ
-    if(m_BlockPlayerInput || m_OverrideLevel >= 2)
-    {
-        OverridePlayerInput(pInputDirection, pJump, pHook, pTargetX);
-    }
-    
-    // 📊 СТАТИСТИКА
-    if(*pInputDirection != 0 || *pJump || *pHook)
-    {
-        // Проверяем успешность наших решений
-        if(!WillInputCauseDeath(0, *pInputDirection) && !WillInputCauseDeath(1, *pJump ? 1 : 0))
-            m_SuccessfulRescues++;
-        else
-            m_FailedAttempts++;
-    }
+// 🎯 УЛУЧШЕННЫЙ ГЛАВНЫЙ МЕТОД GetBotInput (удален - дубликат)
 }
 
 // 🎯 ДОПОЛНИТЕЛЬНЫЕ РЕВОЛЮЦИОННЫЕ ФУНКЦИИ
@@ -919,71 +902,14 @@ bool CFujixGerosBot::IsActive() const
     return HasDanger || m_EmergencyMode || m_FullAutonomyMode;
 }
 
-// 🛡️ УЛУЧШЕННАЯ ПРОВЕРКА ПЕРЕОПРЕДЕЛЕНИЯ ВВОДА  
-bool CFujixGerosBot::ShouldOverrideInput()
-{
-    return IsActive() && (m_OverrideLevel >= 1 || m_BlockPlayerInput || m_FullAutonomyMode);
-}
+// 🛡️ УЛУЧШЕННАЯ ПРОВЕРКА ПЕРЕОПРЕДЕЛЕНИЯ ВВОДА (удалена - дубликат)
 
-// 🚨 ЭКСТРЕННОЕ СПАСЕНИЕ
-void CFujixGerosBot::ExecuteEmergencyRescue()
-{
-    // Немедленно активируем полную автономию
-    ActivateFullAutonomy();
-    
-    // Попытка найти экстренный крюк
-    CGameClient *pGameClient = GameClient();
-    if(pGameClient)
-    {
-        vec2 PlayerPos = pGameClient->m_PredictedChar.m_Pos;
-        vec2 PlayerVel = pGameClient->m_PredictedChar.m_Vel;
-        
-        vec2 EmergencyTarget = FindUltraSafeHookTarget(PlayerPos, PlayerVel);
-        if(EmergencyTarget.x != 0 || EmergencyTarget.y != 0)
-        {
-            // Принудительно используем экстренный крюк
-            m_HookAnalysis.m_BestTarget = EmergencyTarget;
-            m_HookAnalysis.m_SuccessRate = 1.0f; // Принудительно считаем успешным
-        }
-    }
-}
+// 🚨 ЭКСТРЕННОЕ СПАСЕНИЕ (удалена - дубликат)
 
-bool CFujixGerosBot::IsInEmergencyState()
-{
-    // Экстренное состояние если высокая опасность сейчас или в ближайшем будущем
-    for(int i = 0; i < minimum(8, MAX_PREDICTION_TICKS); i++)
-    {
-        if(m_aDeepPredictions[i].m_DeathProbability > 0.7f || 
-           m_aDeepPredictions[i].m_RequiresFullOverride)
-        {
-            return true;
-        }
-    }
-    
-    return m_EmergencyMode;
-}
-
-int CFujixGerosBot::GetAggressiveness() const
-{
-	return g_Config.m_FujixGerosAggressiveness;
-}
-
+// ПРОВЕРКА ЭКСТРЕННОГО СОСТОЯНИЯ (удалена - дубликат)
 int CFujixGerosBot::GetPredictionTicks() const
 {
-	return g_Config.m_FujixGerosPredictionTicks;
-}
-
-bool CFujixGerosBot::IsAntiSuicideEnabled() const
-{
-	return g_Config.m_FujixGerosAntiSuicide;
-}
-
-
-// GameClient() наследуется от CComponent
-void CFujixGerosBot::PredictMovement(SAdvancedPrediction *pPredictions, int NumTicks)
-{
-    // Просто вызываем более продвинутую версию
-    DeepPredict(pPredictions, NumTicks);
+// ПРОВЕРКА ЭКСТРЕННОГО СОСТОЯНИЯ (удалена - дубликат)
 }
 
 void CFujixGerosBot::SimulateCharacterCore(CCharacterCore *pCore, int Ticks)

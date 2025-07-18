@@ -133,7 +133,42 @@ private:
     bool CanReachSafetyWithHook(vec2 From, vec2 HookTarget);
     bool ShouldUseJump(vec2 Pos, vec2 Vel, vec2 DesiredDir);
     
+    // Anti-suicide system
+    bool DetectSuicideAttempt(vec2 Pos, vec2 Vel, int InputDirection);
+    bool IsPlayerTryingToKillThemselves();
+    
     // Состояние
+    int m_LastPredictionTick;
+    int m_RescueAttempts;
+    int m_LastRescueTick;
+    float m_PlayerTrustLevel;
+    bool m_EmergencyMode;
+    
+    // 🕷️ WALL/CEILING RIDING SYSTEM
+    bool m_IsWallRiding;
+    bool m_IsCeilingRiding;
+    int m_RidingSide;
+    vec2 m_CurrentRidingTarget;
+    int m_RidingStartTick;
+    int m_LastHookReleaseTick;
+    
+    // Riding methods
+    void StartRiding(vec2 Target, int CurrentTick);
+    void ExecuteRidingLogic(int *pInputDirection, int *pJump, int *pHook, vec2 *pTargetX, int CurrentTick);
+    bool ShouldHookForWallRiding(vec2 PlayerPos, vec2 PlayerVel, int RidingDuration, int TimeSinceRelease);
+    bool ShouldHookForCeilingRiding(vec2 PlayerPos, vec2 PlayerVel, int RidingDuration, int TimeSinceRelease);
+    bool ShouldJumpForWallRiding(vec2 PlayerPos, vec2 PlayerVel, int RidingDuration);
+    int CalculateCeilingRidingDirection(vec2 PlayerPos, vec2 PlayerVel, int RidingDuration);
+    bool ShouldStopWallRiding(vec2 PlayerPos, vec2 PlayerVel, int RidingDuration);
+    bool ShouldStopCeilingRiding(vec2 PlayerPos, vec2 PlayerVel, int RidingDuration);
+    void StopRiding();
+    
+    // Analysis methods
+    bool AnalyzeHookTrajectory(vec2 From, vec2 To);
+    void AvoidFloorHooks();
+    // Analysis methods
+    bool AnalyzeHookTrajectory(vec2 From, vec2 To);
+    void AvoidFloorHooks();
     int m_LastPredictionTick;
     int m_RescueAttempts;
     int m_LastRescueTick;
