@@ -1,7 +1,7 @@
 #include "fujix_geros_bot.h"
 #include <cmath>
-#include <cmath>
 
+// vec2 operators for standalone compilation
 vec2 operator+(const vec2& a, const vec2& b) { return {a.x + b.x, a.y + b.y}; }
 vec2 operator-(const vec2& a, const vec2& b) { return {a.x - b.x, a.y - b.y}; }
 vec2 operator*(const vec2& a, float f) { return {a.x * f, a.y * f}; }
@@ -14,23 +14,20 @@ vec2 normalize(const vec2& v) { float l = length(v); return l > 0 ? v * (1.0f/l)
 float minimum(float a, float b) { return a < b ? a : b; }
 float maximum(float a, float b) { return a > b ? a : b; }
 
-// Dummy CComponent base class  
-class CComponent { 
-public:
-	virtual ~CComponent() {}
-	virtual int Sizeof() const { return 0; }
-	virtual void OnInit() {}
-	virtual void OnRender() {}
-	virtual void OnMessage(int, void*) {}
-};
-
 // Game constants
 #define TILE_DEATH 1
 #define TILE_FREEZE 2
 #define TILE_DFREEZE 3  
 #define TILE_LFREEZE 4
 
-// Mock config
+// Mock structures for standalone compilation
+struct CCharacterCore { vec2 m_Pos, m_Vel; void Tick(bool, bool) {} void Move() {} void Quantize() {} };
+struct CCollision { int GetCollisionAt(float, float) { return 0; } bool CheckPoint(float, float) { return true; } float GetHeight() { return 1000.0f; } };
+struct CGameWorld { CCollision *m_pCollision = new CCollision(); };  
+struct CClient { int GameTick(int) { return 0; } };
+class CGameClient { public: CGameWorld m_GameWorld; CCharacterCore m_PredictedChar; CClient* Client() { return &m_Client; } private: CClient m_Client; };
+
+// Configuration
 struct { 
 	bool m_FujixGerosBot = true;
 	bool m_Debug = false;
@@ -38,14 +35,6 @@ struct {
 	int m_FujixGerosPredictionTicks = 8;
 	bool m_FujixGerosAntiSuicide = true;
 } g_Config;
-
-// Mock game classes
-class CCharacterCore { public: vec2 m_Pos, m_Vel; void Tick(bool, bool) {} void Move() {} void Quantize() {} };
-class CCollision { public: int GetCollisionAt(float, float) { return 0; } bool CheckPoint(float, float) { return true; } float GetHeight() { return 1000.0f; } };
-class CGameWorld { public: CCollision *m_pCollision = new CCollision(); };  
-class CClient { public: int GameTick(int) { return 0; } };
-class CGameClient { public: CGameWorld m_GameWorld; CCharacterCore m_PredictedChar; CClient* Client() { return &m_Client; } private: CClient m_Client; };
-	CGameClient* GameClient() { return nullptr; }
 CFujixGerosBot::CFujixGerosBot()
 {
 	m_LastPredictionTick = 0;
@@ -141,6 +130,7 @@ void CFujixGerosBot::Update()
 	{
 		m_PlayerTrustLevel = minimum(1.0f, m_PlayerTrustLevel + 0.01f);
 	}
+	
 	CGameClient *pGameClient = GetGameClient();
 	m_LastPredictionTick = pGameClient->Client()->GameTick(0);
 }
@@ -149,7 +139,6 @@ CGameClient *CFujixGerosBot::GetGameClient()
 {
 	return GameClient();
 }
-
 
 
 void CFujixGerosBot::PredictMovement(SGerosBotPrediction *pPredictions, int NumTicks)

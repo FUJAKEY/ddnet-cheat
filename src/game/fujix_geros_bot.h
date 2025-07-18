@@ -1,16 +1,24 @@
 #ifndef GAME_CLIENT_FUJIX_GEROS_BOT_H
 #define GAME_CLIENT_FUJIX_GEROS_BOT_H
 
-// vec2 structure  
+// Forward declarations only - will be resolved by real headers in project
 struct vec2 { 
 	float x, y; 
 	vec2() : x(0), y(0) {}
 	vec2(float x_, float y_) : x(x_), y(y_) {}
 };
-
-// Forward declarations
 class CCharacterCore;
 class CGameClient;
+class CComponent { 
+public: 
+	virtual ~CComponent() {} 
+	virtual int Sizeof() const { return 0; }
+	virtual void OnInit() {}
+	virtual void OnRender() {} 
+	virtual void OnMessage(int, void*) {}
+protected:
+	CGameClient* GameClient() { return nullptr; }
+};
 
 struct SGerosBotPrediction
 {
@@ -25,7 +33,7 @@ struct SGerosBotPrediction
 	vec2 m_DesiredDir;
 };
 
-class CFujixGerosBot
+class CFujixGerosBot : public CComponent
 {
 private:
 	// Helper method
@@ -60,10 +68,10 @@ private:
 public:
 	CFujixGerosBot();
 	
-	int Sizeof() const { return sizeof(*this); }
-	void OnInit();
-	void OnRender();
-	void OnMessage(int MsgType, void *pRawMsg);
+	virtual int Sizeof() const override { return sizeof(*this); }
+	virtual void OnInit() override;
+	virtual void OnRender() override;
+	virtual void OnMessage(int MsgType, void *pRawMsg) override;
 	
 	// Main bot functions
 	void Update();
