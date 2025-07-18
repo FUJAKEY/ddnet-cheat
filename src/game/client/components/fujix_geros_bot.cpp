@@ -36,7 +36,7 @@ CFujixGerosBot::CFujixGerosBot()
 	}
 }
 
-void CFujixGerosBotg_Config.OnInit()
+void CFujixGerosBotg_Config::OnInit()
 {
 	// Initialize GEROS BOT system
 }
