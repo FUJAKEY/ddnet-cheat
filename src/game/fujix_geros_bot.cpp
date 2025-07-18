@@ -305,14 +305,14 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 	// Test different movement directions
 	for(int x = -1; x <= 1; x++)
 	{
+		for(int y = -1; y <= 1; y++)
+		{
 				continue;
 				
 			vec2 TestDirection = vec2(x, y);
 			vec2 TestPos = Pos + TestDirection * 64.0f; // Test position 64 units away
 			
 			float Score = 0.0f;
-			
-			// Higher score for directions that lead away from danger
 			if(!IsPositionDangerous(TestPos, vec2(0, 0)))
 				Score += 10.0f;
 			// Prefer upward movement when in danger
@@ -339,14 +339,11 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 		}
 	}
 	
-	return normalize(BestDirection);
-	// Simulate hook swing
-	for(int i = 0; i < 50; i++)
-	{
-		SimulatedPos += HookDirection * 8.0f;
-		
-		// Check if we've reached a safe position
-		if(!IsPositionDangerous(SimulatedPos, vec2(0, 0)))
+}
+
+bool CFujixGerosBot::CanReachSafetyWithHook(vec2 From, vec2 HookTarget)
+{
+	CGameClient *pGameClient = GetGameClient();
 	// Simple simulation: check if hooking to target would allow reaching safe ground
 	vec2 HookDirection = normalize(HookTarget - From);
 	vec2 SimulatedPos = From;
@@ -354,6 +351,10 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 	// Simulate hook swing
 	for(int i = 0; i < 50; i++)
 	{
+		SimulatedPos += HookDirection * 8.0f;
+		
+		// Check if we've reached a safe position
+		if(!IsPositionDangerous(SimulatedPos, vec2(0, 0)))
 		{
 			vec2 GroundCheck = SimulatedPos + vec2(0, 16);
 			if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(GroundCheck.x, GroundCheck.y))
@@ -362,24 +363,15 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 		
 		// Stop if we hit a wall
 		if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(SimulatedPos.x, SimulatedPos.y))
-			if(GetGameClient()->m_GameWorld.m_pCollision->CheckPoint(GroundCheck.x, GroundCheck.y))
-				return true;
-		}
-		
-		// Stop if we hit a wall
+			break;
+	}
+	
+	return false;
+}
 bool CFujixGerosBot::ShouldUseJump(vec2 Pos, vec2 Vel, vec2 DesiredDir)
 {
 	CGameClient *pGameClient = GetGameClient();
 	if(!pGameClient->m_GameWorld.m_pCollision)
-		return false;
-	
-	return false;
-}
-
-	// Jump if there's an obstacle in front of us
-	vec2 FrontCheck = Pos + vec2(DesiredDir.x * 32.0f, 0);
-	if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(FrontCheck.x, FrontCheck.y))
-		return true;
 		return false;
 		
 	// Jump if we need to go upward
@@ -388,7 +380,7 @@ bool CFujixGerosBot::ShouldUseJump(vec2 Pos, vec2 Vel, vec2 DesiredDir)
 		
 	// Jump if there's an obstacle in front of us
 	vec2 FrontCheck = Pos + vec2(DesiredDir.x * 32.0f, 0);
-	if(GetGameClient()->m_GameWorld.m_pCollision->CheckPoint(FrontCheck.x, FrontCheck.y))
+	if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(FrontCheck.x, FrontCheck.y))
 		return true;
 		
 	// Jump if we're moving fast downward and in danger
@@ -397,7 +389,6 @@ bool CFujixGerosBot::ShouldUseJump(vec2 Pos, vec2 Vel, vec2 DesiredDir)
 		
 	return false;
 }
-
 bool CFujixGerosBot::DetectSuicideAttempt(vec2 Pos, vec2 Vel, int InputDirection)
 {
 	if(!IsAntiSuicideEnabled())
@@ -442,6 +433,16 @@ bool CFujixGerosBot::IsInEmergencyState()
 	for(int i = 0; i < minimum(4, GetPredictionTicks()); i++)
 	{
 		if(m_aPredictions[i].m_InDanger && m_aPredictions[i].m_TicksUntilDeath <= 3)
+			return true;
+	}
+	
+	// Check if danger level is critically high
+	if(m_aPredictions[0].m_DangerLevel > 8.0f)
+		return true;
+		
+	return false;
+}
+
 void CFujixGerosBot::ExecuteEmergencyRescue()
 {
 	CGameClient *pGameClient = GetGameClient();
@@ -451,18 +452,6 @@ void CFujixGerosBot::ExecuteEmergencyRescue()
 	m_EmergencyMode = true;
 	m_RescueAttempts++;
 	m_LastRescueTick = pGameClient->Client()->GameTick(0);
-	// Force override player input to execute rescue
-	// This will be used by the input system
-}
-
-void CFujixGerosBot::ExecuteEmergencyRescue()
-{
-	if(GetGameClient()->Client()->GameTick(0) - m_LastRescueTick < 5) // Prevent spam rescues
-		return;
-	
-	m_EmergencyMode = true;
-	m_RescueAttempts++;
-	m_LastRescueTick = GetGameClient()->Client()->GameTick(0);
 	// Force override player input to execute rescue
 	// This will be used by the input system
 }
