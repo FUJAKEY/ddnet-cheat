@@ -1,6 +1,7 @@
 #include "fujix_geros_bot.h"
 
 #include <base/math.h>
+#include <cmath>
 #include <game/mapitems.h>
 #include <engine/shared/config.h>
 #include <game/client/gameclient.h>
@@ -8,6 +9,7 @@
 #include <game/gamecore.h>
 #include <game/collision.h>
 #include <game/client/components/controls.h>
+#include <engine/client.h>
 
 CFujixGerosBot::CFujixGerosBot()
 {
@@ -106,6 +108,13 @@ void CFujixGerosBot::Update()
 	}
 	CGameClient *pGameClient = GetGameClient();
 	m_LastPredictionTick = pGameClient->Client()->GameTick(0);
+}
+
+CGameClient *CFujixGerosBot::GetGameClient()
+{
+	// Return pointer to global GameClient instance
+	extern CGameClient *g_pGameClient;
+	return g_pGameClient;
 }
 
 
@@ -227,8 +236,6 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 	}
 	
 	if(DistanceToSafety > 500.0f)
-	
-	if(DistanceToSafety > 500.0f)
 		DangerLevel += 5.0f;
 	else if(DistanceToSafety > 200.0f)
 		DangerLevel += 2.0f;
@@ -248,7 +255,7 @@ vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 	// Search in multiple directions for hookable surfaces
 	for(int angle = 0; angle < 360; angle += 15)
 	{
-		float rad = angle * pi / 180.0f;
+		float rad = angle * 3.14159265f / 180.0f;
 		vec2 Direction = vec2(cosf(rad), sinf(rad));
 		
 		for(float distance = 32.0f; distance <= HookRange; distance += 16.0f)
@@ -280,10 +287,6 @@ vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 				{
 					BestScore = Score;
 					BestTarget = TestPos;
-				if(Score > BestScore)
-				{
-					BestScore = Score;
-					BestTarget = TestPos;
 				}
 				break; // Found a hookable surface in this direction
 			}
@@ -307,16 +310,15 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 	{
 		for(int y = -1; y <= 1; y++)
 		{
+			if(x == 0 && y == 0)
 				continue;
 				
 			vec2 TestDirection = vec2(x, y);
 			vec2 TestPos = Pos + TestDirection * 64.0f; // Test position 64 units away
 			
 			float Score = 0.0f;
-			if(!IsPositionDangerous(TestPos, vec2(0, 0)))
-				Score += 10.0f;
-			// Prefer upward movement when in danger
-			if(DangerLevel > 3.0f && y < 0)
+			
+			// Higher score for directions that lead away from danger
 			if(!IsPositionDangerous(TestPos, vec2(0, 0)))
 				Score += 10.0f;
 			else
@@ -325,7 +327,6 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 			// Prefer upward movement when in danger
 			if(DangerLevel > 3.0f && y < 0)
 				Score += 3.0f;
-				
 			// Check if this direction has walkable ground
 			vec2 GroundCheck = TestPos + vec2(0, 16);
 			if(pGameClient->m_GameWorld.m_pCollision->CheckPoint(GroundCheck.x, GroundCheck.y))
@@ -339,6 +340,7 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 		}
 	}
 	
+	return normalize(BestDirection);
 }
 
 bool CFujixGerosBot::CanReachSafetyWithHook(vec2 From, vec2 HookTarget)
@@ -368,12 +370,12 @@ bool CFujixGerosBot::CanReachSafetyWithHook(vec2 From, vec2 HookTarget)
 	
 	return false;
 }
+
 bool CFujixGerosBot::ShouldUseJump(vec2 Pos, vec2 Vel, vec2 DesiredDir)
 {
 	CGameClient *pGameClient = GetGameClient();
 	if(!pGameClient->m_GameWorld.m_pCollision)
 		return false;
-		
 	// Jump if we need to go upward
 	if(DesiredDir.y < -0.5f)
 		return true;
@@ -389,6 +391,7 @@ bool CFujixGerosBot::ShouldUseJump(vec2 Pos, vec2 Vel, vec2 DesiredDir)
 		
 	return false;
 }
+
 bool CFujixGerosBot::DetectSuicideAttempt(vec2 Pos, vec2 Vel, int InputDirection)
 {
 	if(!IsAntiSuicideEnabled())
@@ -455,6 +458,7 @@ void CFujixGerosBot::ExecuteEmergencyRescue()
 	// Force override player input to execute rescue
 	// This will be used by the input system
 }
+
 bool CFujixGerosBot::ShouldOverrideInput()
 {
 	if(!IsActive())
@@ -470,6 +474,7 @@ bool CFujixGerosBot::ShouldOverrideInput()
 		
 	return false;
 }
+
 void CFujixGerosBot::GetBotInput(int *pInputDirection, int *pJump, int *pHook, vec2 *pTargetX)
 {
 	if(!ShouldOverrideInput())
