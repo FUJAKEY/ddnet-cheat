@@ -22,6 +22,13 @@ CFujixGerosBot::CFujixGerosBot()
 	m_FullPredictionMode = true;
 	m_LastFullPredictionTick = 0;
 	
+	// 🕷️ WALL/CEILING RIDING INITIALIZATION
+	m_IsWallRiding = false;
+	m_IsCeilingRiding = false;
+	m_RidingStartTick = 0;
+	m_LastHookReleaseTick = 0;
+	m_CurrentRidingTarget = vec2{0, 0};
+	m_RidingSide = 0;
 	for(int i = 0; i < 16; i++)
 	{
 		m_aPredictions[i].m_Pos = vec2{0, 0};
@@ -252,53 +259,299 @@ float CFujixGerosBot::CalculateDangerLevel(vec2 Pos, vec2 Vel)
 vec2 CFujixGerosBot::FindBestHookTarget(vec2 Pos, vec2 Vel)
 {
 	CGameClient *pGameClient = GameClient();
-		
+	
 	vec2 BestTarget = vec2{0, 0};
 	float BestScore = -1.0f;
-	float HookRange = 400.0f; // Увеличенная дальность крюка для freeze rescue
+	float HookRange = 380.0f; // Максимальная дальность крюка
 	
-	// Search in multiple directions for hookable surfaces
-	for(int angle = 0; angle < 360; angle += 15)
+	// 🧠 ЖЕСТКАЯ ЛОГИКА: анализ ситуации и выбор стратегии
+	bool FreezeAbove = IsFreezeInDirection(Pos, vec2{0, -1}, 4); // Потолок
+	bool FreezeBelow = IsFreezeInDirection(Pos, vec2{0, 1}, 4);  // Пол
+	bool FreezeLeft = IsFreezeInDirection(Pos, vec2{-1, 0}, 4);  // Левая стена
+	bool FreezeRight = IsFreezeInDirection(Pos, vec2{1, 0}, 4);  // Правая стена
+	
+	// 🎯 СТРАТЕГИЯ 1: CEILING RIDING (если сверху и снизу freeze)
+	if(FreezeAbove && FreezeBelow)
 	{
-		float rad = angle * 3.14159265f / 180.0f;
-		vec2 Direction = vec2{cosf(rad), sinf(rad)};
-		
-		for(float distance = 32.0f; distance <= HookRange; distance += 16.0f)
+		// Ищем потолок для ceiling riding
+		vec2 CeilingTarget = FindCeilingRidingTarget(Pos, Vel);
+		if(CeilingTarget.x != 0 || CeilingTarget.y != 0)
 		{
-			vec2 TestPos = Pos + Direction * distance;
+			return CeilingTarget;
+		}
+	}
+	
+	// 🎯 СТРАТЕГИЯ 2: WALL RIDING (если потолок далеко)
+	if(FreezeBelow && !FreezeAbove)
+	{
+		// Пытаемся найти стену для wall riding
+		vec2 WallTarget = FindWallRidingTarget(Pos, Vel);
+		if(WallTarget.x != 0 || WallTarget.y != 0)
+		{
+			return WallTarget;
+		}
+	}
+	
+	// 🎯 СТРАТЕГИЯ 3: УМНОЕ ИЗБЕГАНИЕ ПОЛА
+	if(FreezeBelow)
+	{
+		// НЕ цепляемся за пол! Ищем только вверх и в стороны
+		for(int angle = -150; angle <= -30; angle += 10) // Только вверх и диагонали
+		{
+			float rad = angle * 3.14159265f / 180.0f;
+			vec2 Direction = vec2{cosf(rad), sinf(rad)};
 			
-			// Check if this position is hookable
-			if(pGameClient->Collision()->CheckPoint(TestPos.x, TestPos.y))
+			vec2 Target = FindHookableInDirection(Pos, Direction, HookRange);
+			if(Target.x != 0 || Target.y != 0)
 			{
-				// Calculate score based on safety and reachability
-				float Score = 0.0f;
-				
-				// Higher score for positions that get us further from danger
-				if(!IsPositionDangerous(TestPos, vec2{0, 0}))
-					Score += 5.0f;
-					
-				// Higher score for positions above us (easier to reach safety)
-				if(TestPos.y < Pos.y)
-					Score += 2.0f;
-					
-				// Lower score for very distant targets
-				Score -= distance * 0.01f;
-				
-				// Check if we can actually reach safety from this hook point
-				if(CanReachSafetyWithHook(Pos, TestPos))
-					Score += 3.0f;
-					
+				float Score = CalculateHookScore(Pos, Target, Vel);
 				if(Score > BestScore)
 				{
 					BestScore = Score;
-					BestTarget = TestPos;
+					BestTarget = Target;
 				}
-				break; // Found a hookable surface in this direction
+			}
+		}
+	}
+	else
+	{
+		// 🎯 СТРАТЕГИЯ 4: ПОЛНЫЙ ПОИСК (если нет freeze пола)
+		for(int angle = 0; angle < 360; angle += 12)
+		{
+			float rad = angle * 3.14159265f / 180.0f;
+			vec2 Direction = vec2{cosf(rad), sinf(rad)};
+			
+			vec2 Target = FindHookableInDirection(Pos, Direction, HookRange);
+			if(Target.x != 0 || Target.y != 0)
+			{
+				float Score = CalculateHookScore(Pos, Target, Vel);
+				if(Score > BestScore)
+				{
+					BestScore = Score;
+					BestTarget = Target;
+				}
 			}
 		}
 	}
 	
 	return BestTarget;
+// 🧠 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ ЖЕСТКОЙ ЛОГИКИ КРЮКА
+
+bool CFujixGerosBot::IsFreezeInDirection(vec2 Pos, vec2 Dir, int TileDistance)
+{
+	CGameClient *pGameClient = GameClient();
+	if(!pGameClient || !pGameClient->Collision())
+		return false;
+	
+	for(int i = 1; i <= TileDistance; i++)
+	{
+		vec2 CheckPos = Pos + Dir * (i * 32.0f);
+		int Tile = pGameClient->Collision()->GetCollisionAt(CheckPos.x, CheckPos.y);
+		if(Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE)
+			return true;
+	}
+	return false;
+}
+
+vec2 CFujixGerosBot::FindCeilingRidingTarget(vec2 Pos, vec2 Vel)
+{
+	CGameClient *pGameClient = GameClient();
+	float BestDistance = 999.0f;
+	vec2 BestTarget = vec2{0, 0};
+	
+	// Ищем потолок в диапазоне -45° до -135° (вверх)
+	for(int angle = -45; angle >= -135; angle -= 15)
+	{
+		float rad = angle * 3.14159265f / 180.0f;
+		vec2 Direction = vec2{cosf(rad), sinf(rad)};
+		
+		for(float dist = 64.0f; dist <= 380.0f; dist += 16.0f)
+		{
+			vec2 TestPos = Pos + Direction * dist;
+			
+			if(pGameClient->Collision()->CheckPoint(TestPos.x, TestPos.y))
+			{
+				// Проверяем что это действительно потолок (не freeze)
+				int Tile = pGameClient->Collision()->GetCollisionAt(TestPos.x, TestPos.y);
+				if(Tile != TILE_FREEZE && Tile != TILE_DFREEZE && Tile != TILE_LFREEZE)
+				{
+					// Проверяем возможность ceiling riding
+					if(CanDoCeilingRiding(Pos, TestPos))
+					{
+						if(dist < BestDistance)
+						{
+							BestDistance = dist;
+							BestTarget = TestPos;
+						}
+					}
+				}
+				break;
+			}
+		}
+	}
+	
+	return BestTarget;
+}
+
+vec2 CFujixGerosBot::FindWallRidingTarget(vec2 Pos, vec2 Vel)
+{
+	CGameClient *pGameClient = GameClient();
+	vec2 BestTarget = vec2{0, 0};
+	float BestScore = -1.0f;
+	
+	// Ищем стены слева и справа на 3-4 тайла выше
+	for(int side = -1; side <= 1; side += 2) // -1 = лево, 1 = право
+	{
+		for(int height = 2; height <= 5; height++) // 2-5 тайлов выше
+		{
+			vec2 WallPos = Pos + vec2{side * 96.0f, -height * 32.0f}; // 3 тайла в сторону, height вверх
+			
+			if(pGameClient->Collision()->CheckPoint(WallPos.x, WallPos.y))
+			{
+				// Проверяем что это не freeze
+				int Tile = pGameClient->Collision()->GetCollisionAt(WallPos.x, WallPos.y);
+				if(Tile != TILE_FREEZE && Tile != TILE_DFREEZE && Tile != TILE_LFREEZE)
+				{
+					// Проверяем возможность wall riding
+					if(CanDoWallRiding(Pos, WallPos, side))
+					{
+						float Score = 10.0f - height; // Выше = лучше
+						if(distance(Pos, WallPos) <= 380.0f) // В пределах крюка
+						{
+							if(Score > BestScore)
+							{
+								BestScore = Score;
+								BestTarget = WallPos;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	return BestTarget;
+}
+
+vec2 CFujixGerosBot::FindHookableInDirection(vec2 Pos, vec2 Direction, float MaxRange)
+{
+	CGameClient *pGameClient = GameClient();
+	
+	for(float dist = 32.0f; dist <= MaxRange; dist += 16.0f)
+	{
+		vec2 TestPos = Pos + Direction * dist;
+		
+		if(pGameClient->Collision()->CheckPoint(TestPos.x, TestPos.y))
+		{
+			// Не цепляемся за freeze tiles!
+			int Tile = pGameClient->Collision()->GetCollisionAt(TestPos.x, TestPos.y);
+			if(Tile != TILE_FREEZE && Tile != TILE_DFREEZE && Tile != TILE_LFREEZE)
+			{
+				return TestPos;
+			}
+		}
+	}
+	
+	return vec2{0, 0};
+}
+
+float CFujixGerosBot::CalculateHookScore(vec2 Pos, vec2 Target, vec2 Vel)
+{
+	float Score = 0.0f;
+	float Distance = distance(Pos, Target);
+	
+	// Выше = лучше (избегаем пола)
+	if(Target.y < Pos.y)
+		Score += 8.0f;
+	
+	// Ближе = лучше (до определенной точки)
+	if(Distance < 200.0f)
+		Score += (200.0f - Distance) * 0.02f;
+	
+	// Проверяем безопасность траектории
+	if(IsHookTrajectorysSafe(Pos, Target))
+		Score += 10.0f;
+	
+	// Бонус за wall/ceiling riding позиции
+	if(IsGoodForRiding(Pos, Target))
+		Score += 15.0f;
+	
+	return Score;
+}
+
+bool CFujixGerosBot::CanDoCeilingRiding(vec2 Pos, vec2 CeilingTarget)
+{
+	// Проверяем что можем делать ceiling riding
+	float Distance = distance(Pos, CeilingTarget);
+	
+	// Достаточно близко для riding
+	if(Distance > 380.0f || Distance < 64.0f)
+		return false;
+	
+	// Проверяем что ceiling выше нас
+	if(CeilingTarget.y >= Pos.y)
+		return false;
+	
+	// Проверяем траекторию на безопасность
+	return IsHookTrajectorysSafe(Pos, CeilingTarget);
+}
+
+bool CFujixGerosBot::CanDoWallRiding(vec2 Pos, vec2 WallTarget, int Side)
+{
+	float Distance = distance(Pos, WallTarget);
+	
+	// Проверяем дистанцию
+	if(Distance > 380.0f || Distance < 64.0f)
+		return false;
+	
+	// Проверяем что стена сбоку и выше
+	if(WallTarget.y >= Pos.y)
+		return false;
+	
+	// Проверяем что стена в правильной стороне
+	if((Side > 0 && WallTarget.x <= Pos.x) || (Side < 0 && WallTarget.x >= Pos.x))
+		return false;
+	
+	return IsHookTrajectorysSafe(Pos, WallTarget);
+}
+
+bool CFujixGerosBot::IsHookTrajectorysSafe(vec2 From, vec2 To)
+{
+	CGameClient *pGameClient = GameClient();
+	vec2 Direction = normalize(To - From);
+	float Distance = distance(From, To);
+	
+	// Проверяем траекторию на freeze tiles
+	for(float step = 16.0f; step < Distance; step += 16.0f)
+	{
+		vec2 CheckPos = From + Direction * step;
+		int Tile = pGameClient->Collision()->GetCollisionAt(CheckPos.x, CheckPos.y);
+		if(Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE)
+		{
+			return false;
+		}
+	}
+	
+	return true;
+}
+
+bool CFujixGerosBot::IsGoodForRiding(vec2 Pos, vec2 Target)
+{
+	// Хорошие позиции для riding:
+	// 1. Стена на 3-4 тайла выше и в стороне
+	// 2. Потолок выше нас
+	
+	vec2 Diff = Target - Pos;
+	
+	// Стена для wall riding
+	if(abs(Diff.x) >= 64.0f && abs(Diff.x) <= 128.0f && Diff.y < -64.0f && Diff.y > -160.0f)
+		return true;
+	
+	// Потолок для ceiling riding
+	if(Diff.y < -32.0f && abs(Diff.x) <= 160.0f)
+		return true;
+	
+	return false;
 }
 
 vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLevel)
@@ -545,7 +798,29 @@ void CFujixGerosBot::GetBotInput(int *pInputDirection, int *pJump, int *pHook, v
 {
 	if(!ShouldOverrideInput())
 		return;
-		
+	
+	CGameClient *pGameClient = GameClient();
+	int CurrentTick = pGameClient->Client()->GameTick(0);
+	
+	// 🕷️ WALL/CEILING RIDING ЛОГИКА С ТАЙМИНГАМИ
+	if(m_IsWallRiding || m_IsCeilingRiding)
+	{
+		ExecuteRidingLogic(pInputDirection, pJump, pHook, pTargetX, CurrentTick);
+		return;
+	}
+	
+	// Use the first prediction to determine immediate action
+	SGerosBotPrediction *pPred = &m_aPredictions[0];
+	
+	// 🎯 ПРОВЕРЯЕМ НУЖНО ЛИ НАЧАТЬ RIDING
+	if(pPred->m_CanUseHook && IsGoodForRiding(pGameClient->m_PredictedChar.m_Pos, pPred->m_HookTarget))
+	{
+		StartRiding(pPred->m_HookTarget, CurrentTick);
+		ExecuteRidingLogic(pInputDirection, pJump, pHook, pTargetX, CurrentTick);
+		return;
+	}
+	
+	// 🎯 ОБЫЧНАЯ ЛОГИКА УПРАВЛЕНИЯ (если не riding)
 	// Use the first prediction to determine immediate action
 	SGerosBotPrediction *pPred = &m_aPredictions[0];
 	
@@ -559,8 +834,200 @@ void CFujixGerosBot::GetBotInput(int *pInputDirection, int *pJump, int *pHook, v
 		
 	// Set jump
 	*pJump = pPred->m_ShouldJump ? 1 : 0;
-	
+
 	// Set hook
 	*pHook = pPred->m_CanUseHook ? 1 : 0;
 	*pTargetX = pPred->m_HookTarget;
+
+// 🕷️ МАКСИМАЛЬНО ЖЕСТКАЯ WALL/CEILING RIDING ЛОГИКА
+
+void CFujixGerosBot::StartRiding(vec2 Target, int CurrentTick)
+{
+	CGameClient *pGameClient = GameClient();
+	vec2 PlayerPos = pGameClient->m_PredictedChar.m_Pos;
+	vec2 Diff = Target - PlayerPos;
+	
+	m_CurrentRidingTarget = Target;
+	m_RidingStartTick = CurrentTick;
+	
+	// Определяем тип riding
+	if(abs(Diff.x) > abs(Diff.y) && Diff.y < -32.0f)
+	{
+		// WALL RIDING: стена сбоку и выше
+		m_IsWallRiding = true;
+		m_IsCeilingRiding = false;
+		m_RidingSide = (Diff.x > 0) ? 1 : -1;
+	}
+	else if(Diff.y < -32.0f)
+	{
+		// CEILING RIDING: потолок выше
+		m_IsCeilingRiding = true;
+		m_IsWallRiding = false;
+		m_RidingSide = 0;
+	}
+}
+
+void CFujixGerosBot::ExecuteRidingLogic(int *pInputDirection, int *pJump, int *pHook, vec2 *pTargetX, int CurrentTick)
+{
+	CGameClient *pGameClient = GameClient();
+	vec2 PlayerPos = pGameClient->m_PredictedChar.m_Pos;
+	vec2 PlayerVel = pGameClient->m_PredictedChar.m_Vel;
+	
+	int RidingDuration = CurrentTick - m_RidingStartTick;
+	int TimeSinceRelease = CurrentTick - m_LastHookReleaseTick;
+	
+	// 🕷️ WALL RIDING LOGIC
+	if(m_IsWallRiding)
+	{
+		// Движемся в противоположную сторону от стены
+		*pInputDirection = -m_RidingSide;
+		
+		// 🎯 ТАЙМИНИНГ ОТПУСКАНИЯ/ПЕРЕХВАТА КРЮКА
+		bool ShouldHook = ShouldHookForWallRiding(PlayerPos, PlayerVel, RidingDuration, TimeSinceRelease);
+		*pHook = ShouldHook ? 1 : 0;
+		
+		if(ShouldHook)
+		{
+			*pTargetX = m_CurrentRidingTarget;
+		}
+		else if(*pHook == 0 && TimeSinceRelease == 0)
+		{
+			m_LastHookReleaseTick = CurrentTick;
+		}
+		
+		// Прыжок при необходимости
+		*pJump = ShouldJumpForWallRiding(PlayerPos, PlayerVel, RidingDuration) ? 1 : 0;
+		
+		// Проверяем нужно ли завершить wall riding
+		if(ShouldStopWallRiding(PlayerPos, PlayerVel, RidingDuration))
+		{
+			StopRiding();
+		}
+	}
+	// 🔄 CEILING RIDING LOGIC  
+	else if(m_IsCeilingRiding)
+	{
+		// Тонкая настройка направления для ceiling riding
+		*pInputDirection = CalculateCeilingRidingDirection(PlayerPos, PlayerVel, RidingDuration);
+		
+		// 🎯 ТАЙМИНИНГ ДЛЯ CEILING RIDING
+		bool ShouldHook = ShouldHookForCeilingRiding(PlayerPos, PlayerVel, RidingDuration, TimeSinceRelease);
+		*pHook = ShouldHook ? 1 : 0;
+		
+		if(ShouldHook)
+		{
+			*pTargetX = m_CurrentRidingTarget;
+		}
+		else if(*pHook == 0 && TimeSinceRelease == 0)
+		{
+			m_LastHookReleaseTick = CurrentTick;
+		}
+		
+		// Прыжок редко используется в ceiling riding
+		*pJump = 0;
+		
+		// Проверяем нужно ли завершить ceiling riding
+		if(ShouldStopCeilingRiding(PlayerPos, PlayerVel, RidingDuration))
+		{
+			StopRiding();
+		}
+	}
+}
+
+bool CFujixGerosBot::ShouldHookForWallRiding(vec2 PlayerPos, vec2 PlayerVel, int RidingDuration, int TimeSinceRelease)
+{
+	// 🕷️ WALL RIDING ПАТТЕРН: хук 3-4 тика, отпуск 2-3 тика, повтор
+	
+	// Если недавно отпустили, ждем
+	if(TimeSinceRelease > 0 && TimeSinceRelease < 3)
+		return false;
+	
+	// Если слишком далеко от стены, хукаемся
+	float DistanceToWall = distance(PlayerPos, m_CurrentRidingTarget);
+	if(DistanceToWall > 350.0f)
+		return true;
+	
+	// Если падаем слишком быстро, хукаемся
+	if(PlayerVel.y > 8.0f)
+		return true;
+	
+	// Если висим на крюке слишком долго, отпускаем
+	if(RidingDuration % 7 < 4) // 4 тика хук, 3 тика без
+		return true;
+	
+	return false;
+}
+
+bool CFujixGerosBot::ShouldHookForCeilingRiding(vec2 PlayerPos, vec2 PlayerVel, int RidingDuration, int TimeSinceRelease)
+{
+	// 🔄 CEILING RIDING ПАТТЕРН: более частые перехваты для удержания высоты
+	
+	// Если недавно отпустили, ждем меньше
+	if(TimeSinceRelease > 0 && TimeSinceRelease < 2)
+		return false;
+	
+	// Если падаем, сразу хукаемся
+	if(PlayerVel.y > 5.0f)
+		return true;
+	
+	// Если слишком далеко от потолка
+	float DistanceToCeiling = distance(PlayerPos, m_CurrentRidingTarget);
+	if(DistanceToCeiling > 320.0f)
+		return true;
+	
+	// Частые перехваты: 3 тика хук, 2 тика без
+	if(RidingDuration % 5 < 3)
+		return true;
+	
+	return false;
+}
+
+bool CFujixGerosBot::ShouldJumpForWallRiding(vec2 PlayerPos, vec2 PlayerVel, int RidingDuration)
+{
+	// Прыгаем если падаем слишком быстро или в начале riding
+	return (PlayerVel.y > 10.0f) || (RidingDuration < 5);
+}
+
+int CFujixGerosBot::CalculateCeilingRidingDirection(vec2 PlayerPos, vec2 PlayerVel, int RidingDuration)
+{
+	CGameClient *pGameClient = GameClient();
+	
+	// Проверяем что впереди нет freeze
+	bool FreezeLeft = IsFreezeInDirection(PlayerPos, vec2{-1, 0}, 3);
+	bool FreezeRight = IsFreezeInDirection(PlayerPos, vec2{1, 0}, 3);
+	
+	if(FreezeLeft && !FreezeRight)
+		return 1; // Движемся направо
+	if(FreezeRight && !FreezeLeft)
+		return -1; // Движемся налево
+	
+	// Меняем направление каждые 30 тиков для разнообразия
+	return ((RidingDuration / 30) % 2 == 0) ? 1 : -1;
+}
+
+bool CFujixGerosBot::ShouldStopWallRiding(vec2 PlayerPos, vec2 PlayerVel, int RidingDuration)
+{
+	// Останавливаем если нет опасности или riding слишком долго
+	if(!IsInEmergencyState() && RidingDuration > 150) // 2.5 секунды
+		return true;
+	
+	// Останавливаем если достигли безопасной зоны
+	if(!IsPositionDangerous(PlayerPos, PlayerVel))
+		return true;
+	
+	return false;
+}
+
+bool CFujixGerosBot::ShouldStopCeilingRiding(vec2 PlayerPos, vec2 PlayerVel, int RidingDuration)
+{
+	// Аналогично wall riding
+	return ShouldStopWallRiding(PlayerPos, PlayerVel, RidingDuration);
+}
+
+void CFujixGerosBot::StopRiding()
+{
+	m_IsWallRiding = false;
+	m_IsCeilingRiding = false;
+	m_RidingSide = 0;
+	m_CurrentRidingTarget = vec2{0, 0};
 }

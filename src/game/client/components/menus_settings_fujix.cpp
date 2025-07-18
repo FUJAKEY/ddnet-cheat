@@ -54,6 +54,8 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
 	if(DoButton_Menu(&s_GerosEnable, aBufButton, 0, &BigButton, 0, nullptr, IGraphics::CORNER_ALL))
 	{
 		g_Config.m_FujixGerosBot ^= 1;
+		// Принудительно сохраняем конфиг
+		GameClient()->m_Menus.m_NeedSendinfo = true;
 	}
 	
 	// 🧪 ТЕСТОВАЯ КНОПКА ДЛЯ ПРОВЕРКИ РАБОТЫ БОТА
