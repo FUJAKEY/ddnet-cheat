@@ -517,7 +517,7 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 		// Интегрируем GEROS BOT для обработки ввода
 		if(g_Config.m_FujixGerosBot)
 		{
-			m_FujixGerosBot.OnSnapInput(pData, &m_Snap, &m_PredictedChar, Collision(), Client()->PredGameTick());
+                       m_FujixGerosBot.OnSnapInput(pData, &m_Snap, &m_PredictedChar, Collision(), Client()->PredGameTick(g_Config.m_ClDummy));
 		}
 		return m_Controls.SnapInput(pData);
 	}

@@ -1,5 +1,5 @@
-#ifndef GAME_CLIENT_FUJIX_GEROS_BOT_H
-#define GAME_CLIENT_FUJIX_GEROS_BOT_H
+#ifndef GAME_FUJIX_GEROS_BOT_H
+#define GAME_FUJIX_GEROS_BOT_H
 
 #include <base/vmath.h>
 #include <game/client/component.h>
@@ -56,7 +56,10 @@ private:
 	int m_LastFullPredictionTick;
 
 public:
-	CFujixGerosBot();
+        CFujixGerosBot();
+
+       // Handle input each tick
+       void OnSnapInput(int *pData, const class CGameClient::CSnapState *pSnap, const class CCharacterCore *pPredChar, class CCollision *pCollision, int PredTick);
 	
 	virtual int Sizeof() const override { return sizeof(*this); }
 	virtual void OnInit() override;
