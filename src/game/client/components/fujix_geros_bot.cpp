@@ -353,10 +353,22 @@ bool CFujixGerosBot::WillInputCauseDeath(int InputType, int Direction)
     }
     
     // Симулируем на 10 тиков вперед
+    // Симулируем на 10 тиков вперед
     for(int i = 0; i < 10; i++)
     {
         SimulateCharacterCore(&TestCore, 1);
         
+        // Проверяем безопасность каждый тик
+        if(IsPositionDangerous(TestCore.m_Pos, TestCore.m_Vel))
+        {
+            return true; // Опасное действие
+        }
+    }
+    
+    return false; // Безопасное действие
+}
+
+void CFujixGerosBot::CalculateMovementSafety()
 void CFujixGerosBot::CalculateMovementSafety()
 {
     // Проверяем безопасность каждого типа движения
@@ -432,8 +444,9 @@ void CFujixGerosBot::AnalyzeHookSafety()
         m_HookAnalysis.m_WillHitCeiling = false;
         m_HookAnalysis.m_IsEmergencyOnly = false;
     }
-// 🛡️ СИСТЕМА ПРЕВЕНТИВНОЙ ЗАЩИТЫ И БЛОКИРОВКИ ВВОДА
+}
 
+// 🛡️ СИСТЕМА ПРЕВЕНТИВНОЙ ЗАЩИТЫ И БЛОКИРОВКИ ВВОДА
 void CFujixGerosBot::PreventiveDangerScan()
 {
     CGameClient *pGameClient = GameClient();
@@ -1880,8 +1893,5 @@ void CFujixGerosBot::OptimizeRescueStrategy()
         m_AdaptiveThreshold = minimum(0.3f, m_AdaptiveThreshold + 0.02f);
         m_DangerDetectionRange = maximum(8, m_DangerDetectionRange - 1);
     }
-}
-}
-}
 }
 }
