@@ -320,7 +320,6 @@ vec2 CFujixGerosBot::CalculateEscapeDirection(vec2 Pos, vec2 Vel, float DangerLe
 			vec2 TestPos = Pos + TestDirection * 64.0f; // Test position 64 units away
 			
 			float Score = 0.0f;
-			CGameClient *pGameClient = GameClient();
 			
 			// 🎯 ПРЕВЕНТИВНАЯ ПРОВЕРКА: анализируем путь к TestPos на наличие freeze
 			bool PathHasFreeze = false;
@@ -479,7 +478,6 @@ bool CFujixGerosBot::IsInEmergencyState()
 		}
 		
 		// 🧊 СПЕЦИАЛЬНАЯ ПРОВЕРКА: freeze tiles на пути движения
-		CGameClient *pGameClient = GameClient();
 		if(pGameClient && pGameClient->Collision())
 		{
 			vec2 FuturePos = m_aPredictions[i].m_Pos;
@@ -526,7 +524,7 @@ void CFujixGerosBot::ExecuteEmergencyRescue()
 	
 	// Force override player input to execute rescue
 	// This will be used by the input system
-
+}
 bool CFujixGerosBot::ShouldOverrideInput()
 {
 	if(!IsActive())
