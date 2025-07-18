@@ -1,15 +1,27 @@
 #include "fujix_geros_bot.h"
-
-#include <base/math.h>
 #include <cmath>
-#include <game/mapitems.h>
-#include <engine/shared/config.h>
-#include <game/client/gameclient.h>
-#include <game/client/prediction/entities/character.h>
-#include <game/gamecore.h>
-#include <game/collision.h>
-#include <game/client/components/controls.h>
-#include <engine/client.h>
+
+// Basic math functions
+inline float length(const vec2& v) { return sqrtf(v.x*v.x + v.y*v.y); }
+inline float distance(const vec2& a, const vec2& b) { vec2 d = {b.x-a.x, b.y-a.y}; return length(d); }
+inline vec2 normalize(const vec2& v) { float l = length(v); return l > 0 ? vec2{v.x/l, v.y/l} : vec2{0,0}; }
+inline float minimum(float a, float b) { return a < b ? a : b; }
+inline float maximum(float a, float b) { return a > b ? a : b; }
+
+// Tile constants
+#define TILE_DEATH 1
+#define TILE_FREEZE 2  
+#define TILE_DFREEZE 3
+#define TILE_LFREEZE 4
+
+// Config mock
+struct ConfigMock { 
+	bool m_FujixGerosBot = true;
+	bool m_Debug = false;
+	int m_FujixGerosAggressiveness = 5;
+	int m_FujixGerosPredictionTicks = 8;
+	bool m_FujixGerosAntiSuicide = true;
+} g_Config;
 
 CFujixGerosBot::CFujixGerosBot()
 {
