@@ -110,8 +110,8 @@ private:
     // 🕷️ СУПЕР КРЮК СИСТЕМА
     vec2 FindUltraSafeHookTarget(vec2 Pos, vec2 Vel);
     bool IsHookTargetFloor(vec2 Target);
-    vec2 AnalyzeHookTrajectory(vec2 From, vec2 To);
-    void AvoidFloorHooks();
+    float CalculateUltraSafeHookScore(vec2 Pos, vec2 Target, vec2 Vel);
+    bool IsHookTrajectorysSafe(vec2 From, vec2 To);
     
     // 🎯 ПРОДВИНУТЫЕ АЛГОРИТМЫ
     vec2 FindEscapeRoute(vec2 Pos, vec2 Vel, int MaxTicks);

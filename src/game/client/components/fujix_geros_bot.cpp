@@ -369,7 +369,6 @@ bool CFujixGerosBot::WillInputCauseDeath(int InputType, int Direction)
 }
 
 void CFujixGerosBot::CalculateMovementSafety()
-void CFujixGerosBot::CalculateMovementSafety()
 {
     // Проверяем безопасность каждого типа движения
     m_CurrentSafety.m_IsInputSafe[0] = !WillInputCauseDeath(0, -1); // Left
@@ -729,8 +728,7 @@ void CFujixGerosBot::ExecuteAutonomousControl(int *pInputDirection, int *pJump, 
     if(m_HookAnalysis.m_SuccessRate > 0.6f && !m_HookAnalysis.m_WillHitFloor)
     {
         *pHook = 1;
-        *pTargetX = m_HookAnalysis.m_BestTarget.x;
-        // Note: pTargetY не передается через этот параметр
+        *pTargetX = m_HookAnalysis.m_BestTarget;
     }
     else
     {
@@ -797,6 +795,8 @@ void CFujixGerosBot::GetBotInput(int *pInputDirection, int *pJump, int *pHook, v
         else
             m_FailedAttempts++;
     }
+}
+
 // 🎯 ДОПОЛНИТЕЛЬНЫЕ РЕВОЛЮЦИОННЫЕ ФУНКЦИИ
 
 vec2 CFujixGerosBot::FindEscapeRoute(vec2 Pos, vec2 Vel, int MaxTicks)
@@ -1893,5 +1893,4 @@ void CFujixGerosBot::OptimizeRescueStrategy()
         m_AdaptiveThreshold = minimum(0.3f, m_AdaptiveThreshold + 0.02f);
         m_DangerDetectionRange = maximum(8, m_DangerDetectionRange - 1);
     }
-}
 }
