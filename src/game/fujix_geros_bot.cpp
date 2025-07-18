@@ -86,8 +86,8 @@ bool CFujixGerosBot::IsAntiSuicideEnabled() const
 
 void CFujixGerosBot::Update()
 {
-	if(!IsActive())
-		return;
+        if(!IsActive())
+                return;
 	// Update prediction system
 	PredictMovement(m_aPredictions, GetPredictionTicks());
 	
@@ -107,7 +107,33 @@ void CFujixGerosBot::Update()
 		m_PlayerTrustLevel = minimum(1.0f, m_PlayerTrustLevel + 0.01f);
 	}
 	CGameClient *pGameClient = GetGameClient();
-	m_LastPredictionTick = pGameClient->Client()->GameTick(0);
+        m_LastPredictionTick = pGameClient->Client()->GameTick(0);
+}
+
+void CFujixGerosBot::OnSnapInput(int *pData, const CGameClient::CSnapState *pSnap, const CCharacterCore *pPredChar, CCollision *pCollision, int PredTick)
+{
+       if(!IsActive())
+               return;
+
+       // Update predictions based on current state
+       Update();
+
+       if(!ShouldOverrideInput())
+               return;
+
+       int Direction = 0;
+       int Jump = 0;
+       int Hook = 0;
+       vec2 Target(0, 0);
+
+       GetBotInput(&Direction, &Jump, &Hook, &Target);
+
+       CNetObj_PlayerInput *pInput = reinterpret_cast<CNetObj_PlayerInput *>(pData);
+       pInput->m_Direction = Direction;
+       pInput->m_Jump = Jump;
+       pInput->m_Hook = Hook;
+       pInput->m_TargetX = (int)Target.x;
+       pInput->m_TargetY = (int)Target.y;
 }
 void CFujixGerosBot::PredictMovement(SGerosBotPrediction *pPredictions, int NumTicks)
 {

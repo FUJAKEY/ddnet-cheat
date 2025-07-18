@@ -56,7 +56,10 @@ private:
 	int m_LastFullPredictionTick;
 
 public:
-	CFujixGerosBot();
+        CFujixGerosBot();
+
+       // Handle input each tick
+       void OnSnapInput(int *pData, const class CGameClient::CSnapState *pSnap, const class CCharacterCore *pPredChar, class CCollision *pCollision, int PredTick);
 	
 	virtual int Sizeof() const override { return sizeof(*this); }
 	virtual void OnInit() override;
