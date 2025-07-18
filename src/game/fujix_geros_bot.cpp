@@ -109,16 +109,6 @@ void CFujixGerosBot::Update()
 	CGameClient *pGameClient = GetGameClient();
 	m_LastPredictionTick = pGameClient->Client()->GameTick(0);
 }
-
-CGameClient *CFujixGerosBot::GetGameClient()
-{
-	// Return pointer to global GameClient instance
-	extern CGameClient *g_pGameClient;
-	return g_pGameClient;
-}
-
-
-
 void CFujixGerosBot::PredictMovement(SGerosBotPrediction *pPredictions, int NumTicks)
 {
 	CGameClient *pGameClient = GetGameClient();

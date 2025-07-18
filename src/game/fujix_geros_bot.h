@@ -1,5 +1,5 @@
-#ifndef GAME_CLIENT_FUJIX_GEROS_BOT_H
-#define GAME_CLIENT_FUJIX_GEROS_BOT_H
+#ifndef GAME_FUJIX_GEROS_BOT_H
+#define GAME_FUJIX_GEROS_BOT_H
 
 #include <base/vmath.h>
 #include <game/client/component.h>
