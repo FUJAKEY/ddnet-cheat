@@ -19,6 +19,7 @@ private:
     // internal state for delayed blocking
     int m_BlockDirection;
     int m_TicksUntilBlock;
+    bool m_BlockActive;
 
 public:
     CFujixGoresBot();

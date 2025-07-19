@@ -12,6 +12,7 @@ CFujixGoresBot::CFujixGoresBot()
        m_pCollision = nullptr;
        m_BlockDirection = 0;
        m_TicksUntilBlock = 0;
+       m_BlockActive = false;
 }
 
 void CFujixGoresBot::Init(CGameClient *pGameClient, CCollision *pCollision)
@@ -25,36 +26,54 @@ void CFujixGoresBot::ProcessPlayerInput(CNetObj_PlayerInput *pInput, CCharacter 
        if(!g_Config.m_FujixGoresBot || !pInput || !pCharacter || !m_pCollision)
                return;
 
-       // handle delayed block from previous prediction
+       // countdown to block if scheduled
        if(m_TicksUntilBlock > 0)
        {
                m_TicksUntilBlock--;
-               if(m_TicksUntilBlock == 0 && pInput->m_Direction == m_BlockDirection)
+               if(m_TicksUntilBlock == 0)
                {
-                       pInput->m_Direction = 0;
+                       m_BlockActive = true;
+               }
+       }
+
+       // if actively blocking, ensure we keep the player safe
+       if(m_BlockActive)
+       {
+               int freeze = PredictFreezeTick(pCharacter, m_BlockDirection, PREDICTION_TICKS);
+               if(freeze > 0 && freeze <= SAFETY_DISTANCE_TICKS)
+               {
+                       if(pInput->m_Direction == m_BlockDirection)
+                               pInput->m_Direction = 0;
+               }
+               else
+               {
+                       m_BlockActive = false;
                        m_BlockDirection = 0;
                }
        }
 
-       int direction = pInput->m_Direction;
-
-       int freezeTick = PredictFreezeTick(pCharacter, direction, PREDICTION_TICKS);
-       if(freezeTick > 0)
+       // evaluate new prediction if not already blocking or waiting
+       if(!m_BlockActive && m_TicksUntilBlock == 0)
        {
-               int stopTick = freezeTick - SAFETY_DISTANCE_TICKS;
-               if(stopTick <= 0)
+               int direction = pInput->m_Direction;
+               int freezeTick = PredictFreezeTick(pCharacter, direction, PREDICTION_TICKS);
+               if(freezeTick > 0)
                {
-                       if(direction != 0)
+                       int stopTick = freezeTick - SAFETY_DISTANCE_TICKS;
+                       if(stopTick <= 0)
                        {
-                               pInput->m_Direction = 0;
-                               m_BlockDirection = 0;
-                               m_TicksUntilBlock = 0;
+                               if(direction != 0)
+                               {
+                                       pInput->m_Direction = 0;
+                                       m_BlockDirection = direction;
+                                       m_BlockActive = true;
+                               }
                        }
-               }
-               else if(m_TicksUntilBlock == 0)
-               {
-                       m_TicksUntilBlock = stopTick;
-                       m_BlockDirection = direction;
+                       else
+                       {
+                               m_TicksUntilBlock = stopTick;
+                               m_BlockDirection = direction;
+                       }
                }
        }
 }
