@@ -538,7 +538,7 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		const char *pButtonText = g_Config.m_ClFujixGerosBot ? "FUJIX Bot: ON" : "FUJIX Bot: OFF";
 		const ColorRGBA ButtonColor = g_Config.m_ClFujixGerosBot ? ColorRGBA(0.0f, 0.8f, 0.0f, 0.8f) : ColorRGBA(0.8f, 0.0f, 0.0f, 0.8f);
 		
-		if(DoButton_Menu(&s_FujixToggleButton, pButtonText, 0, &ButtonRect, 0, nullptr, nullptr, ButtonColor, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f)))
+		if(DoButton_Menu(&s_FujixToggleButton, pButtonText, 0, &ButtonRect, 0, nullptr, IGraphics::CORNER_ALL, 5.0f, 0.0f, ButtonColor))
 		{
 			g_Config.m_ClFujixGerosBot = g_Config.m_ClFujixGerosBot ? 0 : 1;
 		}
