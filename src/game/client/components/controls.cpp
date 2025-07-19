@@ -304,33 +304,6 @@ int CControls::SnapInput(int *pData)
 		Send = Send || (m_pClient->m_Snap.m_pLocalCharacter && m_pClient->m_Snap.m_pLocalCharacter->m_Weapon == WEAPON_NINJA && (m_aInputData[g_Config.m_ClDummy].m_Direction || m_aInputData[g_Config.m_ClDummy].m_Jump || m_aInputData[g_Config.m_ClDummy].m_Hook));
 	}
 
-	// 🤖 ИНТЕГРАЦИЯ GEROS BOT - переопределение ввода для спасения
-	if(g_Config.m_FujixGerosBot && m_pClient->m_FujixGerosBot.ShouldOverrideInput())
-	{
-		int BotDirection = 0, BotJump = 0, BotHook = 0;
-		vec2 BotTarget = vec2(0, 0);
-		
-		m_pClient->m_FujixGerosBot.GetBotInput(&BotDirection, &BotJump, &BotHook, &BotTarget);
-		
-		// Переопределяем ввод игрока командами бота
-		if(BotDirection != 0)
-			m_aInputData[g_Config.m_ClDummy].m_Direction = BotDirection;
-		if(BotJump)
-			m_aInputData[g_Config.m_ClDummy].m_Jump = BotJump;
-		if(BotHook)
-		{
-			m_aInputData[g_Config.m_ClDummy].m_Hook = BotHook;
-			if(BotTarget.x != 0 || BotTarget.y != 0)
-			{
-				m_aInputData[g_Config.m_ClDummy].m_TargetX = (int)BotTarget.x;
-				m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)BotTarget.y;
-			}
-		}
-		
-		// Принудительно отправляем ввод при активности бота
-		Send = true;
-	}
-
 	// copy and return size
 	m_aLastData[g_Config.m_ClDummy] = m_aInputData[g_Config.m_ClDummy];
 

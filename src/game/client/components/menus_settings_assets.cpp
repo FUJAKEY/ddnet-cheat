@@ -32,7 +32,8 @@ enum
 	ASSETS_TAB_PARTICLES = 3,
 	ASSETS_TAB_HUD = 4,
 	ASSETS_TAB_EXTRAS = 5,
-	NUMBER_OF_ASSETS_TABS = 6,
+	ASSETS_TAB_FUJIX = 6,
+	NUMBER_OF_ASSETS_TABS = 7,
 };
 
 void CMenus::LoadEntities(SCustomEntities *pEntitiesItem, void *pUser)
@@ -241,7 +242,10 @@ static const CMenus::SCustomItem *GetCustomItem(int CurTab, size_t Index)
 	else if(CurTab == ASSETS_TAB_HUD)
 		return gs_vpSearchHudList[Index];
 	else if(CurTab == ASSETS_TAB_EXTRAS)
+	else if(CurTab == ASSETS_TAB_EXTRAS)
 		return gs_vpSearchExtrasList[Index];
+	else if(CurTab == ASSETS_TAB_FUJIX)
+		return nullptr; // FUJIX tab doesn't use items
 
 	return nullptr;
 }
@@ -307,6 +311,9 @@ void CMenus::ClearCustomItems(int CurTab)
 		// reload current DDNet particles skin
 		GameClient()->LoadExtrasSkin(g_Config.m_ClAssetExtras);
 	}
+	else if(CurTab == ASSETS_TAB_FUJIX)
+	{
+		// FUJIX tab doesn't need clearing - no assets to clear
 	gs_aInitCustomList[CurTab] = true;
 }
 
@@ -359,7 +366,8 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		Localize("Emoticons"),
 		Localize("Particles"),
 		Localize("HUD"),
-		Localize("Extras")};
+		Localize("Extras"),
+		"FUJIX"};
 
 	for(int Tab = ASSETS_TAB_ENTITIES; Tab < NUMBER_OF_ASSETS_TABS; ++Tab)
 	{
@@ -415,7 +423,10 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	{
 		InitAssetList(m_vExtrasList, "assets/extras", "extras", ExtrasScan, Graphics(), Storage(), &User);
 	}
-
+	else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+	{
+		// FUJIX tab doesn't need asset loading - it's for bot configuration
+	}
 	MainView.HSplitTop(10.0f, nullptr, &MainView);
 
 	// skin selector
@@ -458,6 +469,10 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		{
 			ListSize = InitSearchList(gs_vpSearchExtrasList, m_vExtrasList);
 		}
+		else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+		{
+			// FUJIX tab doesn't use search list
+			ListSize = 0;
 		gs_aInitCustomList[s_CurCustomTab] = false;
 		gs_aCustomListSize[s_CurCustomTab] = ListSize;
 	}
@@ -494,8 +509,42 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	{
 		SearchListSize = gs_vpSearchExtrasList.size();
 	}
-
-	static CListBox s_ListBox;
+	else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+	{
+		// FUJIX tab has special rendering, no list needed
+		SearchListSize = 0;
+	}
+	
+	// Special handling for FUJIX tab
+	if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+	{
+		CUIRect FujixSection, ToggleButton;
+		CustomList.HSplitTop(50.0f, &FujixSection, &CustomList);
+		
+		// Title
+		FujixSection.HSplitTop(20.0f, &ToggleButton, &FujixSection);
+		Ui()->DoLabel(&ToggleButton, "FUJIX Gores Bot", 16.0f, TEXTALIGN_MC);
+		
+		// Toggle button
+		FujixSection.HSplitTop(5.0f, nullptr, &FujixSection);
+		FujixSection.HSplitTop(25.0f, &ToggleButton, &FujixSection);
+		ToggleButton.VMargin(CustomList.w * 0.3f, &ToggleButton);
+		
+		static CButtonContainer s_FujixBotButton;
+		if(DoButton_CheckBox(&s_FujixBotButton, "Enable Gores Bot", g_Config.m_FujixGoresBot, &ToggleButton))
+		{
+			g_Config.m_FujixGoresBot = g_Config.m_FujixGoresBot ? 0 : 1;
+		}
+		
+		// Description
+		FujixSection.HSplitTop(10.0f, nullptr, &FujixSection);
+		FujixSection.HSplitTop(15.0f, &ToggleButton, &FujixSection);
+		Ui()->DoLabel(&ToggleButton, "AI bot that predicts freeze tile collisions", 12.0f, TEXTALIGN_MC);
+		FujixSection.HSplitTop(15.0f, &ToggleButton, &FujixSection);
+		Ui()->DoLabel(&ToggleButton, "and blocks movement 2 ticks before impact", 12.0f, TEXTALIGN_MC);
+		
+		return; // Don't render the standard asset list for FUJIX
+	}
 	s_ListBox.DoStart(TextureHeight + 15.0f + 10.0f + Margin, SearchListSize, CustomList.w / (Margin + TextureWidth), 1, OldSelected, &CustomList, false);
 	for(size_t i = 0; i < SearchListSize; ++i)
 	{

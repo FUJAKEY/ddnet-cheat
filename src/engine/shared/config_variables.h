@@ -765,12 +765,9 @@ MACRO_CONFIG_INT(GfxDriverIsBlocked, gfx_driver_is_blocked, 0, 0, 1, CFGFLAG_SAV
 
 MACRO_CONFIG_INT(ClVideoRecorderFPS, cl_video_recorder_fps, 60, 1, 1000, CFGFLAG_SAVE | CFGFLAG_CLIENT, "At which FPS the videorecorder should record demos.")
 
-// FUJIX - GEROS BOT Configuration
-MACRO_CONFIG_INT(FujixGerosBot, fujix_geros_bot, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable GEROS BOT - Advanced prediction and auto-rescue system")
-MACRO_CONFIG_INT(FujixGerosAggressiveness, fujix_geros_aggressiveness, 7, 1, 10, CFGFLAG_CLIENT | CFGFLAG_SAVE, "GEROS BOT rescue aggressiveness level (1=passive, 10=very aggressive)")
-MACRO_CONFIG_INT(FujixGerosPredictionTicks, fujix_geros_prediction_ticks, 8, 4, 12, CFGFLAG_CLIENT | CFGFLAG_SAVE, "How many ticks ahead GEROS BOT predicts (4-12 ticks)")
-MACRO_CONFIG_INT(FujixGerosAntiSuicide, fujix_geros_anti_suicide, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Prevent intentional suicide attempts when GEROS BOT is active")
-
 /*
  * Add config variables for mods below this comment to avoid merge conflicts.
  */
+
+// FUJIX Gores Bot
+MACRO_CONFIG_INT(FujixGoresBot, fujix_gores_bot, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable FUJIX Gores Bot - AI prediction to prevent freeze tile collisions")

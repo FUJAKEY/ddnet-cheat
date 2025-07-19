@@ -2345,12 +2345,8 @@ if(CLIENT)
     components/emoticon.h
     components/flow.cpp
     components/flow.h
-    components/flow.cpp
-    components/flow.h
     components/freezebars.cpp
     components/freezebars.h
-    components/fujix_geros_bot.cpp
-    components/fujix_geros_bot.h
     components/ghost.cpp
     components/ghost.h
     components/hud.cpp
@@ -2375,7 +2371,6 @@ if(CLIENT)
     components/menus_settings.cpp
     components/menus_settings7.cpp
     components/menus_settings_assets.cpp
-    components/menus_settings_fujix.cpp
     components/menus_start.cpp
     components/motd.cpp
     components/motd.h
@@ -2407,6 +2402,8 @@ if(CLIENT)
     components/voting.h
     gameclient.cpp
     gameclient.h
+    fujix_gores_bot.cpp
+    fujix_gores_bot.h
     laser_data.cpp
     laser_data.h
     lineinput.cpp

@@ -154,7 +154,6 @@ void CGameClient::OnConsoleInit()
 					      &m_Motd,
 					      &m_Menus,
 					      &m_Tooltips,
-					      &m_FujixGerosBot,
 					      &CMenus::m_Binder,
 					      &m_GameConsole,
 					      &m_MenuBackground});
@@ -514,11 +513,6 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 {
 	if(!Dummy)
 	{
-		// Интегрируем GEROS BOT для обработки ввода
-		if(g_Config.m_FujixGerosBot)
-		{
-			m_FujixGerosBot.Update();
-		}
 		return m_Controls.SnapInput(pData);
 	}
 	if(m_aLocalIds[!g_Config.m_ClDummy] < 0)
@@ -577,6 +571,9 @@ void CGameClient::OnConnected()
 	m_Collision.Init(Layers());
 	m_GameWorld.m_Core.InitSwitchers(m_Collision.m_HighestSwitchNumber);
 	m_RaceHelper.Init(this);
+	
+	// Initialize FUJIX Gores Bot
+	m_FujixGoresBot.Init(this, &m_Collision);
 
 	// render loading before going through all components
 	m_Menus.RenderLoading(pConnectCaption, pLoadMapContent, 0);
@@ -2392,7 +2389,13 @@ void CGameClient::OnPredict()
 		CNetObj_PlayerInput *pInputData = (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping);
 		CNetObj_PlayerInput *pDummyInputData = !pDummyChar ? nullptr : (CNetObj_PlayerInput *)Client()->GetInput(Tick, m_IsDummySwapping ^ 1);
 		bool DummyFirst = pInputData && pDummyInputData && pDummyChar->GetCid() < pLocalChar->GetCid();
+		bool DummyFirst = pInputData && pDummyInputData && pDummyChar->GetCid() < pLocalChar->GetCid();
 
+		// Apply FUJIX Gores Bot AI before processing input
+		if(pInputData && pLocalChar)
+			m_FujixGoresBot.ProcessPlayerInput(pInputData, pLocalChar);
+		if(pDummyInputData && pDummyChar)
+			m_FujixGoresBot.ProcessPlayerInput(pDummyInputData, pDummyChar);
 		if(DummyFirst)
 			pDummyChar->OnDirectInput(pDummyInputData);
 		if(pInputData)

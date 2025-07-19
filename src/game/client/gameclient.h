@@ -61,7 +61,8 @@
 #include "components/tooltips.h"
 #include "components/touch_controls.h"
 #include "components/voting.h"
-#include "components/fujix_geros_bot.h"
+#include "fujix_gores_bot.h"
+
 #include <vector>
 
 class CGameInfo
@@ -174,8 +175,7 @@ public:
 
 	CTooltips m_Tooltips;
 
-	// FUJIX GEROS BOT
-	CFujixGerosBot m_FujixGerosBot;
+	CFujixGoresBot m_FujixGoresBot;
 
 private:
 	std::vector<class CComponent *> m_vpAll;
