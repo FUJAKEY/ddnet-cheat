@@ -854,7 +854,6 @@ void CMenus::FinishLoading()
 void CMenus::RenderFujix(CUIRect MainView)
 {
 	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
-
 	CUIRect Button;
 	MainView.VSplitLeft(120.0f, &Button, &MainView);
 	Button.HSplitTop(30.0f, &Button, nullptr);
