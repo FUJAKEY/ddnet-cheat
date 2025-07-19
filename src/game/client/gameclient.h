@@ -126,6 +126,8 @@ enum class EClientIdFormat
 	INDENT_FORCE, // for rendering settings preview
 };
 
+class CGoresBot;
+
 class CGameClient : public IGameClient
 {
 public:

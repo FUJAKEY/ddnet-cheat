@@ -3029,6 +3029,7 @@ if((GTEST_FOUND OR DOWNLOAD_GTEST) AND SERVER)
     src/engine/client/serverbrowser_ping_cache.cpp
     src/engine/client/serverbrowser_ping_cache.h
     src/engine/client/sqlite.cpp
+	src/game/client/components/goresbot.cpp
   )
 
   set(TARGET_TESTRUNNER testrunner)

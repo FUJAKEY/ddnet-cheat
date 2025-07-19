@@ -76,9 +76,9 @@
 #include "components/spectator.h"
 #include "components/statboard.h"
 #include "components/voting.h"
-#include "components/goresbot.h"
 #include "prediction/entities/character.h"
 #include "prediction/entities/projectile.h"
+#include "components/goresbot.h"
 
 using namespace std::chrono_literals;
 
