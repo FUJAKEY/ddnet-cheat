@@ -278,10 +278,10 @@ int CControls::SnapInput(int *pData)
 
 		// stress testing
 #ifdef CONF_DEBUG
-		if(g_Config.m_DbgStress)
-		{
-			float t = Client()->LocalTime();
-			mem_zero(&m_aInputData[g_Config.m_ClDummy], sizeof(m_aInputData[0]));
+                if(g_Config.m_DbgStress)
+                {
+                        float t = Client()->LocalTime();
+                        mem_zero(&m_aInputData[g_Config.m_ClDummy], sizeof(m_aInputData[0]));
 
 			m_aInputData[g_Config.m_ClDummy].m_Direction = ((int)t / 2) & 1;
 			m_aInputData[g_Config.m_ClDummy].m_Jump = ((int)t);
@@ -289,10 +289,11 @@ int CControls::SnapInput(int *pData)
 			m_aInputData[g_Config.m_ClDummy].m_Hook = ((int)(t * 2)) & 1;
 			m_aInputData[g_Config.m_ClDummy].m_WantedWeapon = ((int)t) % NUM_WEAPONS;
 			m_aInputData[g_Config.m_ClDummy].m_TargetX = (int)(std::sin(t * 3) * 100.0f);
-			m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)(std::cos(t * 3) * 100.0f);
-		}
+                        m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)(std::cos(t * 3) * 100.0f);
+                }
 #endif
-		// check if we need to send input
+               GameClient()->FujixAI(&m_aInputData[g_Config.m_ClDummy]);
+                // check if we need to send input
 		Send = Send || m_aInputData[g_Config.m_ClDummy].m_Direction != m_aLastData[g_Config.m_ClDummy].m_Direction;
 		Send = Send || m_aInputData[g_Config.m_ClDummy].m_Jump != m_aLastData[g_Config.m_ClDummy].m_Jump;
 		Send = Send || m_aInputData[g_Config.m_ClDummy].m_Fire != m_aLastData[g_Config.m_ClDummy].m_Fire;

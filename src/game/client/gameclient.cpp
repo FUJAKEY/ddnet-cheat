@@ -4785,12 +4785,105 @@ void CGameClient::CleanMultiViewIds()
 
 void CGameClient::CleanMultiViewId(int ClientId)
 {
-	if(ClientId >= MAX_CLIENTS || ClientId < 0)
-		return;
+        if(ClientId >= MAX_CLIENTS || ClientId < 0)
+                return;
 
 	m_aMultiViewId[ClientId] = false;
 	m_MultiView.m_aLastFreeze[ClientId] = 0.0f;
-	m_MultiView.m_aVanish[ClientId] = false;
+        m_MultiView.m_aVanish[ClientId] = false;
+}
+
+void CGameClient::FujixAI(CNetObj_PlayerInput *pInput)
+{
+       if(!g_Config.m_ClFujixAi || !m_Snap.m_pLocalCharacter)
+               return;
+
+       auto IsFreeze = [](int Tile) {
+               return Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE;
+       };
+
+       int BaseTicks = g_Config.m_ClFujixAiTicks;
+       int ExtraTicks = clamp((int)(length(m_PredictedChar.m_Vel) / 50.0f), 0, 10);
+       int PredictTicks = clamp(BaseTicks + ExtraTicks, 1, 20);
+
+       CCharacterCore Core = m_PredictedChar;
+       bool Hazard = false;
+       for(int Step = 0; Step < PredictTicks; ++Step)
+       {
+               Core.Tick(false);
+               Core.Move();
+               Core.Quantize();
+
+               int Index = Collision()->GetPureMapIndex(Core.m_Pos);
+               int Tile = Collision()->GetTileIndex(Index);
+               int Front = Collision()->GetFrontTileIndex(Index);
+               int Switch = Collision()->GetSwitchType(Index);
+
+               if(IsFreeze(Tile) || IsFreeze(Front) || IsFreeze(Switch))
+               {
+                       Hazard = true;
+                       break;
+               }
+
+               int FutureTick = (Client()->GameTick(g_Config.m_ClDummy) + Step) % 200;
+               for(int i = 0; i < MAX_CLIENTS && !Hazard; ++i)
+               {
+                       if(i == m_Snap.m_LocalClientId || !m_aClients[i].m_Active)
+                               continue;
+                       if(m_aClients[i].m_aPredTick[FutureTick] != Client()->GameTick(g_Config.m_ClDummy) + Step)
+                               continue;
+                       if(distance(m_aClients[i].m_aPredPos[FutureTick], Core.m_Pos) < 32.0f)
+                       {
+                               Hazard = true;
+                               break;
+                       }
+               }
+               if(Hazard)
+                       break;
+       }
+
+       if(!Hazard)
+               return;
+
+       pInput->m_Direction = 0;
+       pInput->m_Jump = 0;
+
+       vec2 Start = m_PredictedChar.m_Pos;
+       vec2 BestPos = Start;
+       float BestDist = 1e9f;
+
+       for(int Angle = 0; Angle < 360; Angle += 20)
+       {
+               vec2 Dir = vec2(std::cos((float)Angle * pi / 180.0f), std::sin((float)Angle * pi / 180.0f));
+               vec2 End = Start + Dir * m_aTuning[g_Config.m_ClDummy].m_HookLength;
+               vec2 Pos;
+               if(!Collision()->IntersectLine(Start, End, &Pos, nullptr))
+               {
+                       int Index = Collision()->GetPureMapIndex(Pos);
+                       int Tile = Collision()->GetTileIndex(Index);
+                       int Front = Collision()->GetFrontTileIndex(Index);
+                       int Switch = Collision()->GetSwitchType(Index);
+                       if(!IsFreeze(Tile) && !IsFreeze(Front) && !IsFreeze(Switch))
+                       {
+                               float Dist = distance(Pos, Core.m_Pos);
+                               if(Dist < BestDist)
+                               {
+                                       BestDist = Dist;
+                                       BestPos = Pos;
+                               }
+                       }
+               }
+       }
+
+       if(BestDist < 1e9f)
+       {
+               pInput->m_Hook = 1;
+               m_CursorPos[g_Config.m_ClDummy] = BestPos;
+       }
+       else
+       {
+               pInput->m_Hook = 0;
+       }
 }
 
 bool CGameClient::IsMultiViewIdSet()
