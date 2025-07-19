@@ -24,8 +24,8 @@ void CFujixGoresBot::ProcessPlayerInput(CNetObj_PlayerInput *pInput, CCharacter 
 		return;
 	
 	// Get current character state
-	vec2 currentPos = pCharacter->m_Core.m_Pos;
-	vec2 currentVel = pCharacter->m_Core.m_Vel;
+       vec2 currentPos = pCharacter->Core()->m_Pos;
+       vec2 currentVel = pCharacter->Core()->m_Vel;
 	
 	// Calculate intended velocity based on current input
 	vec2 intendedVel = currentVel;
@@ -61,7 +61,7 @@ void CFujixGoresBot::ProcessPlayerInput(CNetObj_PlayerInput *pInput, CCharacter 
 
 bool CFujixGoresBot::WillHitFreezeTile(CCharacter *pCharacter, vec2 velocity, int ticks)
 {
-	vec2 currentPos = pCharacter->m_Core.m_Pos;
+       vec2 currentPos = pCharacter->Core()->m_Pos;
 	
 	// Simulate movement for each tick
 	for(int i = 1; i <= ticks; i++)
