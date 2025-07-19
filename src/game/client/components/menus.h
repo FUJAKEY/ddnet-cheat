@@ -713,6 +713,7 @@ public:
 		PAGE_SETTINGS,
 		PAGE_NETWORK,
 		PAGE_GHOST,
+		PAGE_FUJIX,
 
 		PAGE_LENGTH,
 
@@ -849,6 +850,7 @@ private:
 	// found in menus_ingame.cpp
 	void RenderInGameNetwork(CUIRect MainView);
 	void RenderGhost(CUIRect MainView);
+	void RenderFujix(CUIRect MainView);
 
 	// found in menus_settings.cpp
 	void RenderSettingsDDNet(CUIRect MainView);

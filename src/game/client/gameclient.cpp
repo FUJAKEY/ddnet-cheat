@@ -76,6 +76,7 @@
 #include "components/spectator.h"
 #include "components/statboard.h"
 #include "components/voting.h"
+#include "components/goresbot.h"
 #include "prediction/entities/character.h"
 #include "prediction/entities/projectile.h"
 
@@ -155,6 +156,7 @@ void CGameClient::OnConsoleInit()
 					      &m_Menus,
 					      &m_Tooltips,
 					      &CMenus::m_Binder,
+					      &m_GoresBot,
 					      &m_GameConsole,
 					      &m_MenuBackground});
 

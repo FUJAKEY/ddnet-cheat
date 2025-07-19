@@ -758,6 +758,11 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 				NewPage = PAGE_GHOST;
 		}
 
+		Box.VSplitLeft(90.0f, &Button, &Box);
+		static CButtonContainer s_FujixButton;
+		if(DoButton_MenuTab(&s_FujixButton, "FUJIX", ActivePage == PAGE_FUJIX, &Button, IGraphics::CORNER_NONE))
+			NewPage = PAGE_FUJIX;
+
 		Box.VSplitLeft(100.0f, &Button, &Box);
 		Box.VSplitLeft(4.0f, nullptr, &Box);
 		static CButtonContainer s_CallVoteButton;
@@ -844,6 +849,20 @@ void CMenus::FinishLoading()
 {
 	m_LoadingState.m_Current = 0;
 	m_LoadingState.m_Total = 0;
+}
+
+void CMenus::RenderFujix(CUIRect MainView)
+{
+	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
+
+	CUIRect Button;
+	MainView.VSplitLeft(120.0f, &Button, &MainView);
+	Button.HSplitTop(30.0f, &Button, nullptr);
+	static CButtonContainer s_GoresBotButton;
+	if(DoButton_Menu(&s_GoresBotButton, "GORES BOT", g_Config.m_ClGoresBot, &Button))
+	{
+		g_Config.m_ClGoresBot ^= 1;
+	}
 }
 
 void CMenus::RenderNews(CUIRect MainView)
@@ -1204,6 +1223,10 @@ void CMenus::Render()
 			else if(m_GamePage == PAGE_CALLVOTE)
 			{
 				RenderServerControl(MainView);
+			}
+			else if(m_GamePage == PAGE_FUJIX)
+			{
+				RenderFujix(MainView);
 			}
 			else if(m_GamePage == PAGE_SETTINGS)
 			{
