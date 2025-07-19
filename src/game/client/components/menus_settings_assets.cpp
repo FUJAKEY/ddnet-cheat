@@ -644,53 +644,56 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 			}
 		}
 	}
+	} // end of else block
+	// Quick search (for all tabs except FUJIX)
+	if(s_CurCustomTab != ASSETS_TAB_FUJIX)
+	{
+		MainView.HSplitBottom(ms_ButtonHeight, &MainView, &QuickSearch);
+		QuickSearch.VSplitLeft(220.0f, &QuickSearch, &DirectoryButton);
+		QuickSearch.HSplitTop(5.0f, nullptr, &QuickSearch);
+		if(Ui()->DoEditBox_Search(&s_aFilterInputs[s_CurCustomTab], &QuickSearch, 14.0f, !Ui()->IsPopupOpen() && !m_pClient->m_GameConsole.IsActive()))
+		{
+			gs_aInitCustomList[s_CurCustomTab] = true;
+		}
 
-	// Quick search
-	MainView.HSplitBottom(ms_ButtonHeight, &MainView, &QuickSearch);
-	QuickSearch.VSplitLeft(220.0f, &QuickSearch, &DirectoryButton);
-	QuickSearch.HSplitTop(5.0f, nullptr, &QuickSearch);
-	if(Ui()->DoEditBox_Search(&s_aFilterInputs[s_CurCustomTab], &QuickSearch, 14.0f, !Ui()->IsPopupOpen() && !m_pClient->m_GameConsole.IsActive()))
-	{
-		gs_aInitCustomList[s_CurCustomTab] = true;
-	}
+		DirectoryButton.HSplitTop(5.0f, nullptr, &DirectoryButton);
+		DirectoryButton.VSplitRight(175.0f, nullptr, &DirectoryButton);
+		DirectoryButton.VSplitRight(25.0f, &DirectoryButton, &ReloadButton);
+		DirectoryButton.VSplitRight(10.0f, &DirectoryButton, nullptr);
+		static CButtonContainer s_AssetsDirId;
+		if(DoButton_Menu(&s_AssetsDirId, Localize("Assets directory"), 0, &DirectoryButton))
+		{
+			char aBuf[IO_MAX_PATH_LENGTH];
+			char aBufFull[IO_MAX_PATH_LENGTH + 7];
+			if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
+				str_copy(aBufFull, "assets/entities");
+			else if(s_CurCustomTab == ASSETS_TAB_GAME)
+				str_copy(aBufFull, "assets/game");
+			else if(s_CurCustomTab == ASSETS_TAB_EMOTICONS)
+				str_copy(aBufFull, "assets/emoticons");
+			else if(s_CurCustomTab == ASSETS_TAB_PARTICLES)
+				str_copy(aBufFull, "assets/particles");
+			else if(s_CurCustomTab == ASSETS_TAB_HUD)
+				str_copy(aBufFull, "assets/hud");
+			else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+				str_copy(aBufFull, "assets/extras");
+			Storage()->GetCompletePath(IStorage::TYPE_SAVE, aBufFull, aBuf, sizeof(aBuf));
+			Storage()->CreateFolder("assets", IStorage::TYPE_SAVE);
+			Storage()->CreateFolder(aBufFull, IStorage::TYPE_SAVE);
+			Client()->ViewFile(aBuf);
+		}
+		GameClient()->m_Tooltips.DoToolTip(&s_AssetsDirId, &DirectoryButton, Localize("Open the directory to add custom assets"));
 
-	DirectoryButton.HSplitTop(5.0f, nullptr, &DirectoryButton);
-	DirectoryButton.VSplitRight(175.0f, nullptr, &DirectoryButton);
-	DirectoryButton.VSplitRight(25.0f, &DirectoryButton, &ReloadButton);
-	DirectoryButton.VSplitRight(10.0f, &DirectoryButton, nullptr);
-	static CButtonContainer s_AssetsDirId;
-	if(DoButton_Menu(&s_AssetsDirId, Localize("Assets directory"), 0, &DirectoryButton))
-	{
-		char aBuf[IO_MAX_PATH_LENGTH];
-		char aBufFull[IO_MAX_PATH_LENGTH + 7];
-		if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
-			str_copy(aBufFull, "assets/entities");
-		else if(s_CurCustomTab == ASSETS_TAB_GAME)
-			str_copy(aBufFull, "assets/game");
-		else if(s_CurCustomTab == ASSETS_TAB_EMOTICONS)
-			str_copy(aBufFull, "assets/emoticons");
-		else if(s_CurCustomTab == ASSETS_TAB_PARTICLES)
-			str_copy(aBufFull, "assets/particles");
-		else if(s_CurCustomTab == ASSETS_TAB_HUD)
-			str_copy(aBufFull, "assets/hud");
-		else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
-			str_copy(aBufFull, "assets/extras");
-		Storage()->GetCompletePath(IStorage::TYPE_SAVE, aBufFull, aBuf, sizeof(aBuf));
-		Storage()->CreateFolder("assets", IStorage::TYPE_SAVE);
-		Storage()->CreateFolder(aBufFull, IStorage::TYPE_SAVE);
-		Client()->ViewFile(aBuf);
+		TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
+		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+		static CButtonContainer s_AssetsReloadBtnId;
+		if(DoButton_Menu(&s_AssetsReloadBtnId, FONT_ICON_ARROW_ROTATE_RIGHT, 0, &ReloadButton) || Input()->KeyPress(KEY_F5) || (Input()->KeyPress(KEY_R) && Input()->ModifierIsPressed()))
+		{
+			ClearCustomItems(s_CurCustomTab);
+		}
+		TextRender()->SetRenderFlags(0);
+		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 	}
-	GameClient()->m_Tooltips.DoToolTip(&s_AssetsDirId, &DirectoryButton, Localize("Open the directory to add custom assets"));
-	} // end of else block for FUJIX tab
-	TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-	TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
-	static CButtonContainer s_AssetsReloadBtnId;
-	if(DoButton_Menu(&s_AssetsReloadBtnId, FONT_ICON_ARROW_ROTATE_RIGHT, 0, &ReloadButton) || Input()->KeyPress(KEY_F5) || (Input()->KeyPress(KEY_R) && Input()->ModifierIsPressed()))
-	{
-		ClearCustomItems(s_CurCustomTab);
-	}
-	TextRender()->SetRenderFlags(0);
-	TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 }
 
 void CMenus::ConchainAssetsEntities(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
