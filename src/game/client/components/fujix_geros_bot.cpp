@@ -908,6 +908,7 @@ bool CFujixGerosBot::IsActive() const
 int CFujixGerosBot::GetPredictionTicks() const
 {
 // ПРОВЕРКА ЭКСТРЕННОГО СОСТОЯНИЯ (удалена - дубликат)
+    return 0;
 }
 
 void CFujixGerosBot::SimulateCharacterCore(CCharacterCore *pCore, int Ticks)
@@ -1226,10 +1227,6 @@ float CFujixGerosBot::CalculateHookScore(vec2 Pos, vec2 Target, vec2 Vel)
 	return Score;
 }
 
-// bool CFujixGerosBot::CanDoCeilingRiding - удалена старая версия, используется новая
-// bool CFujixGerosBot::CanDoWallRiding - удалена старая версия, используется новая
-	return IsHookTrajectorysSafe(Pos, WallTarget);
-}
 
 bool CFujixGerosBot::IsHookTrajectorysSafe(vec2 From, vec2 To)
 {
