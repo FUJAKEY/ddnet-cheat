@@ -36,11 +36,9 @@ void CFujixGoresBot::ProcessPlayerInput(CNetObj_PlayerInput *pInput, CCharacter 
                }
        }
 
-       vec2 pos = pCharacter->Core()->m_Pos;
-       vec2 vel = pCharacter->Core()->m_Vel;
        int direction = pInput->m_Direction;
 
-       int freezeTick = PredictFreezeTick(pos, vel, direction, PREDICTION_TICKS);
+       int freezeTick = PredictFreezeTick(pCharacter, direction, PREDICTION_TICKS);
        if(freezeTick > 0)
        {
                int stopTick = freezeTick - SAFETY_DISTANCE_TICKS;
@@ -63,25 +61,40 @@ void CFujixGoresBot::ProcessPlayerInput(CNetObj_PlayerInput *pInput, CCharacter 
 
 bool CFujixGoresBot::WillHitFreezeTile(CCharacter *pCharacter, vec2 velocity, int ticks)
 {
-       return PredictFreezeTick(pCharacter->Core()->m_Pos, velocity, 0, ticks) > 0;
+       if(!pCharacter)
+               return false;
+
+       CCharacterCore TmpCore = *pCharacter->Core();
+       TmpCore.SetCoreWorld(nullptr, m_pCollision, nullptr);
+       TmpCore.m_Vel = velocity;
+       for(int i = 0; i < ticks; i++)
+       {
+               TmpCore.m_Input.m_Direction = 0;
+               TmpCore.Tick(true);
+               TmpCore.Move();
+               TmpCore.Quantize();
+               if(IsFreezeTile(TmpCore.m_Pos))
+                       return true;
+       }
+       return false;
 }
 
-int CFujixGoresBot::PredictFreezeTick(vec2 pos, vec2 vel, int direction, int maxTicks)
+int CFujixGoresBot::PredictFreezeTick(CCharacter *pCharacter, int direction, int maxTicks)
 {
+       if(!pCharacter)
+               return -1;
+
+       CCharacterCore Core = *pCharacter->Core();
+       Core.SetCoreWorld(nullptr, m_pCollision, nullptr);
+
        for(int i = 1; i <= maxTicks; i++)
        {
-               if(direction != 0)
-               {
-                       float acceleration = 2.0f;
-                       vel.x += direction * acceleration;
-               }
+               Core.m_Input.m_Direction = direction;
+               Core.Tick(true);
+               Core.Move();
+               Core.Quantize();
 
-               pos += vel * (1.0f / 50.0f);
-
-               vel.x *= 0.5f;
-               vel.y += 0.75f;
-
-               if(IsFreezeTile(pos))
+               if(IsFreezeTile(Core.m_Pos))
                        return i;
        }
 
