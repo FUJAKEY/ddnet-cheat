@@ -4785,12 +4785,89 @@ void CGameClient::CleanMultiViewIds()
 
 void CGameClient::CleanMultiViewId(int ClientId)
 {
-	if(ClientId >= MAX_CLIENTS || ClientId < 0)
-		return;
+        if(ClientId >= MAX_CLIENTS || ClientId < 0)
+                return;
 
 	m_aMultiViewId[ClientId] = false;
 	m_MultiView.m_aLastFreeze[ClientId] = 0.0f;
-	m_MultiView.m_aVanish[ClientId] = false;
+        m_MultiView.m_aVanish[ClientId] = false;
+}
+
+void CGameClient::FujixAI(CNetObj_PlayerInput *pInput)
+{
+       if(!g_Config.m_ClFujixAi || !m_Snap.m_pLocalCharacter)
+               return;
+
+       CCharacterCore Sim = m_PredictedChar;
+       bool FreezeSoon = false;
+       int FreezeTick = -1;
+
+       for(int i = 0; i < 9; ++i)
+       {
+               Sim.Tick(false);
+               Sim.Move();
+               Sim.Quantize();
+
+               int Index = Collision()->GetPureMapIndex(Sim.m_Pos);
+               int Tile = Collision()->GetTileIndex(Index);
+               int Front = Collision()->GetFrontTileIndex(Index);
+               int Switch = Collision()->GetSwitchType(Index);
+
+               if(Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
+                  Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE ||
+                  Switch == TILE_FREEZE || Switch == TILE_DFREEZE || Switch == TILE_LFREEZE)
+               {
+                       FreezeSoon = true;
+                       FreezeTick = i;
+                       break;
+               }
+       }
+
+       if(!FreezeSoon)
+               return;
+
+       pInput->m_Hook = 0;
+
+       // If we are falling towards freeze, try to hook the ceiling.
+       if(Sim.m_Vel.y > 0)
+       {
+               vec2 Start = m_PredictedChar.m_Pos;
+               vec2 BestHook = Start;
+               float BestDist = 1e9f;
+
+               // search upward directions for hook spots
+               static const vec2 s_aDir[5] = {
+                       vec2(0, -1), vec2(1, -1), vec2(-1, -1), vec2(1, 0), vec2(-1, 0)};
+               for(const vec2 &Dir : s_aDir)
+               {
+                       vec2 End = Start + normalize(Dir) * m_aTuning[g_Config.m_ClDummy].m_HookLength;
+                       vec2 HookPos;
+                       if(!Collision()->IntersectLine(Start, End, &HookPos, nullptr))
+                       {
+                               float Dist = distance(Start, HookPos);
+                               if(Dist < BestDist)
+                               {
+                                       BestDist = Dist;
+                                       BestHook = HookPos;
+                               }
+                       }
+               }
+
+               if(BestDist < 1e9f)
+               {
+                       pInput->m_Hook = 1;
+                       pInput->m_TargetX = (int)(BestHook.x - Start.x);
+                       pInput->m_TargetY = (int)(BestHook.y - Start.y);
+                       return;
+               }
+       }
+
+       // Freeze ahead horizontally, stop two ticks before it.
+       if(absolute(Sim.m_Vel.x) > 0.0f)
+       {
+               pInput->m_Direction = 0;
+               pInput->m_Jump = 0;
+       }
 }
 
 bool CGameClient::IsMultiViewIdSet()
