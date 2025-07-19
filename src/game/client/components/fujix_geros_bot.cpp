@@ -1829,3 +1829,25 @@ bool CFujixGerosBot::CanDoWallRiding(vec2 Pos, vec2 Target, int Side)
     
     return true;
 }
+
+// 🔧 НЕДОСТАЮЩИЕ ФУНКЦИИ - ДОБАВЛЕНЫ ДЛЯ ЛИНКОВКИ
+
+void CFujixGerosBot::PredictMovement(SAdvancedPrediction *pPredictions, int NumTicks)
+{
+    // Базовая реализация предсказания движения
+    // Используем DeepPredict для совместимости
+    DeepPredict(pPredictions, NumTicks);
+}
+
+int CFujixGerosBot::GetAggressiveness() const
+{
+    // Возвращаем агрессивность от 0 до 10
+    // 5 - умеренная агрессивность по умолчанию
+    return 5;
+}
+
+bool CFujixGerosBot::IsAntiSuicideEnabled() const
+{
+    // По умолчанию антисуицид включен
+    return true;
+}
