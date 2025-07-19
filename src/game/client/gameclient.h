@@ -155,6 +155,7 @@ public:
 	CTouchControls m_TouchControls;
 	CVoting m_Voting;
 	CSpectator m_Spectator;
+	CGoresBot m_GoresBot;
 
 	CPlayers m_Players;
 	CNamePlates m_NamePlates;
