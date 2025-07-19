@@ -242,22 +242,11 @@ static const CMenus::SCustomItem *GetCustomItem(int CurTab, size_t Index)
 	else if(CurTab == ASSETS_TAB_HUD)
 		return gs_vpSearchHudList[Index];
 	else if(CurTab == ASSETS_TAB_EXTRAS)
-	else if(CurTab == ASSETS_TAB_EXTRAS)
 		return gs_vpSearchExtrasList[Index];
 	else if(CurTab == ASSETS_TAB_FUJIX)
 		return nullptr; // FUJIX tab doesn't use items
 
 	return nullptr;
-}
-
-template<typename TName>
-void ClearAssetList(std::vector<TName> &vList, IGraphics *pGraphics)
-{
-	for(TName &Asset : vList)
-	{
-		pGraphics->UnloadTexture(&Asset.m_RenderTexture);
-	}
-	vList.clear();
 }
 
 void CMenus::ClearCustomItems(int CurTab)
@@ -315,6 +304,7 @@ void CMenus::ClearCustomItems(int CurTab)
 	{
 		// FUJIX tab doesn't need clearing - no assets to clear
 	gs_aInitCustomList[CurTab] = true;
+	}
 }
 
 template<typename TName, typename TCaller>
