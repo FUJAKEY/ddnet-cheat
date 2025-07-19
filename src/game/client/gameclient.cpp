@@ -4785,12 +4785,52 @@ void CGameClient::CleanMultiViewIds()
 
 void CGameClient::CleanMultiViewId(int ClientId)
 {
-	if(ClientId >= MAX_CLIENTS || ClientId < 0)
-		return;
+        if(ClientId >= MAX_CLIENTS || ClientId < 0)
+                return;
 
 	m_aMultiViewId[ClientId] = false;
 	m_MultiView.m_aLastFreeze[ClientId] = 0.0f;
-	m_MultiView.m_aVanish[ClientId] = false;
+        m_MultiView.m_aVanish[ClientId] = false;
+}
+
+void CGameClient::FujixAI(CNetObj_PlayerInput *pInput)
+{
+       if(!g_Config.m_ClFujixAi || !m_Snap.m_pLocalCharacter)
+               return;
+
+       CCharacterCore Core = m_PredictedChar;
+       bool FreezeSoon = false;
+       for(int i = 0; i < 9; ++i)
+       {
+               Core.Tick(false);
+               Core.Move();
+               Core.Quantize();
+               int Index = Collision()->GetPureMapIndex(Core.m_Pos);
+               int Tile = Collision()->GetTileIndex(Index);
+               int Front = Collision()->GetFrontTileIndex(Index);
+               int Switch = Collision()->GetSwitchType(Index);
+               if(Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
+                  Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE ||
+                  Switch == TILE_FREEZE || Switch == TILE_DFREEZE || Switch == TILE_LFREEZE)
+               {
+                       FreezeSoon = true;
+                       break;
+               }
+       }
+
+       if(FreezeSoon)
+       {
+               pInput->m_Direction = 0;
+               pInput->m_Jump = 0;
+
+               vec2 HookPos;
+               vec2 Start = m_PredictedChar.m_Pos;
+               vec2 End = Start - vec2(0, m_aTuning[g_Config.m_ClDummy].m_HookLength);
+               if(!Collision()->IntersectLine(Start, End, &HookPos, nullptr))
+                       pInput->m_Hook = 1;
+               else
+                       pInput->m_Hook = 0;
+       }
 }
 
 bool CGameClient::IsMultiViewIdSet()

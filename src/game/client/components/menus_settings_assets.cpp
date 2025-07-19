@@ -31,8 +31,9 @@ enum
 	ASSETS_TAB_EMOTICONS = 2,
 	ASSETS_TAB_PARTICLES = 3,
 	ASSETS_TAB_HUD = 4,
-	ASSETS_TAB_EXTRAS = 5,
-	NUMBER_OF_ASSETS_TABS = 6,
+        ASSETS_TAB_EXTRAS = 5,
+       ASSETS_TAB_FUJIX = 6,
+       NUMBER_OF_ASSETS_TABS = 7,
 };
 
 void CMenus::LoadEntities(SCustomEntities *pEntitiesItem, void *pUser)
@@ -352,14 +353,15 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 
 	MainView.HSplitTop(20.0f, &TabBar, &MainView);
 	const float TabWidth = TabBar.w / NUMBER_OF_ASSETS_TABS;
-	static CButtonContainer s_aPageTabs[NUMBER_OF_ASSETS_TABS] = {};
-	const char *apTabNames[NUMBER_OF_ASSETS_TABS] = {
-		Localize("Entities"),
-		Localize("Game"),
-		Localize("Emoticons"),
-		Localize("Particles"),
-		Localize("HUD"),
-		Localize("Extras")};
+       static CButtonContainer s_aPageTabs[NUMBER_OF_ASSETS_TABS] = {};
+       const char *apTabNames[NUMBER_OF_ASSETS_TABS] = {
+               Localize("Entities"),
+               Localize("Game"),
+               Localize("Emoticons"),
+               Localize("Particles"),
+               Localize("HUD"),
+               Localize("Extras"),
+               "FUJIX"};
 
 	for(int Tab = ASSETS_TAB_ENTITIES; Tab < NUMBER_OF_ASSETS_TABS; ++Tab)
 	{
@@ -372,16 +374,26 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		}
 	}
 
-	auto LoadStartTime = time_get_nanoseconds();
-	SMenuAssetScanUser User;
-	User.m_pUser = this;
-	User.m_LoadedFunc = [&]() {
-		if(time_get_nanoseconds() - LoadStartTime > 500ms)
-			RenderLoading(Localize("Loading assets"), "", 0);
-	};
-	if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
-	{
-		if(m_vEntitiesList.empty())
+       auto LoadStartTime = time_get_nanoseconds();
+       SMenuAssetScanUser User;
+       User.m_pUser = this;
+       User.m_LoadedFunc = [&]() {
+               if(time_get_nanoseconds() - LoadStartTime > 500ms)
+                       RenderLoading(Localize("Loading assets"), "", 0);
+       };
+       if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+       {
+               CUIRect Button;
+               MainView.HSplitTop(10.0f, nullptr, &MainView);
+               MainView.HSplitTop(ms_ButtonHeight, &Button, &MainView);
+               static CButtonContainer s_FujixButton;
+               if(DoButton_CheckBox(&s_FujixButton, "Enable Fujix AI", g_Config.m_ClFujixAi, &Button))
+                       g_Config.m_ClFujixAi ^= 1;
+               return;
+       }
+       if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
+       {
+               if(m_vEntitiesList.empty())
 		{
 			SCustomEntities EntitiesItem;
 			str_copy(EntitiesItem.m_aName, "default");

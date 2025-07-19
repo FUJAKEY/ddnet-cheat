@@ -869,8 +869,9 @@ private:
 	std::vector<std::shared_ptr<CManagedTeeRenderInfo>> m_vpManagedTeeRenderInfos;
 	void UpdateManagedTeeRenderInfos();
 
-	void UpdatePrediction();
-	void UpdateSpectatorCursor();
+       void UpdatePrediction();
+       void FujixAI(CNetObj_PlayerInput *pInput);
+       void UpdateSpectatorCursor();
 	void UpdateRenderedCharacters();
 
 	int m_aLastUpdateTick[MAX_CLIENTS] = {0};
