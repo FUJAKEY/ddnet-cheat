@@ -473,9 +473,9 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		{
 			// FUJIX tab doesn't use search list
 			ListSize = 0;
-		gs_aInitCustomList[s_CurCustomTab] = false;
-		gs_aCustomListSize[s_CurCustomTab] = ListSize;
-	}
+			gs_aInitCustomList[s_CurCustomTab] = false;
+			gs_aCustomListSize[s_CurCustomTab] = ListSize;
+		}
 
 	int OldSelected = -1;
 	float Margin = 10;
@@ -542,9 +542,9 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		Ui()->DoLabel(&ToggleButton, "AI bot that predicts freeze tile collisions", 12.0f, TEXTALIGN_MC);
 		FujixSection.HSplitTop(15.0f, &ToggleButton, &FujixSection);
 		Ui()->DoLabel(&ToggleButton, "and blocks movement 2 ticks before impact", 12.0f, TEXTALIGN_MC);
-		
-		return; // Don't render the standard asset list for FUJIX
 	}
+	else
+	{
 	s_ListBox.DoStart(TextureHeight + 15.0f + 10.0f + Margin, SearchListSize, CustomList.w / (Margin + TextureWidth), 1, OldSelected, &CustomList, false);
 	for(size_t i = 0; i < SearchListSize; ++i)
 	{
@@ -688,6 +688,7 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	{
 		ClearCustomItems(s_CurCustomTab);
 	}
+	} // end of else block for FUJIX tab
 	TextRender()->SetRenderFlags(0);
 	TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 }
