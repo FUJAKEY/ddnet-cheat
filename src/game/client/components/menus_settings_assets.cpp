@@ -131,6 +131,16 @@ static void LoadAsset(TName *pAssetItem, const char *pAssetName, IGraphics *pGra
 }
 
 template<typename TName>
+static void ClearAssetList(std::vector<TName> &vList, IGraphics *pGraphics)
+{
+	for(auto &Asset : vList)
+	{
+		pGraphics->UnloadTexture(&Asset.m_RenderTexture);
+	}
+	vList.clear();
+}
+
+template<typename TName>
 static int AssetScan(const char *pName, int IsDir, int DirType, std::vector<TName> &vAssetList, const char *pAssetName, IGraphics *pGraphics, void *pUser)
 {
 	auto *pRealUser = (SMenuAssetScanUser *)pUser;
@@ -346,6 +356,7 @@ int InitSearchList(std::vector<const TName *> &vpSearchList, std::vector<TName> 
 void CMenus::RenderSettingsCustom(CUIRect MainView)
 {
 	CUIRect TabBar, CustomList, QuickSearch, DirectoryButton, ReloadButton;
+	static CUiListBox s_ListBox;
 
 	MainView.HSplitTop(20.0f, &TabBar, &MainView);
 	const float TabWidth = TabBar.w / NUMBER_OF_ASSETS_TABS;
@@ -678,7 +689,6 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	{
 		ClearCustomItems(s_CurCustomTab);
 	}
-	} // end of else block for FUJIX tab
 	TextRender()->SetRenderFlags(0);
 	TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 }
