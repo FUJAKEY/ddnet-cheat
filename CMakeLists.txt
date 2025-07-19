@@ -2402,8 +2402,6 @@ if(CLIENT)
     components/voting.h
     gameclient.cpp
     gameclient.h
-    fujix_gores_bot.cpp
-    fujix_gores_bot.h
     laser_data.cpp
     laser_data.h
     lineinput.cpp

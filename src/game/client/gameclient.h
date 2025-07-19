@@ -61,7 +61,6 @@
 #include "components/tooltips.h"
 #include "components/touch_controls.h"
 #include "components/voting.h"
-#include "fujix_gores_bot.h"
 
 #include <vector>
 
@@ -174,8 +173,6 @@ public:
 	CGhost m_Ghost;
 
 	CTooltips m_Tooltips;
-
-	CFujixGoresBot m_FujixGoresBot;
 
 private:
 	std::vector<class CComponent *> m_vpAll;

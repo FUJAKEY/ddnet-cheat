@@ -131,16 +131,6 @@ static void LoadAsset(TName *pAssetItem, const char *pAssetName, IGraphics *pGra
 }
 
 template<typename TName>
-static void ClearAssetList(std::vector<TName> &vList, IGraphics *pGraphics)
-{
-	for(auto &Asset : vList)
-	{
-		pGraphics->UnloadTexture(&Asset.m_RenderTexture);
-	}
-	vList.clear();
-}
-
-template<typename TName>
 static int AssetScan(const char *pName, int IsDir, int DirType, std::vector<TName> &vAssetList, const char *pAssetName, IGraphics *pGraphics, void *pUser)
 {
 	auto *pRealUser = (SMenuAssetScanUser *)pUser;
@@ -253,10 +243,18 @@ static const CMenus::SCustomItem *GetCustomItem(int CurTab, size_t Index)
 		return gs_vpSearchHudList[Index];
 	else if(CurTab == ASSETS_TAB_EXTRAS)
 		return gs_vpSearchExtrasList[Index];
-	else if(CurTab == ASSETS_TAB_FUJIX)
-		return nullptr; // FUJIX tab doesn't use items
 
 	return nullptr;
+}
+
+template<typename TName>
+void ClearAssetList(std::vector<TName> &vList, IGraphics *pGraphics)
+{
+	for(TName &Asset : vList)
+	{
+		pGraphics->UnloadTexture(&Asset.m_RenderTexture);
+	}
+	vList.clear();
 }
 
 void CMenus::ClearCustomItems(int CurTab)
@@ -312,9 +310,9 @@ void CMenus::ClearCustomItems(int CurTab)
 	}
 	else if(CurTab == ASSETS_TAB_FUJIX)
 	{
-		// FUJIX tab doesn't need clearing - no assets to clear
-	gs_aInitCustomList[CurTab] = true;
+		// FUJIX tab doesn't need clearing - it's just configuration
 	}
+	gs_aInitCustomList[CurTab] = true;
 }
 
 template<typename TName, typename TCaller>
@@ -356,7 +354,6 @@ int InitSearchList(std::vector<const TName *> &vpSearchList, std::vector<TName> 
 void CMenus::RenderSettingsCustom(CUIRect MainView)
 {
 	CUIRect TabBar, CustomList, QuickSearch, DirectoryButton, ReloadButton;
-	static CListBox s_ListBox;
 
 	MainView.HSplitTop(20.0f, &TabBar, &MainView);
 	const float TabWidth = TabBar.w / NUMBER_OF_ASSETS_TABS;
@@ -368,7 +365,7 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		Localize("Particles"),
 		Localize("HUD"),
 		Localize("Extras"),
-		"FUJIX"};
+		Localize("FUJIX")};
 
 	for(int Tab = ASSETS_TAB_ENTITIES; Tab < NUMBER_OF_ASSETS_TABS; ++Tab)
 	{
@@ -426,8 +423,9 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	}
 	else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
 	{
-		// FUJIX tab doesn't need asset loading - it's for bot configuration
+		// FUJIX tab doesn't need asset loading - it's just a simple toggle
 	}
+
 	MainView.HSplitTop(10.0f, nullptr, &MainView);
 
 	// skin selector
@@ -472,11 +470,11 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		}
 		else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
 		{
-			// FUJIX tab doesn't use search list
+			// FUJIX tab doesn't use search lists - it's a simple toggle interface
 			ListSize = 0;
-			gs_aInitCustomList[s_CurCustomTab] = false;
-			gs_aCustomListSize[s_CurCustomTab] = ListSize;
-		}
+		gs_aInitCustomList[s_CurCustomTab] = false;
+		gs_aCustomListSize[s_CurCustomTab] = ListSize;
+	}
 
 	int OldSelected = -1;
 	float Margin = 10;
@@ -512,42 +510,51 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	}
 	else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
 	{
-		// FUJIX tab has special rendering, no list needed
-		SearchListSize = 0;
+		SearchListSize = 0; // FUJIX tab has custom UI, not a list
 	}
-	
-	// Special handling for FUJIX tab
+
+	// Handle FUJIX tab with custom UI
 	if(s_CurCustomTab == ASSETS_TAB_FUJIX)
 	{
-		CUIRect FujixSection, ToggleButton;
-		CustomList.HSplitTop(50.0f, &FujixSection, &CustomList);
+		// Custom FUJIX interface with toggle button
+		CUIRect FujixContainer, ToggleRect, LabelRect;
+		CustomList.VMargin(20.0f, &FujixContainer);
+		FujixContainer.HMargin(20.0f, &FujixContainer);
 		
 		// Title
-		FujixSection.HSplitTop(20.0f, &ToggleButton, &FujixSection);
-		Ui()->DoLabel(&ToggleButton, "FUJIX Gores Bot", 16.0f, TEXTALIGN_MC);
+		FujixContainer.HSplitTop(30.0f, &LabelRect, &FujixContainer);
+		Ui()->DoLabel(&LabelRect, "FUJIX Geros Bot Configuration", 16.0f, TEXTALIGN_MC);
+		
+		FujixContainer.HSplitTop(20.0f, nullptr, &FujixContainer); // Spacer
+		
+		// Toggle button area
+		FujixContainer.HSplitTop(40.0f, &ToggleRect, &FujixContainer);
 		
 		// Toggle button
-		FujixSection.HSplitTop(5.0f, nullptr, &FujixSection);
-		FujixSection.HSplitTop(25.0f, &ToggleButton, &FujixSection);
-		ToggleButton.VMargin(CustomList.w * 0.3f, &ToggleButton);
+		CUIRect ButtonRect;
+		ToggleRect.VMargin(ToggleRect.w * 0.3f, &ButtonRect);
 		
-		static CButtonContainer s_FujixBotButton;
-		if(DoButton_CheckBox(&s_FujixBotButton, "Enable Gores Bot", g_Config.m_FujixGoresBot, &ToggleButton))
+		static CButtonContainer s_FujixToggleButton;
+		const char *pButtonText = g_Config.m_ClFujixGerosBot ? "FUJIX Bot: ON" : "FUJIX Bot: OFF";
+		const ColorRGBA ButtonColor = g_Config.m_ClFujixGerosBot ? ColorRGBA(0.0f, 0.8f, 0.0f, 0.8f) : ColorRGBA(0.8f, 0.0f, 0.0f, 0.8f);
+		
+		if(DoButton_Menu(&s_FujixToggleButton, pButtonText, 0, &ButtonRect, 0, nullptr, nullptr, ButtonColor, ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f)))
 		{
-			g_Config.m_FujixGoresBot = g_Config.m_FujixGoresBot ? 0 : 1;
+			g_Config.m_ClFujixGerosBot = g_Config.m_ClFujixGerosBot ? 0 : 1;
 		}
 		
-		// Description
-		FujixSection.HSplitTop(10.0f, nullptr, &FujixSection);
-		FujixSection.HSplitTop(15.0f, &ToggleButton, &FujixSection);
-		Ui()->DoLabel(&ToggleButton, "AI bot that predicts freeze tile collisions", 12.0f, TEXTALIGN_MC);
-		FujixSection.HSplitTop(15.0f, &ToggleButton, &FujixSection);
-		Ui()->DoLabel(&ToggleButton, "and blocks movement 2 ticks before impact", 12.0f, TEXTALIGN_MC);
+		// Status description
+		FujixContainer.HSplitTop(30.0f, nullptr, &FujixContainer); // Spacer
+		FujixContainer.HSplitTop(20.0f, &LabelRect, &FujixContainer);
+		const char *pStatusText = g_Config.m_ClFujixGerosBot ? "FUJIX Geros Bot is currently ENABLED" : "FUJIX Geros Bot is currently DISABLED";
+		Ui()->DoLabel(&LabelRect, pStatusText, 12.0f, TEXTALIGN_MC);
 	}
 	else
 	{
-	s_ListBox.DoStart(TextureHeight + 15.0f + 10.0f + Margin, SearchListSize, CustomList.w / (Margin + TextureWidth), 1, OldSelected, &CustomList, false);
-	for(size_t i = 0; i < SearchListSize; ++i)
+		// Standard asset list interface for other tabs
+		static CListBox s_ListBox;
+		s_ListBox.DoStart(TextureHeight + 15.0f + 10.0f + Margin, SearchListSize, CustomList.w / (Margin + TextureWidth), 1, OldSelected, &CustomList, false);
+		for(size_t i = 0; i < SearchListSize; ++i)
 	{
 		const SCustomItem *pItem = GetCustomItem(s_CurCustomTab, i);
 		if(pItem == nullptr)
@@ -644,56 +651,55 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 			}
 		}
 	}
-	} // end of else block
-	// Quick search (for all tabs except FUJIX)
-	if(s_CurCustomTab != ASSETS_TAB_FUJIX)
+	} // End of else block for standard asset list interface
+	// Quick search
+	MainView.HSplitBottom(ms_ButtonHeight, &MainView, &QuickSearch);
+	QuickSearch.VSplitLeft(220.0f, &QuickSearch, &DirectoryButton);
+	QuickSearch.HSplitTop(5.0f, nullptr, &QuickSearch);
+	if(Ui()->DoEditBox_Search(&s_aFilterInputs[s_CurCustomTab], &QuickSearch, 14.0f, !Ui()->IsPopupOpen() && !m_pClient->m_GameConsole.IsActive()))
 	{
-		MainView.HSplitBottom(ms_ButtonHeight, &MainView, &QuickSearch);
-		QuickSearch.VSplitLeft(220.0f, &QuickSearch, &DirectoryButton);
-		QuickSearch.HSplitTop(5.0f, nullptr, &QuickSearch);
-		if(Ui()->DoEditBox_Search(&s_aFilterInputs[s_CurCustomTab], &QuickSearch, 14.0f, !Ui()->IsPopupOpen() && !m_pClient->m_GameConsole.IsActive()))
-		{
-			gs_aInitCustomList[s_CurCustomTab] = true;
-		}
-
-		DirectoryButton.HSplitTop(5.0f, nullptr, &DirectoryButton);
-		DirectoryButton.VSplitRight(175.0f, nullptr, &DirectoryButton);
-		DirectoryButton.VSplitRight(25.0f, &DirectoryButton, &ReloadButton);
-		DirectoryButton.VSplitRight(10.0f, &DirectoryButton, nullptr);
-		static CButtonContainer s_AssetsDirId;
-		if(DoButton_Menu(&s_AssetsDirId, Localize("Assets directory"), 0, &DirectoryButton))
-		{
-			char aBuf[IO_MAX_PATH_LENGTH];
-			char aBufFull[IO_MAX_PATH_LENGTH + 7];
-			if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
-				str_copy(aBufFull, "assets/entities");
-			else if(s_CurCustomTab == ASSETS_TAB_GAME)
-				str_copy(aBufFull, "assets/game");
-			else if(s_CurCustomTab == ASSETS_TAB_EMOTICONS)
-				str_copy(aBufFull, "assets/emoticons");
-			else if(s_CurCustomTab == ASSETS_TAB_PARTICLES)
-				str_copy(aBufFull, "assets/particles");
-			else if(s_CurCustomTab == ASSETS_TAB_HUD)
-				str_copy(aBufFull, "assets/hud");
-			else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
-				str_copy(aBufFull, "assets/extras");
-			Storage()->GetCompletePath(IStorage::TYPE_SAVE, aBufFull, aBuf, sizeof(aBuf));
-			Storage()->CreateFolder("assets", IStorage::TYPE_SAVE);
-			Storage()->CreateFolder(aBufFull, IStorage::TYPE_SAVE);
-			Client()->ViewFile(aBuf);
-		}
-		GameClient()->m_Tooltips.DoToolTip(&s_AssetsDirId, &DirectoryButton, Localize("Open the directory to add custom assets"));
-
-		TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
-		TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
-		static CButtonContainer s_AssetsReloadBtnId;
-		if(DoButton_Menu(&s_AssetsReloadBtnId, FONT_ICON_ARROW_ROTATE_RIGHT, 0, &ReloadButton) || Input()->KeyPress(KEY_F5) || (Input()->KeyPress(KEY_R) && Input()->ModifierIsPressed()))
-		{
-			ClearCustomItems(s_CurCustomTab);
-		}
-		TextRender()->SetRenderFlags(0);
-		TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
+		gs_aInitCustomList[s_CurCustomTab] = true;
 	}
+
+	DirectoryButton.HSplitTop(5.0f, nullptr, &DirectoryButton);
+	DirectoryButton.VSplitRight(175.0f, nullptr, &DirectoryButton);
+	DirectoryButton.VSplitRight(25.0f, &DirectoryButton, &ReloadButton);
+	DirectoryButton.VSplitRight(10.0f, &DirectoryButton, nullptr);
+	static CButtonContainer s_AssetsDirId;
+	if(DoButton_Menu(&s_AssetsDirId, Localize("Assets directory"), 0, &DirectoryButton))
+	{
+		char aBuf[IO_MAX_PATH_LENGTH];
+		char aBufFull[IO_MAX_PATH_LENGTH + 7];
+		if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
+			str_copy(aBufFull, "assets/entities");
+		else if(s_CurCustomTab == ASSETS_TAB_GAME)
+			str_copy(aBufFull, "assets/game");
+		else if(s_CurCustomTab == ASSETS_TAB_EMOTICONS)
+			str_copy(aBufFull, "assets/emoticons");
+		else if(s_CurCustomTab == ASSETS_TAB_PARTICLES)
+			str_copy(aBufFull, "assets/particles");
+		else if(s_CurCustomTab == ASSETS_TAB_HUD)
+			str_copy(aBufFull, "assets/hud");
+		else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+			str_copy(aBufFull, "assets/extras");
+		else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+			str_copy(aBufFull, "assets"); // FUJIX doesn't need a specific folder
+		Storage()->GetCompletePath(IStorage::TYPE_SAVE, aBufFull, aBuf, sizeof(aBuf));
+		Storage()->CreateFolder("assets", IStorage::TYPE_SAVE);
+		Storage()->CreateFolder(aBufFull, IStorage::TYPE_SAVE);
+		Client()->ViewFile(aBuf);
+	}
+	GameClient()->m_Tooltips.DoToolTip(&s_AssetsDirId, &DirectoryButton, Localize("Open the directory to add custom assets"));
+
+	TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
+	TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
+	static CButtonContainer s_AssetsReloadBtnId;
+	if(DoButton_Menu(&s_AssetsReloadBtnId, FONT_ICON_ARROW_ROTATE_RIGHT, 0, &ReloadButton) || Input()->KeyPress(KEY_F5) || (Input()->KeyPress(KEY_R) && Input()->ModifierIsPressed()))
+	{
+		ClearCustomItems(s_CurCustomTab);
+	}
+	TextRender()->SetRenderFlags(0);
+	TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
 }
 
 void CMenus::ConchainAssetsEntities(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)

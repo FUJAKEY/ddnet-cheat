@@ -767,7 +767,9 @@ MACRO_CONFIG_INT(ClVideoRecorderFPS, cl_video_recorder_fps, 60, 1, 1000, CFGFLAG
 
 /*
  * Add config variables for mods below this comment to avoid merge conflicts.
+/*
+ * Add config variables for mods below this comment to avoid merge conflicts.
  */
 
-// FUJIX Gores Bot
-MACRO_CONFIG_INT(FujixGoresBot, fujix_gores_bot, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable FUJIX Gores Bot - AI prediction to prevent freeze tile collisions")
+// FUJIX Bot configuration
+MACRO_CONFIG_INT(ClFujixGerosBot, cl_fujix_geros_bot, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable/disable FUJIX Geros Bot (0 = disabled, 1 = enabled)")
