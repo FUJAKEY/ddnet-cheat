@@ -356,7 +356,7 @@ int InitSearchList(std::vector<const TName *> &vpSearchList, std::vector<TName> 
 void CMenus::RenderSettingsCustom(CUIRect MainView)
 {
 	CUIRect TabBar, CustomList, QuickSearch, DirectoryButton, ReloadButton;
-	static CUiListBox s_ListBox;
+	static CListBox s_ListBox;
 
 	MainView.HSplitTop(20.0f, &TabBar, &MainView);
 	const float TabWidth = TabBar.w / NUMBER_OF_ASSETS_TABS;
@@ -681,7 +681,7 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		Client()->ViewFile(aBuf);
 	}
 	GameClient()->m_Tooltips.DoToolTip(&s_AssetsDirId, &DirectoryButton, Localize("Open the directory to add custom assets"));
-
+	} // end of else block for FUJIX tab
 	TextRender()->SetFontPreset(EFontPreset::ICON_FONT);
 	TextRender()->SetRenderFlags(ETextRenderFlags::TEXT_RENDER_FLAG_ONLY_ADVANCE_WIDTH | ETextRenderFlags::TEXT_RENDER_FLAG_NO_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_Y_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT | ETextRenderFlags::TEXT_RENDER_FLAG_NO_OVERSIZE);
 	static CButtonContainer s_AssetsReloadBtnId;
