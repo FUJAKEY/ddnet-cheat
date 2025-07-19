@@ -4862,14 +4862,16 @@ void CGameClient::FujixAI(CNetObj_PlayerInput *pInput)
        pInput->m_Jump = 0;
 
        vec2 BestPos = Start;
-       float BestDist = 1e9f;
+       float BestScore = 1e9f;
 
-       int AngleStart = FallingHazard ? -90 : 0;
-       int AngleEnd = FallingHazard ? 90 : 360;
-       for(int Angle = AngleStart; Angle < AngleEnd; Angle += 15)
+       float HookLen = m_aTuning[g_Config.m_ClDummy].m_HookLength;
+       float AngleStart = FallingHazard ? -150.0f : -120.0f;
+       float AngleEnd = FallingHazard ? -30.0f : 120.0f;
+
+       for(float Angle = AngleStart; Angle <= AngleEnd; Angle += 15.0f)
        {
-               vec2 Dir = vec2(std::cos((float)Angle * pi / 180.0f), std::sin((float)Angle * pi / 180.0f));
-               vec2 End = Start + Dir * m_aTuning[g_Config.m_ClDummy].m_HookLength;
+               vec2 Dir = direction(Angle * pi / 180.0f);
+               vec2 End = Start + Dir * HookLen;
                vec2 Pos;
                if(Collision()->IntersectLine(Start, End, &Pos, nullptr))
                {
@@ -4877,19 +4879,23 @@ void CGameClient::FujixAI(CNetObj_PlayerInput *pInput)
                        int Tile = Collision()->GetTileIndex(Index);
                        int Front = Collision()->GetFrontTileIndex(Index);
                        int Switch = Collision()->GetSwitchType(Index);
-                       if(!IsFreeze(Tile) && !IsFreeze(Front) && !IsFreeze(Switch))
+
+                       if(IsFreeze(Tile) || IsFreeze(Front) || IsFreeze(Switch))
+                               continue;
+
+                       if(FallingHazard && Pos.y > Start.y)
+                               continue;
+
+                       float Score = FallingHazard ? Pos.y : distance(Pos, HazardPos);
+                       if(Score < BestScore)
                        {
-                               float Dist = distance(Pos, Core.m_Pos);
-                               if(Dist < BestDist)
-                               {
-                                       BestDist = Dist;
-                                       BestPos = Pos;
-                               }
+                               BestScore = Score;
+                               BestPos = Pos;
                        }
                }
        }
 
-       if(BestDist < 1e9f)
+       if(BestScore < 1e9f)
        {
                pInput->m_Hook = 1;
                m_Controls.m_aMousePos[g_Config.m_ClDummy] = BestPos - m_LocalCharacterPos;
