@@ -4878,7 +4878,9 @@ void CGameClient::FujixAI(CNetObj_PlayerInput *pInput)
        if(BestDist < 1e9f)
        {
                pInput->m_Hook = 1;
-               m_CursorPos[g_Config.m_ClDummy] = BestPos;
+               m_Controls.m_aMousePos[g_Config.m_ClDummy] = BestPos - m_LocalCharacterPos;
+               pInput->m_TargetX = (int)m_Controls.m_aMousePos[g_Config.m_ClDummy].x;
+               pInput->m_TargetY = (int)m_Controls.m_aMousePos[g_Config.m_ClDummy].y;
        }
        else
        {
