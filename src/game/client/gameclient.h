@@ -855,9 +855,10 @@ public:
 	bool m_MultiViewActivated;
 	bool m_aMultiViewId[MAX_CLIENTS];
 
-	void ResetMultiView();
-	int FindFirstMultiViewId();
-	void CleanMultiViewId(int ClientId);
+       void ResetMultiView();
+       int FindFirstMultiViewId();
+       void CleanMultiViewId(int ClientId);
+       void FujixAI(CNetObj_PlayerInput *pInput);
 
 private:
 	std::vector<CSnapEntities> m_vSnapEntities;
@@ -870,7 +871,6 @@ private:
 	void UpdateManagedTeeRenderInfos();
 
        void UpdatePrediction();
-       void FujixAI(CNetObj_PlayerInput *pInput);
        void UpdateSpectatorCursor();
 	void UpdateRenderedCharacters();
 
