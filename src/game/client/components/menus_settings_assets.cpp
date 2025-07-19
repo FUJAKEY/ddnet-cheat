@@ -644,8 +644,9 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 			}
 		}
 	}
-	} // end of else block
-	// Quick search (for all tabs except FUJIX)
+       } // end of else block
+       } // close gs_aInitCustomList check
+       // Quick search (for all tabs except FUJIX)
 	if(s_CurCustomTab != ASSETS_TAB_FUJIX)
 	{
 		MainView.HSplitBottom(ms_ButtonHeight, &MainView, &QuickSearch);
