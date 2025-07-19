@@ -4808,6 +4808,8 @@ void CGameClient::FujixAI(CNetObj_PlayerInput *pInput)
 
        CCharacterCore Core = m_PredictedChar;
        bool Hazard = false;
+       int HazardStep = -1;
+       vec2 HazardPos = Core.m_Pos;
        for(int Step = 0; Step < PredictTicks; ++Step)
        {
                Core.Tick(false);
@@ -4822,6 +4824,8 @@ void CGameClient::FujixAI(CNetObj_PlayerInput *pInput)
                if(IsFreeze(Tile) || IsFreeze(Front) || IsFreeze(Switch))
                {
                        Hazard = true;
+                       HazardStep = Step;
+                       HazardPos = Core.m_Pos;
                        break;
                }
 
@@ -4835,6 +4839,8 @@ void CGameClient::FujixAI(CNetObj_PlayerInput *pInput)
                        if(distance(m_aClients[i].m_aPredPos[FutureTick], Core.m_Pos) < 32.0f)
                        {
                                Hazard = true;
+                               HazardStep = Step;
+                               HazardPos = Core.m_Pos;
                                break;
                        }
                }
@@ -4845,19 +4851,27 @@ void CGameClient::FujixAI(CNetObj_PlayerInput *pInput)
        if(!Hazard)
                return;
 
-       pInput->m_Direction = 0;
+       vec2 Start = m_PredictedChar.m_Pos;
+       bool FallingHazard = HazardPos.y > Start.y + 2.0f;
+
+       if(!FallingHazard && HazardStep > 2)
+       {
+               pInput->m_Direction = 0;
+       }
+
        pInput->m_Jump = 0;
 
-       vec2 Start = m_PredictedChar.m_Pos;
        vec2 BestPos = Start;
        float BestDist = 1e9f;
 
-       for(int Angle = 0; Angle < 360; Angle += 20)
+       int AngleStart = FallingHazard ? -90 : 0;
+       int AngleEnd = FallingHazard ? 90 : 360;
+       for(int Angle = AngleStart; Angle < AngleEnd; Angle += 15)
        {
                vec2 Dir = vec2(std::cos((float)Angle * pi / 180.0f), std::sin((float)Angle * pi / 180.0f));
                vec2 End = Start + Dir * m_aTuning[g_Config.m_ClDummy].m_HookLength;
                vec2 Pos;
-               if(!Collision()->IntersectLine(Start, End, &Pos, nullptr))
+               if(Collision()->IntersectLine(Start, End, &Pos, nullptr))
                {
                        int Index = Collision()->GetPureMapIndex(Pos);
                        int Tile = Collision()->GetTileIndex(Index);
