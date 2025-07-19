@@ -24,11 +24,11 @@ public:
 	void ProcessPlayerInput(CNetObj_PlayerInput *pInput, class CCharacter *pCharacter);
 	
 private:
-	// Prediction functions
-	bool WillHitFreezeTile(class CCharacter *pCharacter, vec2 velocity, int ticks);
-	vec2 PredictPosition(vec2 currentPos, vec2 velocity, int ticks);
-	bool IsFreezeTile(vec2 position);
-	int GetDirectionToAvoid(class CCharacter *pCharacter, vec2 velocity);
+       // Prediction functions
+       bool WillHitFreezeTile(class CCharacter *pCharacter, vec2 velocity, int direction, int ticks, int *pFreezeTick = nullptr);
+       vec2 PredictPosition(vec2 currentPos, vec2 velocity, int ticks);
+       int PredictFreezeTick(vec2 currentPos, vec2 velocity, int direction, int ticks);
+       bool IsFreezeTile(vec2 position);
 };
 
 #endif
