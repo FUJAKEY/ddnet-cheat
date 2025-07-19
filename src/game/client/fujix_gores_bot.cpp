@@ -8,8 +8,10 @@
 
 CFujixGoresBot::CFujixGoresBot()
 {
-	m_pGameClient = nullptr;
-	m_pCollision = nullptr;
+       m_pGameClient = nullptr;
+       m_pCollision = nullptr;
+       m_BlockDirection = 0;
+       m_TicksUntilBlock = 0;
 }
 
 void CFujixGoresBot::Init(CGameClient *pGameClient, CCollision *pCollision)
@@ -20,76 +22,104 @@ void CFujixGoresBot::Init(CGameClient *pGameClient, CCollision *pCollision)
 
 void CFujixGoresBot::ProcessPlayerInput(CNetObj_PlayerInput *pInput, CCharacter *pCharacter)
 {
-	if(!g_Config.m_FujixGoresBot || !pInput || !pCharacter || !m_pCollision)
-		return;
-	
-	// Get current character state
-	vec2 currentPos = pCharacter->m_Core.m_Pos;
-	vec2 currentVel = pCharacter->m_Core.m_Vel;
-	
-	// Calculate intended velocity based on current input
-	vec2 intendedVel = currentVel;
-	if(pInput->m_Direction != 0)
-	{
-		// Simulate how direction input affects velocity
-		float acceleration = 2.0f; // Approximate ground acceleration
-		intendedVel.x += pInput->m_Direction * acceleration;
-	}
-	
-	// Check if player will hit freeze tile in the next PREDICTION_TICKS
-	if(WillHitFreezeTile(pCharacter, intendedVel, PREDICTION_TICKS))
-	{
-		// Check if stopping SAFETY_DISTANCE_TICKS before would be safe
-		int safeStopTick = PREDICTION_TICKS - SAFETY_DISTANCE_TICKS;
-		if(safeStopTick > 0)
-		{
-			vec2 safePos = PredictPosition(currentPos, intendedVel, safeStopTick);
-			
-			// If we can safely stop before the freeze tile, block the direction input
-			if(!IsFreezeTile(safePos))
-			{
-				// Block movement in the dangerous direction
-				int dangerousDirection = GetDirectionToAvoid(pCharacter, intendedVel);
-				if(pInput->m_Direction == dangerousDirection)
-				{
-					pInput->m_Direction = 0; // Stop moving in that direction
-				}
-			}
-		}
-	}
+       if(!g_Config.m_FujixGoresBot || !pInput || !pCharacter || !m_pCollision)
+               return;
+
+       // handle delayed block from previous prediction
+       if(m_TicksUntilBlock > 0)
+       {
+               m_TicksUntilBlock--;
+               if(m_TicksUntilBlock == 0 && pInput->m_Direction == m_BlockDirection)
+               {
+                       pInput->m_Direction = 0;
+                       m_BlockDirection = 0;
+               }
+       }
+
+       int direction = pInput->m_Direction;
+
+       int freezeTick = PredictFreezeTick(pCharacter, direction, PREDICTION_TICKS);
+       if(freezeTick > 0)
+       {
+               int stopTick = freezeTick - SAFETY_DISTANCE_TICKS;
+               if(stopTick <= 0)
+               {
+                       if(direction != 0)
+                       {
+                               pInput->m_Direction = 0;
+                               m_BlockDirection = 0;
+                               m_TicksUntilBlock = 0;
+                       }
+               }
+               else if(m_TicksUntilBlock == 0)
+               {
+                       m_TicksUntilBlock = stopTick;
+                       m_BlockDirection = direction;
+               }
+       }
 }
 
 bool CFujixGoresBot::WillHitFreezeTile(CCharacter *pCharacter, vec2 velocity, int ticks)
 {
-	vec2 currentPos = pCharacter->m_Core.m_Pos;
-	
-	// Simulate movement for each tick
-	for(int i = 1; i <= ticks; i++)
-	{
-		vec2 predictedPos = PredictPosition(currentPos, velocity, i);
-		if(IsFreezeTile(predictedPos))
-		{
-			return true;
-		}
-	}
-	
-	return false;
+       if(!pCharacter)
+               return false;
+
+       CCharacterCore TmpCore = *pCharacter->Core();
+       TmpCore.SetCoreWorld(nullptr, m_pCollision, nullptr);
+       TmpCore.m_Vel = velocity;
+       for(int i = 0; i < ticks; i++)
+       {
+               TmpCore.m_Input.m_Direction = 0;
+               TmpCore.Tick(true);
+               TmpCore.Move();
+               TmpCore.Quantize();
+               if(IsFreezeTile(TmpCore.m_Pos))
+                       return true;
+       }
+       return false;
 }
 
-vec2 CFujixGoresBot::PredictPosition(vec2 currentPos, vec2 velocity, int ticks)
+int CFujixGoresBot::PredictFreezeTick(CCharacter *pCharacter, int direction, int maxTicks)
+{
+       if(!pCharacter)
+               return -1;
+
+       CCharacterCore Core = *pCharacter->Core();
+       Core.SetCoreWorld(nullptr, m_pCollision, nullptr);
+
+       for(int i = 1; i <= maxTicks; i++)
+       {
+               Core.m_Input.m_Direction = direction;
+               Core.Tick(true);
+               Core.Move();
+               Core.Quantize();
+
+               if(IsFreezeTile(Core.m_Pos))
+                       return i;
+       }
+
+       return -1;
+}
+
+vec2 CFujixGoresBot::PredictPosition(vec2 currentPos, vec2 velocity, int direction, int ticks)
 {
 	// Simple prediction: position = current + velocity * time
 	// This is a simplified version - real DDNet physics are more complex
 	vec2 predictedPos = currentPos;
 	
-	for(int i = 0; i < ticks; i++)
-	{
-		predictedPos += velocity * (1.0f / 50.0f); // 50 ticks per second
-		
-		// Apply simple physics (friction, gravity)
-		velocity.x *= 0.5f; // Simple ground friction
-		velocity.y += 0.75f; // Gravity
-	}
+       for(int i = 0; i < ticks; i++)
+       {
+               if(direction != 0)
+               {
+                       float acceleration = 2.0f;
+                       velocity.x += direction * acceleration;
+               }
+
+               predictedPos += velocity * (1.0f / 50.0f);
+
+               velocity.x *= 0.5f;
+               velocity.y += 0.75f;
+       }
 	
 	return predictedPos;
 }
@@ -113,15 +143,4 @@ bool CFujixGoresBot::IsFreezeTile(vec2 position)
 	        frontTileIndex == TILE_FREEZE || 
 	        frontTileIndex == TILE_DFREEZE || 
 	        frontTileIndex == TILE_LFREEZE);
-}
-
-int CFujixGoresBot::GetDirectionToAvoid(CCharacter *pCharacter, vec2 velocity)
-{
-	// Return the direction that would lead to danger
-	if(velocity.x > 0)
-		return 1;  // Moving right is dangerous
-	else if(velocity.x < 0)
-		return -1; // Moving left is dangerous
-	
-	return 0; // No horizontal movement
 }
