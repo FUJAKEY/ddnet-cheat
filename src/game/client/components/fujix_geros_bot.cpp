@@ -776,9 +776,7 @@ void CFujixGerosBot::OverridePlayerInput(int *pInputDirection, int *pJump, int *
     }
 }
 
-// 🎯 УЛУЧШЕННЫЙ ГЛАВНЫЙ МЕТОД GetBotInput
 // 🎯 УЛУЧШЕННЫЙ ГЛАВНЫЙ МЕТОД GetBotInput (удален - дубликат)
-}
 
 // 🎯 ДОПОЛНИТЕЛЬНЫЕ РЕВОЛЮЦИОННЫЕ ФУНКЦИИ
 
@@ -1228,39 +1226,8 @@ float CFujixGerosBot::CalculateHookScore(vec2 Pos, vec2 Target, vec2 Vel)
 	return Score;
 }
 
-bool CFujixGerosBot::CanDoCeilingRiding(vec2 Pos, vec2 CeilingTarget)
-{
-	// Проверяем что можем делать ceiling riding
-	float Distance = distance(Pos, CeilingTarget);
-	
-	// Достаточно близко для riding
-	if(Distance > 380.0f || Distance < 64.0f)
-		return false;
-	
-	// Проверяем что ceiling выше нас
-	if(CeilingTarget.y >= Pos.y)
-		return false;
-	
-	// Проверяем траекторию на безопасность
-	return IsHookTrajectorysSafe(Pos, CeilingTarget);
-}
-
-bool CFujixGerosBot::CanDoWallRiding(vec2 Pos, vec2 WallTarget, int Side)
-{
-	float Distance = distance(Pos, WallTarget);
-	
-	// Проверяем дистанцию
-	if(Distance > 380.0f || Distance < 64.0f)
-		return false;
-	
-	// Проверяем что стена сбоку и выше
-	if(WallTarget.y >= Pos.y)
-		return false;
-	
-	// Проверяем что стена в правильной стороне
-	if((Side > 0 && WallTarget.x <= Pos.x) || (Side < 0 && WallTarget.x >= Pos.x))
-		return false;
-	
+// bool CFujixGerosBot::CanDoCeilingRiding - удалена старая версия, используется новая
+// bool CFujixGerosBot::CanDoWallRiding - удалена старая версия, используется новая
 	return IsHookTrajectorysSafe(Pos, WallTarget);
 }
 
