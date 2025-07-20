@@ -21,31 +21,7 @@ using namespace FontIcons;
 
 static const float FONT_SIZE = 12.0f;
 
-// Базовый класс для настроек карты
-struct IMapSetting
-{
-	enum EType
-	{
-		SETTING_INT = 0,
-		SETTING_COMMAND = 1
-	};
-
-	const char *m_pName;
-	const char *m_pHelp;
-	int m_Type;
-
-	IMapSetting(const char *pName, const char *pHelp, int Type) :
-		m_pName(pName), m_pHelp(pHelp), m_Type(Type) {}
-
-	virtual ~IMapSetting() = default;
-};
-struct SMapSettingCommand : public IMapSetting
-{
-	const char *m_pArgs;
-
-	SMapSettingCommand(const char *pName, const char *pHelp, const char *pArgs) :
-		IMapSetting(pName, pHelp, IMapSetting::SETTING_COMMAND), m_pArgs(pArgs) {}
-};
+// Структуры для настроек карты теперь определены в заголовочном файле
 
 void CEditor::RenderServerSettingsEditor(CUIRect View, bool ShowServerSettingsEditorLast)
 {

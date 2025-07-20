@@ -4,26 +4,64 @@
 #include "component.h"
 #include "editor_ui.h"
 
+#include <base/system.h>
+#include <game/generated/protocol.h>
 #include <map>
 #include <string>
 #include <vector>
 
 class CEditor;
-struct SMapSettingInt;
-struct SMapSettingCommand;
-struct IMapSetting;
-class CLineInput;
 
+// Структура для хранения настроек редактора карты
 struct CEditorMapSetting
 {
 	char m_aCommand[256];
 
+	CEditorMapSetting() = default;
+	
 	CEditorMapSetting(const char *pCommand)
 	{
 		str_copy(m_aCommand, pCommand);
 	}
 };
 
+// Базовый класс для настроек карты
+struct IMapSetting
+{
+	enum EType
+	{
+		SETTING_INT = 0,
+		SETTING_COMMAND = 1
+	};
+
+	const char *m_pName;
+	const char *m_pHelp;
+	int m_Type;
+
+	IMapSetting(const char *pName, const char *pHelp, int Type) :
+		m_pName(pName), m_pHelp(pHelp), m_Type(Type) {}
+
+	virtual ~IMapSetting() = default;
+};
+// Целочисленная настройка карты
+struct SMapSettingInt : public IMapSetting
+{
+	int m_Default;
+	int m_Min;
+	int m_Max;
+
+	SMapSettingInt(const char *pName, const char *pHelp, int Default, int Min, int Max) :
+		IMapSetting(pName, pHelp, IMapSetting::SETTING_INT), m_Default(Default), m_Min(Min), m_Max(Max) {}
+};
+
+// Командная настройка карты
+struct SMapSettingCommand : public IMapSetting
+{
+	const char *m_pArgs;
+
+	SMapSettingCommand(const char *pName, const char *pHelp, const char *pArgs) :
+		IMapSetting(pName, pHelp, IMapSetting::SETTING_COMMAND), m_pArgs(pArgs) {}
+};
 // A parsed map setting argument, storing the name and the type
 // Used for validation and to display arguments names
 struct SParsedMapSettingArg
