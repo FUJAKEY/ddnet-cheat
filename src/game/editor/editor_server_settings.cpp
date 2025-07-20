@@ -1076,8 +1076,9 @@ void CMapSettingsBackend::LoadCommand(const char *pName, const char *pArgs, cons
 void CMapSettingsBackend::LoadSettingInt(const std::shared_ptr<SMapSettingInt> &pSetting)
 {
 	// We load an int argument here
-	m_ParsedCommandArgs[pSetting].emplace_back();
-	auto &Arg = m_ParsedCommandArgs[pSetting].back();
+	std::shared_ptr<IMapSetting> pBaseSetting = pSetting;
+	m_ParsedCommandArgs[pBaseSetting].emplace_back();
+	auto &Arg = m_ParsedCommandArgs[pBaseSetting].back();
 	str_copy(Arg.m_aName, "value");
 	Arg.m_Type = 'i';
 }
@@ -1088,7 +1089,8 @@ void CMapSettingsBackend::LoadSettingCommand(const std::shared_ptr<SMapSettingCo
 	// use them to validate the current input as well as display the current argument value
 	// over the line input.
 
-	m_ParsedCommandArgs[pSetting].clear();
+	std::shared_ptr<IMapSetting> pBaseSetting = pSetting;
+	m_ParsedCommandArgs[pBaseSetting].clear();
 	const char *pIterator = pSetting->m_pArgs;
 
 	char Type;
@@ -1115,8 +1117,8 @@ void CMapSettingsBackend::LoadSettingCommand(const std::shared_ptr<SMapSettingCo
 		dbg_assert(Len + 1 < sizeof(SParsedMapSettingArg::m_aName), "Length of server setting name exceeds limit.");
 
 		// Append parsed arg
-		m_ParsedCommandArgs[pSetting].emplace_back();
-		auto &Arg = m_ParsedCommandArgs[pSetting].back();
+		m_ParsedCommandArgs[pBaseSetting].emplace_back();
+		auto &Arg = m_ParsedCommandArgs[pBaseSetting].back();
 		str_copy(Arg.m_aName, pNameStart, Len + 1);
 		Arg.m_Type = Type;
 
