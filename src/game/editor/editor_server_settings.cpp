@@ -1076,7 +1076,7 @@ void CMapSettingsBackend::LoadCommand(const char *pName, const char *pArgs, cons
 void CMapSettingsBackend::LoadSettingInt(const std::shared_ptr<SMapSettingInt> &pSetting)
 {
 	// We load an int argument here
-	std::shared_ptr<IMapSetting> pBaseSetting = pSetting;
+	std::shared_ptr<IMapSetting> pBaseSetting = std::static_pointer_cast<IMapSetting>(pSetting);
 	m_ParsedCommandArgs[pBaseSetting].emplace_back();
 	auto &Arg = m_ParsedCommandArgs[pBaseSetting].back();
 	str_copy(Arg.m_aName, "value");
@@ -1089,7 +1089,7 @@ void CMapSettingsBackend::LoadSettingCommand(const std::shared_ptr<SMapSettingCo
 	// use them to validate the current input as well as display the current argument value
 	// over the line input.
 
-	std::shared_ptr<IMapSetting> pBaseSetting = pSetting;
+	std::shared_ptr<IMapSetting> pBaseSetting = std::static_pointer_cast<IMapSetting>(pSetting);
 	m_ParsedCommandArgs[pBaseSetting].clear();
 	const char *pIterator = pSetting->m_pArgs;
 
