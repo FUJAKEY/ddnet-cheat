@@ -2,17 +2,8 @@
 
 #include <engine/shared/config.h>  // Для g_Config
 #include <game/client/gameclient.h>  // Для полного типа CGameClient
+#include <game/gamecore.h>  // Для CTuningParams
 #include <game/mapitems.h>  // Для констант TILE_FREEZE и т.д.
-
-void CFujixBot::Init(CGameClient *pGameClient)
-{
-	m_pGameClient = pGameClient;
-	if(m_pGameClient)
-	{
-		m_pCollision = m_pGameClient->Collision();
-	}
-	Reset();
-}
 
 void CFujixBot::Reset()
 {
@@ -85,11 +76,20 @@ vec2 CFujixBot::PredictPosition(vec2 pos, vec2 vel, int ticks)
 	vec2 predicted = pos;
 	vec2 velocity = vel;
 	
+	// Получаем friction из tuning
+	float friction = 0.95f; // Значение по умолчанию (air friction)
+	if(m_pGameClient)
+	{
+		const CTuningParams *pTuning = m_pGameClient->GetTuning(0);
+		if(pTuning)
+			friction = pTuning->m_AirFriction;
+	}
+	
 	// Симуляция физики на N тиков вперед
 	for(int i = 0; i < ticks; i++)
 	{
 		predicted += velocity;
-		velocity *= FRICTION; // Применяем трение каждый тик
+		velocity *= friction; // Применяем трение каждый тик
 	}
 	
 	return predicted;
@@ -131,28 +131,26 @@ float CFujixBot::CalculateSafeDistance()
 
 bool CFujixBot::IsPathSafe(vec2 from, vec2 to)
 {
-	// Проверяем путь от from до to по линии
-	vec2 direction = normalize(to - from);
+	if(!m_pCollision)
+		return true;
+		
+	// Проверяем путь по шагам
+	vec2 dir = normalize(to - from);
 	float distance = length(to - from);
+	float step = 32.0f / 2.0f; // Половина размера тайла для точности
 	
-	// Шагаем по пути с шагом в половину тайла
-	float step = TILE_SIZE / 2.0f;
 	for(float d = 0; d < distance; d += step)
 	{
-		vec2 checkPos = from + direction * d;
+		vec2 checkPos = from + dir * d;
+		int tileX = (int)(checkPos.x / 32.0f);
+		int tileY = (int)(checkPos.y / 32.0f);
 		
-		// Конвертируем в координаты тайлов
-		int tileX = (int)(checkPos.x / TILE_SIZE);
-		int tileY = (int)(checkPos.y / TILE_SIZE);
-		
-		// Проверяем фриз тайл
+		// Если найден фриз тайл - путь небезопасен
 		if(IsFreezeAt(tileX, tileY))
-		{
-			return false; // Найден фриз тайл на пути
-		}
+			return false;
 	}
 	
-	return true; // Путь безопасен
+	return true;
 }
 
 void CFujixBot::AnalyzeDirection(int direction)
@@ -171,10 +169,10 @@ void CFujixBot::AnalyzeDirection(int direction)
 	}
 	
 	// Рассчитываем безопасную дистанцию
-	float safeDistance = CalculateSafeDistance() * TILE_SIZE;
+	float safeDistance = CalculateSafeDistance() * 32.0f; // 32.0f = размер тайла
 	
 	// Проверяем точку на безопасной дистанции в этом направлении
-	vec2 checkPoint = m_PlayerPos + dirVec * safeDistance;
+	vec2 checkPoint = m_PredictedPos + dirVec * safeDistance;
 	
 	// Проверяем безопасность пути
 	bool pathSafe = IsPathSafe(m_PlayerPos, checkPoint);
