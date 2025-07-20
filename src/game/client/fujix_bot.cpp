@@ -1,10 +1,8 @@
 #include "fujix_bot.h"
 
+#include <engine/shared/config.h>  // Для g_Config
+#include <game/client/gameclient.h>  // Для полного типа CGameClient
 #include <game/mapitems.h>  // Для констант TILE_FREEZE и т.д.
-
-CFujixBot::~CFujixBot()
-{
-}
 
 void CFujixBot::Init(CGameClient *pGameClient)
 {
@@ -42,7 +40,7 @@ void CFujixBot::OnRender()
 		return;
 		
 	// Проверяем есть ли игрок
-	if(!m_pGameClient->m_LocalCharacterPos.x && !m_pGameClient->m_LocalCharacterPos.y)
+	if(!m_pGameClient || !m_pGameClient->m_Snap.m_pLocalCharacter)
 		return;
 	
 	// Обновляем состояние игрока
@@ -57,28 +55,25 @@ void CFujixBot::OnRender()
 
 void CFujixBot::UpdatePlayerState()
 {
-	// Получаем текущую позицию игрока
-	m_PlayerPos = vec2(m_pGameClient->m_LocalCharacterPos.x, m_pGameClient->m_LocalCharacterPos.y);
+	if(!m_pGameClient || !m_pGameClient->m_Snap.m_pLocalCharacter)
+		return;
+		
+	// Получаем текущую позицию из snap данных  
+	vec2 CurrentPos = vec2(m_pGameClient->m_Snap.m_pLocalCharacter->m_X, m_pGameClient->m_Snap.m_pLocalCharacter->m_Y);
 	
-	// Получаем скорость игрока
-	if(m_pGameClient->m_Controls.m_aInputData[g_Config.m_ClDummy].m_Direction)
+	// Вычисляем скорость как разность позиций
+	if(m_PlayerPos.x != 0 || m_PlayerPos.y != 0)
 	{
-		int dir = m_pGameClient->m_Controls.m_aInputData[g_Config.m_ClDummy].m_Direction;
-		m_PlayerVel.x = dir * PLAYER_SPEED;
-	}
-	else
-	{
-		m_PlayerVel.x *= FRICTION; // Применяем трение
+		m_PlayerVel = CurrentPos - m_PlayerPos;
 	}
 	
-	// Прыжок влияет на вертикальную скорость
-	if(m_pGameClient->m_Controls.m_aInputData[g_Config.m_ClDummy].m_Jump)
+	m_PlayerPos = CurrentPos;
+	
+	// Обновляем количество тиков для предсказания на основе пинга
+	if(m_pGameClient->m_Snap.m_pLocalInfo)
 	{
-		m_PlayerVel.y = -PLAYER_SPEED; // Отрицательное значение = вверх
-	}
-	else
-	{
-		m_PlayerVel.y *= FRICTION;
+		int ping = m_pGameClient->m_Snap.m_pLocalInfo->m_Latency;
+		m_PredictionTicks = maximum(1, ping / 20); // Примерно тик на 20ms пинга
 	}
 	
 	// Предсказываем позицию
