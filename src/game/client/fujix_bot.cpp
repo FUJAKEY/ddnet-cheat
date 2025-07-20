@@ -1,30 +1,6 @@
 #include "fujix_bot.h"
 
-#include <base/system.h>
-#include <base/math.h>
-#include <engine/shared/config.h>
-#include <game/client/gameclient.h>
-#include <game/collision.h>
-#include <game/client/components/controls.h>
-
-// Константы физики DDNet
-static const float PLAYER_SPEED = 5.0f;      // Скорость движения игрока
-static const float TILE_SIZE = 32.0f;        // Размер тайла в пикселях
-static const float FRICTION = 0.95f;         // Коэффициент трения
-static const float ACCELERATION = 0.5f;      // Ускорение движения
-
-CFujixBot::CFujixBot()
-{
-	m_pGameClient = nullptr;
-	m_pCollision = nullptr;
-	
-	// Настройки по умолчанию
-	m_SafeDistance = 2.0f;        // 2 тайла безопасной дистанции
-	m_PingCompensation = 1.0f;    // +1 тайл для компенсации пинга
-	m_PredictionTicks = 10;       // Предсказание на 10 тиков вперед
-	
-	Reset();
-}
+#include <game/mapitems.h>  // Для констант TILE_FREEZE и т.д.
 
 CFujixBot::~CFujixBot()
 {
@@ -130,8 +106,12 @@ bool CFujixBot::IsFreezeAt(int x, int y)
 		return false;
 		
 	// Проверяем тайл на фриз
-	int Index = m_pCollision->GetTileIndex(x, y);
-	return m_pCollision->GetTileFlags(Index) & CCollision::COLFLAG_FREEZE;
+	int Tile = m_pCollision->GetTile(x, y);
+	int FrontTile = m_pCollision->GetFrontTile(x, y);
+	
+	// Проверяем все типы фриз тайлов
+	return (Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
+	        FrontTile == TILE_FREEZE || FrontTile == TILE_DFREEZE || FrontTile == TILE_LFREEZE);
 }
 
 float CFujixBot::CalculateSafeDistance()
