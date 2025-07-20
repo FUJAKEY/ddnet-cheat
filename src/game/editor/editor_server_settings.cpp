@@ -20,14 +20,24 @@
 using namespace FontIcons;
 
 static const float FONT_SIZE = 12.0f;
-struct SMapSettingInt : public IMapSetting
-{
-	int m_Default;
-	int m_Min;
-	int m_Max;
 
-	SMapSettingInt(const char *pName, const char *pHelp, int Default, int Min, int Max) :
-		IMapSetting(pName, pHelp, IMapSetting::SETTING_INT), m_Default(Default), m_Min(Min), m_Max(Max) {}
+// Базовый класс для настроек карты
+struct IMapSetting
+{
+	enum EType
+	{
+		SETTING_INT = 0,
+		SETTING_COMMAND = 1
+	};
+
+	const char *m_pName;
+	const char *m_pHelp;
+	int m_Type;
+
+	IMapSetting(const char *pName, const char *pHelp, int Type) :
+		m_pName(pName), m_pHelp(pHelp), m_Type(Type) {}
+
+	virtual ~IMapSetting() = default;
 };
 struct SMapSettingCommand : public IMapSetting
 {
