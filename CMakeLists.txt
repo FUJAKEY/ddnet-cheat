@@ -2400,6 +2400,8 @@ if(CLIENT)
     components/touch_controls.h
     components/voting.cpp
     components/voting.h
+    fujix_bot.cpp
+    fujix_bot.h
     gameclient.cpp
     gameclient.h
     laser_data.cpp
