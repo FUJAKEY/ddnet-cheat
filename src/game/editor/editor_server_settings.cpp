@@ -19,22 +19,7 @@
 
 using namespace FontIcons;
 
-static const int FONT_SIZE = 12.0f;
-
-struct IMapSetting
-{
-	enum EType
-	{
-		SETTING_INT,
-		SETTING_COMMAND,
-	};
-	const char *m_pName;
-	const char *m_pHelp;
-	EType m_Type;
-
-	IMapSetting(const char *pName, const char *pHelp, EType Type) :
-		m_pName(pName), m_pHelp(pHelp), m_Type(Type) {}
-};
+static const float FONT_SIZE = 12.0f;
 struct SMapSettingInt : public IMapSetting
 {
 	int m_Default;

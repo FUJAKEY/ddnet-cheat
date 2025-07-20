@@ -60,12 +60,12 @@ public:
 	bool IsActive() const;                          // Активен ли бот
 	
 	// Константы направлений
-	enum EDirection
+	enum class EDirection
 	{
-		DIRECTION_LEFT = 0,
-		DIRECTION_RIGHT = 1,
-		DIRECTION_UP = 2, 
-		DIRECTION_DOWN = 3
+		LEFT = 0,
+		RIGHT = 1,
+		UP = 2, 
+		DOWN = 3
 	};
 };
 

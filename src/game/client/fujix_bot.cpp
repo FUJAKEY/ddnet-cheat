@@ -162,10 +162,10 @@ void CFujixBot::AnalyzeDirection(int direction)
 	vec2 dirVec(0, 0);
 	switch(direction)
 	{
-		case DIRECTION_LEFT:  dirVec = vec2(-1, 0); break;
-		case DIRECTION_RIGHT: dirVec = vec2(1, 0);  break;
-		case DIRECTION_UP:    dirVec = vec2(0, -1); break;
-		case DIRECTION_DOWN:  dirVec = vec2(0, 1);  break;
+		case 0:  dirVec = vec2(-1, 0); break;  // LEFT
+		case 1: dirVec = vec2(1, 0);  break;   // RIGHT
+		case 2:    dirVec = vec2(0, -1); break; // UP
+		case 3:  dirVec = vec2(0, 1);  break;  // DOWN
 	}
 	
 	// Рассчитываем безопасную дистанцию
@@ -187,9 +187,10 @@ bool CFujixBot::ShouldBlockMovement(int direction)
 		return false;
 	
 	// Проверяем блокировку движения влево/вправо
-	if(direction < 0 && m_IsBlocked[DIRECTION_LEFT])  // Движение влево
+	// Проверяем блокировку движения влево/вправо
+	if(direction < 0 && m_IsBlocked[0])  // Движение влево (LEFT)
 		return true;
-	if(direction > 0 && m_IsBlocked[DIRECTION_RIGHT]) // Движение вправо  
+	if(direction > 0 && m_IsBlocked[1]) // Движение вправо (RIGHT)
 		return true;
 	
 	return false;
@@ -201,7 +202,7 @@ bool CFujixBot::ShouldBlockJump()
 		return false;
 		
 	// Блокируем прыжок если движение вверх заблокировано
-	return m_IsBlocked[DIRECTION_UP];
+	return m_IsBlocked[2]; // UP direction
 }
 
 bool CFujixBot::ShouldBlockHook(vec2 hookTarget)
