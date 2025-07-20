@@ -32,7 +32,8 @@ enum
 	ASSETS_TAB_PARTICLES = 3,
 	ASSETS_TAB_HUD = 4,
 	ASSETS_TAB_EXTRAS = 5,
-	NUMBER_OF_ASSETS_TABS = 6,
+	ASSETS_TAB_FUJIX = 6,
+	NUMBER_OF_ASSETS_TABS = 7,
 };
 
 void CMenus::LoadEntities(SCustomEntities *pEntitiesItem, void *pUser)
@@ -359,7 +360,8 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		Localize("Emoticons"),
 		Localize("Particles"),
 		Localize("HUD"),
-		Localize("Extras")};
+		Localize("Extras"),
+		Localize("FUJIX")};
 
 	for(int Tab = ASSETS_TAB_ENTITIES; Tab < NUMBER_OF_ASSETS_TABS; ++Tab)
 	{
@@ -370,6 +372,19 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		{
 			s_CurCustomTab = Tab;
 		}
+	}
+
+	if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+	{
+		MainView.Margin(10.0f, &MainView);
+		CUIRect Button;
+		MainView.HSplitTop(20.0f, &Button, &MainView);
+		static CButtonContainer s_GerosBotButton;
+		if(DoButton_CheckBox(&s_GerosBotButton, Localize("geros bot"), g_Config.m_ClGerosBot, &Button))
+		{
+			g_Config.m_ClGerosBot ^= 1;
+		}
+		return;
 	}
 
 	auto LoadStartTime = time_get_nanoseconds();
