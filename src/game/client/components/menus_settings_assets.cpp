@@ -651,16 +651,25 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 			}
 		}
 	}
-	} // End of else block for standard asset list interface
-	// Quick search
-	MainView.HSplitBottom(ms_ButtonHeight, &MainView, &QuickSearch);
-	QuickSearch.VSplitLeft(220.0f, &QuickSearch, &DirectoryButton);
-	QuickSearch.HSplitTop(5.0f, nullptr, &QuickSearch);
-	if(Ui()->DoEditBox_Search(&s_aFilterInputs[s_CurCustomTab], &QuickSearch, 14.0f, !Ui()->IsPopupOpen() && !m_pClient->m_GameConsole.IsActive()))
-	{
-		gs_aInitCustomList[s_CurCustomTab] = true;
 	}
 
+	// Quick search (only for asset tabs, not for FUJIX)
+	if(s_CurCustomTab != ASSETS_TAB_FUJIX)
+	{
+		MainView.HSplitBottom(ms_ButtonHeight, &MainView, &QuickSearch);
+		QuickSearch.VSplitLeft(220.0f, &QuickSearch, &DirectoryButton);
+		QuickSearch.HSplitTop(5.0f, nullptr, &QuickSearch);
+		if(Ui()->DoEditBox_Search(&s_aFilterInputs[s_CurCustomTab], &QuickSearch, 14.0f, !Ui()->IsPopupOpen() && !m_pClient->m_GameConsole.IsActive()))
+		{
+			gs_aInitCustomList[s_CurCustomTab] = true;
+		}
+	}
+	else
+	{
+		// For FUJIX tab, just setup DirectoryButton area
+		MainView.HSplitBottom(ms_ButtonHeight, &MainView, &QuickSearch);
+		QuickSearch.VSplitLeft(220.0f, nullptr, &DirectoryButton);
+	}
 	DirectoryButton.HSplitTop(5.0f, nullptr, &DirectoryButton);
 	DirectoryButton.VSplitRight(175.0f, nullptr, &DirectoryButton);
 	DirectoryButton.VSplitRight(25.0f, &DirectoryButton, &ReloadButton);
@@ -700,8 +709,7 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	}
 	TextRender()->SetRenderFlags(0);
 	TextRender()->SetFontPreset(EFontPreset::DEFAULT_FONT);
-}
-
+} // End of RenderSettingsCustom function
 void CMenus::ConchainAssetsEntities(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
 	CMenus *pThis = (CMenus *)pUserData;
@@ -790,4 +798,5 @@ void CMenus::ConchainAssetExtras(IConsole::IResult *pResult, void *pUserData, IC
 	}
 
 	pfnCallback(pResult, pCallbackUserData);
+}
 }
