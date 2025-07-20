@@ -61,6 +61,7 @@
 #include "components/tooltips.h"
 #include "components/touch_controls.h"
 #include "components/voting.h"
+#include "fujix_bot.h"
 
 #include <vector>
 
@@ -173,6 +174,8 @@ public:
 	CGhost m_Ghost;
 
 	CTooltips m_Tooltips;
+
+	CFujixBot m_FujixBot;
 
 private:
 	std::vector<class CComponent *> m_vpAll;

@@ -571,6 +571,7 @@ void CGameClient::OnConnected()
 	m_Collision.Init(Layers());
 	m_GameWorld.m_Core.InitSwitchers(m_Collision.m_HighestSwitchNumber);
 	m_RaceHelper.Init(this);
+	m_FujixBot.Init(this);
 
 	// render loading before going through all components
 	m_Menus.RenderLoading(pConnectCaption, pLoadMapContent, 0);
@@ -797,7 +798,9 @@ void CGameClient::OnRender()
 
 	// update the local character and spectate position
 	UpdatePositions();
-
+	
+	// Update FUJIX Bot
+	m_FujixBot.OnRender();
 	// display warnings
 	if(m_Menus.CanDisplayWarning())
 	{

@@ -237,30 +237,16 @@ int CControls::SnapInput(int *pData)
 
 		// set direction
 		m_aInputData[g_Config.m_ClDummy].m_Direction = 0;
+		int RequestedDirection = 0;
 		if(m_aInputDirectionLeft[g_Config.m_ClDummy] && !m_aInputDirectionRight[g_Config.m_ClDummy])
-			m_aInputData[g_Config.m_ClDummy].m_Direction = -1;
+			RequestedDirection = -1;
 		if(!m_aInputDirectionLeft[g_Config.m_ClDummy] && m_aInputDirectionRight[g_Config.m_ClDummy])
-			m_aInputData[g_Config.m_ClDummy].m_Direction = 1;
-
-		// dummy copy moves
-		if(g_Config.m_ClDummyCopyMoves)
+			RequestedDirection = 1;
+		
+		// FUJIX Bot: Check if movement should be blocked
+		if(RequestedDirection != 0 && !m_pClient->m_FujixBot.ShouldBlockMovement(RequestedDirection))
 		{
-			CNetObj_PlayerInput *pDummyInput = &m_pClient->m_DummyInput;
-			pDummyInput->m_Direction = m_aInputData[g_Config.m_ClDummy].m_Direction;
-			pDummyInput->m_Hook = m_aInputData[g_Config.m_ClDummy].m_Hook;
-			pDummyInput->m_Jump = m_aInputData[g_Config.m_ClDummy].m_Jump;
-			pDummyInput->m_PlayerFlags = m_aInputData[g_Config.m_ClDummy].m_PlayerFlags;
-			pDummyInput->m_TargetX = m_aInputData[g_Config.m_ClDummy].m_TargetX;
-			pDummyInput->m_TargetY = m_aInputData[g_Config.m_ClDummy].m_TargetY;
-			pDummyInput->m_WantedWeapon = m_aInputData[g_Config.m_ClDummy].m_WantedWeapon;
-
-			if(!g_Config.m_ClDummyControl)
-				pDummyInput->m_Fire += m_aInputData[g_Config.m_ClDummy].m_Fire - m_aLastData[g_Config.m_ClDummy].m_Fire;
-
-			pDummyInput->m_NextWeapon += m_aInputData[g_Config.m_ClDummy].m_NextWeapon - m_aLastData[g_Config.m_ClDummy].m_NextWeapon;
-			pDummyInput->m_PrevWeapon += m_aInputData[g_Config.m_ClDummy].m_PrevWeapon - m_aLastData[g_Config.m_ClDummy].m_PrevWeapon;
-
-			m_aInputData[!g_Config.m_ClDummy] = *pDummyInput;
+			m_aInputData[g_Config.m_ClDummy].m_Direction = RequestedDirection;
 		}
 
 		if(g_Config.m_ClDummyControl)
