@@ -3557,11 +3557,6 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
                    g_Config.m_ClFujixBlockFreezeLegit ^= 1;
 
            MainView.HSplitTop(5.0f, nullptr, &MainView);
-           CUIRect RageBox;
-           MainView.HSplitTop(ms_ButtonHeight, &RageBox, &MainView);
-           static int s_RageChk = 0;
-           if(DoButton_CheckBox(&s_RageChk, Localize("Block freeze (rage)"), g_Config.m_ClFujixBlockFreezeRage, &RageBox))
-                   g_Config.m_ClFujixBlockFreezeRage ^= 1;
     }
        else if(m_FujixPage == 2)
        {
