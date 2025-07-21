@@ -585,8 +585,10 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 			Graphics()->WrapNormal();
 		}
 	}
+	}
 
-	const int NewSelected = s_ListBox.DoEnd();
+
+const int NewSelected = s_ListBox.DoEnd();
 	if(OldSelected != NewSelected)
 	{
 		if(GetCustomItem(s_CurCustomTab, NewSelected)->m_aName[0] != '\0')
