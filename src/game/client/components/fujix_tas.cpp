@@ -365,10 +365,10 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     if(!g_Config.m_ClFujixBlockFreezeRage || !GameClient()->m_Snap.m_pLocalCharacter)
         return;
 
+    const int Steps = 24;
     auto PredictFreeze = [&](const CNetObj_PlayerInput &Input) {
         CCharacterCore Core = GameClient()->m_PredictedChar;
         Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
-        const int Steps = 24;
         for(int i = 0; i < Steps; i++)
         {
             Core.m_Input = Input;
@@ -402,7 +402,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     for(const vec2 &Dir : s_aDirs)
     {
         vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
-        vec2 To = Pos + Dir * GetTuning(g_Config.m_ClDummy)->m_HookLength;
+        vec2 To = Pos + Dir * GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookLength;
         vec2 Col;
         int Hit = Collision()->IntersectLineTeleHook(Pos, To, &Col, nullptr);
         if(Hit && Hit != TILE_NOHOOK)
