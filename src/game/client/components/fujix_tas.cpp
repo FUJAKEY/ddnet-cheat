@@ -141,8 +141,53 @@ void CFujixTas::ApplyHookEvents(int PredTick, bool ToPhantom)
     }
 }
 
+void CFujixTas::AutoRescueHook(CNetObj_PlayerInput *pInput)
+{
+    if(!g_Config.m_ClFujixBlockFreezeRage || !GameClient()->m_Snap.m_pLocalCharacter)
+        return;
+
+    if(pInput->m_Hook)
+        return;
+
+    auto PredictFreeze = [&](const CNetObj_PlayerInput &Input) {
+        CCharacterCore Core = GameClient()->m_PredictedChar;
+        Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
+        const int Steps = 12;
+        for(int i = 0; i < Steps; i++)
+        {
+            CNetObj_PlayerInput Step = Input;
+            Core.m_Input = Step;
+            Core.Tick(true);
+            Core.Move();
+            Core.Quantize();
+            int Index = Collision()->GetPureMapIndex(Core.m_Pos.x, Core.m_Pos.y);
+            int Tile = Collision()->GetTileIndex(Index);
+            int Front = Collision()->GetFrontTileIndex(Index);
+            bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
+                          Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
+            if(Freeze)
+                return i + 1;
+        }
+        return 0;
+    };
+
+    if(!PredictFreeze(*pInput))
+        return;
+
+    CNetObj_PlayerInput Hooked = *pInput;
+    Hooked.m_Hook = 1;
+    vec2 Dir = vec2(Ui()->MouseWorldX(), Ui()->MouseWorldY()) - GameClient()->m_PredictedChar.m_Pos;
+    Hooked.m_TargetX = (int)(Dir.x * 256.0f);
+    Hooked.m_TargetY = (int)(Dir.y * 256.0f);
+
+    if(!PredictFreeze(Hooked))
+        *pInput = Hooked;
+}
+
 void CFujixTas::ApplyRageInput(CNetObj_PlayerInput *pInput)
 {
+    AutoRescueHook(pInput);
+
     if(!g_Config.m_ClFujixBlockFreezeRage || !GameClient()->m_Snap.m_pLocalCharacter || !m_RageActive)
         return;
 

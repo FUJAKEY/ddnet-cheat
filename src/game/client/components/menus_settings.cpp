@@ -3553,7 +3553,8 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
            BlockBox.VSplitLeft(BlockBox.h, &Icon, &BlockBox);
            Ui()->DoLabel(&Icon, FONT_ICON_LOCK, BlockBox.h * 0.7f, TEXTALIGN_MC);
            static int s_BlockChk = 0;
-           DoButton_CheckBox(&s_BlockChk, Localize("Block freeze (legit)"), g_Config.m_ClFujixBlockFreezeLegit, &BlockBox);
+           if(DoButton_CheckBox(&s_BlockChk, Localize("Block freeze (legit)"), g_Config.m_ClFujixBlockFreezeLegit, &BlockBox))
+                   g_Config.m_ClFujixBlockFreezeLegit ^= 1;
 
            MainView.HSplitTop(5.0f, nullptr, &MainView);
            CUIRect RageBox;

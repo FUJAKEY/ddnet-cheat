@@ -80,6 +80,7 @@ void RenderFuturePath(int TicksAhead);
 void TickPhantomUpTo(int TargetTick);
 void RecordHookState(int Tick);
 void ApplyHookEvents(int PredTick, bool ToPhantom);
+void AutoRescueHook(CNetObj_PlayerInput *pInput);
 public:
 void ApplyRageInput(CNetObj_PlayerInput *pInput);
 void UpdateRageTarget();
