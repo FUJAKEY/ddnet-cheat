@@ -31,8 +31,9 @@ enum
 	ASSETS_TAB_EMOTICONS = 2,
 	ASSETS_TAB_PARTICLES = 3,
 	ASSETS_TAB_HUD = 4,
-	ASSETS_TAB_EXTRAS = 5,
-	NUMBER_OF_ASSETS_TABS = 6,
+       ASSETS_TAB_EXTRAS = 5,
+       ASSETS_TAB_FUJIX = 6,
+       NUMBER_OF_ASSETS_TABS = 7,
 };
 
 void CMenus::LoadEntities(SCustomEntities *pEntitiesItem, void *pUser)
@@ -238,10 +239,12 @@ static const CMenus::SCustomItem *GetCustomItem(int CurTab, size_t Index)
 		return gs_vpSearchEmoticonsList[Index];
 	else if(CurTab == ASSETS_TAB_PARTICLES)
 		return gs_vpSearchParticlesList[Index];
-	else if(CurTab == ASSETS_TAB_HUD)
-		return gs_vpSearchHudList[Index];
-	else if(CurTab == ASSETS_TAB_EXTRAS)
-		return gs_vpSearchExtrasList[Index];
+       else if(CurTab == ASSETS_TAB_HUD)
+               return gs_vpSearchHudList[Index];
+       else if(CurTab == ASSETS_TAB_EXTRAS)
+               return gs_vpSearchExtrasList[Index];
+       else if(CurTab == ASSETS_TAB_FUJIX)
+               return nullptr;
 
 	return nullptr;
 }
@@ -300,14 +303,18 @@ void CMenus::ClearCustomItems(int CurTab)
 		// reload current hud skin
 		GameClient()->LoadHudSkin(g_Config.m_ClAssetHud);
 	}
-	else if(CurTab == ASSETS_TAB_EXTRAS)
-	{
-		ClearAssetList(m_vExtrasList, Graphics());
+       else if(CurTab == ASSETS_TAB_EXTRAS)
+       {
+               ClearAssetList(m_vExtrasList, Graphics());
 
-		// reload current DDNet particles skin
-		GameClient()->LoadExtrasSkin(g_Config.m_ClAssetExtras);
-	}
-	gs_aInitCustomList[CurTab] = true;
+               // reload current DDNet particles skin
+               GameClient()->LoadExtrasSkin(g_Config.m_ClAssetExtras);
+       }
+       else if(CurTab == ASSETS_TAB_FUJIX)
+       {
+               // nothing to clear
+       }
+       gs_aInitCustomList[CurTab] = true;
 }
 
 template<typename TName, typename TCaller>
@@ -353,13 +360,14 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	MainView.HSplitTop(20.0f, &TabBar, &MainView);
 	const float TabWidth = TabBar.w / NUMBER_OF_ASSETS_TABS;
 	static CButtonContainer s_aPageTabs[NUMBER_OF_ASSETS_TABS] = {};
-	const char *apTabNames[NUMBER_OF_ASSETS_TABS] = {
-		Localize("Entities"),
-		Localize("Game"),
-		Localize("Emoticons"),
-		Localize("Particles"),
-		Localize("HUD"),
-		Localize("Extras")};
+       const char *apTabNames[NUMBER_OF_ASSETS_TABS] = {
+               Localize("Entities"),
+               Localize("Game"),
+               Localize("Emoticons"),
+               Localize("Particles"),
+               Localize("HUD"),
+               Localize("Extras"),
+               "FUJIX"};
 
 	for(int Tab = ASSETS_TAB_ENTITIES; Tab < NUMBER_OF_ASSETS_TABS; ++Tab)
 	{
@@ -411,12 +419,23 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	{
 		InitAssetList(m_vHudList, "assets/hud", "hud", HudScan, Graphics(), Storage(), &User);
 	}
-	else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
-	{
-		InitAssetList(m_vExtrasList, "assets/extras", "extras", ExtrasScan, Graphics(), Storage(), &User);
-	}
+       else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+       {
+               InitAssetList(m_vExtrasList, "assets/extras", "extras", ExtrasScan, Graphics(), Storage(), &User);
+       }
+       else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+       {
+               // no assets to load
+       }
 
-	MainView.HSplitTop(10.0f, nullptr, &MainView);
+       MainView.HSplitTop(10.0f, nullptr, &MainView);
+
+       if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+       {
+               CUIRect Check;
+               MainView.HSplitTop(24.0f, &Check, &MainView);
+               DoButton_CheckBox(&g_Config.m_ClFujixFreeze, "Freeze helper", g_Config.m_ClFujixFreeze, &Check);
+       }
 
 	// skin selector
 	MainView.HSplitTop(MainView.h - 10.0f - ms_ButtonHeight, &CustomList, &MainView);
@@ -454,13 +473,17 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		{
 			ListSize = InitSearchList(gs_vpSearchHudList, m_vHudList);
 		}
-		else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
-		{
-			ListSize = InitSearchList(gs_vpSearchExtrasList, m_vExtrasList);
-		}
-		gs_aInitCustomList[s_CurCustomTab] = false;
-		gs_aCustomListSize[s_CurCustomTab] = ListSize;
-	}
+               else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+               {
+                       ListSize = InitSearchList(gs_vpSearchExtrasList, m_vExtrasList);
+               }
+               else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+               {
+                       ListSize = 0;
+               }
+               gs_aInitCustomList[s_CurCustomTab] = false;
+               gs_aCustomListSize[s_CurCustomTab] = ListSize;
+       }
 
 	int OldSelected = -1;
 	float Margin = 10;
@@ -490,18 +513,24 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	{
 		SearchListSize = gs_vpSearchHudList.size();
 	}
-	else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
-	{
-		SearchListSize = gs_vpSearchExtrasList.size();
-	}
+       else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+       {
+               SearchListSize = gs_vpSearchExtrasList.size();
+       }
+       else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+       {
+               SearchListSize = 0;
+       }
 
-	static CListBox s_ListBox;
-	s_ListBox.DoStart(TextureHeight + 15.0f + 10.0f + Margin, SearchListSize, CustomList.w / (Margin + TextureWidth), 1, OldSelected, &CustomList, false);
-	for(size_t i = 0; i < SearchListSize; ++i)
-	{
-		const SCustomItem *pItem = GetCustomItem(s_CurCustomTab, i);
-		if(pItem == nullptr)
-			continue;
+       static CListBox s_ListBox;
+       if(s_CurCustomTab != ASSETS_TAB_FUJIX)
+       {
+               s_ListBox.DoStart(TextureHeight + 15.0f + 10.0f + Margin, SearchListSize, CustomList.w / (Margin + TextureWidth), 1, OldSelected, &CustomList, false);
+               for(size_t i = 0; i < SearchListSize; ++i)
+               {
+                       const SCustomItem *pItem = GetCustomItem(s_CurCustomTab, i);
+                       if(pItem == nullptr)
+                               continue;
 
 		if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
 		{
@@ -552,57 +581,68 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 			Graphics()->SetColor(1, 1, 1, 1);
 			IGraphics::CQuadItem QuadItem(TextureRect.x + (TextureRect.w - TextureWidth) / 2, TextureRect.y + (TextureRect.h - TextureHeight) / 2, TextureWidth, TextureHeight);
 			Graphics()->QuadsDrawTL(&QuadItem, 1);
-			Graphics()->QuadsEnd();
-			Graphics()->WrapNormal();
-		}
-	}
+                       Graphics()->QuadsEnd();
+                       Graphics()->WrapNormal();
+               }
+       }
 
-	const int NewSelected = s_ListBox.DoEnd();
-	if(OldSelected != NewSelected)
-	{
-		if(GetCustomItem(s_CurCustomTab, NewSelected)->m_aName[0] != '\0')
-		{
-			if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
-			{
-				str_copy(g_Config.m_ClAssetsEntities, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-				m_pClient->m_MapImages.ChangeEntitiesPath(GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-			}
-			else if(s_CurCustomTab == ASSETS_TAB_GAME)
-			{
-				str_copy(g_Config.m_ClAssetGame, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-				GameClient()->LoadGameSkin(g_Config.m_ClAssetGame);
-			}
-			else if(s_CurCustomTab == ASSETS_TAB_EMOTICONS)
-			{
-				str_copy(g_Config.m_ClAssetEmoticons, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-				GameClient()->LoadEmoticonsSkin(g_Config.m_ClAssetEmoticons);
-			}
-			else if(s_CurCustomTab == ASSETS_TAB_PARTICLES)
-			{
-				str_copy(g_Config.m_ClAssetParticles, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-				GameClient()->LoadParticlesSkin(g_Config.m_ClAssetParticles);
-			}
-			else if(s_CurCustomTab == ASSETS_TAB_HUD)
-			{
-				str_copy(g_Config.m_ClAssetHud, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-				GameClient()->LoadHudSkin(g_Config.m_ClAssetHud);
-			}
-			else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
-			{
-				str_copy(g_Config.m_ClAssetExtras, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-				GameClient()->LoadExtrasSkin(g_Config.m_ClAssetExtras);
-			}
-		}
-	}
+               const int NewSelected = s_ListBox.DoEnd();
+               if(OldSelected != NewSelected)
+               {
+                       if(GetCustomItem(s_CurCustomTab, NewSelected)->m_aName[0] != '\0')
+                       {
+                               if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
+                               {
+                                       str_copy(g_Config.m_ClAssetsEntities, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+                                       m_pClient->m_MapImages.ChangeEntitiesPath(GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+                               }
+                               else if(s_CurCustomTab == ASSETS_TAB_GAME)
+                               {
+                                       str_copy(g_Config.m_ClAssetGame, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+                                       GameClient()->LoadGameSkin(g_Config.m_ClAssetGame);
+                               }
+                               else if(s_CurCustomTab == ASSETS_TAB_EMOTICONS)
+                               {
+                                       str_copy(g_Config.m_ClAssetEmoticons, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+                                       GameClient()->LoadEmoticonsSkin(g_Config.m_ClAssetEmoticons);
+                               }
+                               else if(s_CurCustomTab == ASSETS_TAB_PARTICLES)
+                               {
+                                       str_copy(g_Config.m_ClAssetParticles, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+                                       GameClient()->LoadParticlesSkin(g_Config.m_ClAssetParticles);
+                               }
+                               else if(s_CurCustomTab == ASSETS_TAB_HUD)
+                               {
+                                       str_copy(g_Config.m_ClAssetHud, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+                                       GameClient()->LoadHudSkin(g_Config.m_ClAssetHud);
+                               }
+                               else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+                               {
+                                       str_copy(g_Config.m_ClAssetExtras, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+                                       GameClient()->LoadExtrasSkin(g_Config.m_ClAssetExtras);
+                               }
+                       }
+               }
+}
+// end of ListBox block
 
-	// Quick search
-	MainView.HSplitBottom(ms_ButtonHeight, &MainView, &QuickSearch);
-	QuickSearch.VSplitLeft(220.0f, &QuickSearch, &DirectoryButton);
-	QuickSearch.HSplitTop(5.0f, nullptr, &QuickSearch);
-	if(Ui()->DoEditBox_Search(&s_aFilterInputs[s_CurCustomTab], &QuickSearch, 14.0f, !Ui()->IsPopupOpen() && !m_pClient->m_GameConsole.IsActive()))
-	{
-		gs_aInitCustomList[s_CurCustomTab] = true;
-	}
+       if(s_CurCustomTab != ASSETS_TAB_FUJIX)
+       {
+               // Quick search
+               MainView.HSplitBottom(ms_ButtonHeight, &MainView, &QuickSearch);
+               QuickSearch.VSplitLeft(220.0f, &QuickSearch, &DirectoryButton);
+               QuickSearch.HSplitTop(5.0f, nullptr, &QuickSearch);
+               if(Ui()->DoEditBox_Search(&s_aFilterInputs[s_CurCustomTab], &QuickSearch, 14.0f, !Ui()->IsPopupOpen() && !m_pClient->m_GameConsole.IsActive()))
+               {
+                       gs_aInitCustomList[s_CurCustomTab] = true;
+               }
+       }
+       else
+       {
+               MainView.HSplitBottom(ms_ButtonHeight, &MainView, &QuickSearch);
+               QuickSearch = MainView;
+               DirectoryButton = QuickSearch;
+       }
 
 	DirectoryButton.HSplitTop(5.0f, nullptr, &DirectoryButton);
 	DirectoryButton.VSplitRight(175.0f, nullptr, &DirectoryButton);
@@ -623,8 +663,10 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 			str_copy(aBufFull, "assets/particles");
 		else if(s_CurCustomTab == ASSETS_TAB_HUD)
 			str_copy(aBufFull, "assets/hud");
-		else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
-			str_copy(aBufFull, "assets/extras");
+               else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+                       str_copy(aBufFull, "assets/extras");
+               else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+                       str_copy(aBufFull, "assets");
 		Storage()->GetCompletePath(IStorage::TYPE_SAVE, aBufFull, aBuf, sizeof(aBuf));
 		Storage()->CreateFolder("assets", IStorage::TYPE_SAVE);
 		Storage()->CreateFolder(aBufFull, IStorage::TYPE_SAVE);
