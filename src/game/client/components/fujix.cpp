@@ -18,20 +18,20 @@ void CFujix::OnUpdate()
         return;
 
     CCharacterCore Core = *pChar->Core();
-    for(int i = 0; i < 9; ++i)
+    bool PredFreeze = false;
+    for(int i = 0; i < 9 && !PredFreeze; ++i)
     {
         Core.Tick(true, false);
         Core.Move();
+        int Tile = Collision()->GetCollisionAt(Core.m_Pos.x, Core.m_Pos.y);
+        PredFreeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE;
     }
-
-    int Tile = Collision()->GetCollisionAt(Core.m_Pos.x, Core.m_Pos.y);
-    bool PredFreeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE;
 
     if(PredFreeze)
     {
         m_pClient->m_Controls.m_aInputData[g_Config.m_ClDummy].m_Hook = 1;
         m_HookTicks++;
-        if(m_HookTicks > 3)
+        if(m_HookTicks > 5)
         {
             m_pClient->m_Controls.m_aInputData[g_Config.m_ClDummy].m_Hook = 0;
             m_HookTicks = 0;

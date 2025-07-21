@@ -581,50 +581,51 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 			Graphics()->SetColor(1, 1, 1, 1);
 			IGraphics::CQuadItem QuadItem(TextureRect.x + (TextureRect.w - TextureWidth) / 2, TextureRect.y + (TextureRect.h - TextureHeight) / 2, TextureWidth, TextureHeight);
 			Graphics()->QuadsDrawTL(&QuadItem, 1);
-			Graphics()->QuadsEnd();
-			Graphics()->WrapNormal();
-		}
-	}
-	}
+                       Graphics()->QuadsEnd();
+                       Graphics()->WrapNormal();
+               }
+       }
 
-
-const int NewSelected = s_ListBox.DoEnd();
-	if(OldSelected != NewSelected)
-	{
-		if(GetCustomItem(s_CurCustomTab, NewSelected)->m_aName[0] != '\0')
-		{
-			if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
-			{
-				str_copy(g_Config.m_ClAssetsEntities, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-				m_pClient->m_MapImages.ChangeEntitiesPath(GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-			}
-			else if(s_CurCustomTab == ASSETS_TAB_GAME)
-			{
-				str_copy(g_Config.m_ClAssetGame, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-				GameClient()->LoadGameSkin(g_Config.m_ClAssetGame);
-			}
-			else if(s_CurCustomTab == ASSETS_TAB_EMOTICONS)
-			{
-				str_copy(g_Config.m_ClAssetEmoticons, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-				GameClient()->LoadEmoticonsSkin(g_Config.m_ClAssetEmoticons);
-			}
-			else if(s_CurCustomTab == ASSETS_TAB_PARTICLES)
-			{
-				str_copy(g_Config.m_ClAssetParticles, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-				GameClient()->LoadParticlesSkin(g_Config.m_ClAssetParticles);
-			}
-			else if(s_CurCustomTab == ASSETS_TAB_HUD)
-			{
-				str_copy(g_Config.m_ClAssetHud, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-				GameClient()->LoadHudSkin(g_Config.m_ClAssetHud);
-			}
-			else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
-			{
-				str_copy(g_Config.m_ClAssetExtras, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
-				GameClient()->LoadExtrasSkin(g_Config.m_ClAssetExtras);
-			}
-		}
-	}
+               const int NewSelected = s_ListBox.DoEnd();
+               if(OldSelected != NewSelected)
+               {
+                       if(GetCustomItem(s_CurCustomTab, NewSelected)->m_aName[0] != '\0')
+                       {
+                               if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
+                               {
+                                       str_copy(g_Config.m_ClAssetsEntities, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+                                       m_pClient->m_MapImages.ChangeEntitiesPath(GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+                               }
+                               else if(s_CurCustomTab == ASSETS_TAB_GAME)
+                               {
+                                       str_copy(g_Config.m_ClAssetGame, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+                                       GameClient()->LoadGameSkin(g_Config.m_ClAssetGame);
+                               }
+                               else if(s_CurCustomTab == ASSETS_TAB_EMOTICONS)
+                               {
+                                       str_copy(g_Config.m_ClAssetEmoticons, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+                                       GameClient()->LoadEmoticonsSkin(g_Config.m_ClAssetEmoticons);
+                               }
+                               else if(s_CurCustomTab == ASSETS_TAB_PARTICLES)
+                               {
+                                       str_copy(g_Config.m_ClAssetParticles, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+                                       GameClient()->LoadParticlesSkin(g_Config.m_ClAssetParticles);
+                               }
+                               else if(s_CurCustomTab == ASSETS_TAB_HUD)
+                               {
+                                       str_copy(g_Config.m_ClAssetHud, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+                                       GameClient()->LoadHudSkin(g_Config.m_ClAssetHud);
+                               }
+                               else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+                               {
+                                       str_copy(g_Config.m_ClAssetExtras, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+                                       GameClient()->LoadExtrasSkin(g_Config.m_ClAssetExtras);
+                               }
+                       }
+               }
+       }
+       // end of ListBox block
+       }
 
        if(s_CurCustomTab != ASSETS_TAB_FUJIX)
        {
