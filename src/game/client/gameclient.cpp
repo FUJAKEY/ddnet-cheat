@@ -547,7 +547,7 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
 
                if(Size > 0)
                {
-                   m_FujixTas.BlockFreezeInput(&LocalInput);
+                   m_FujixTas.UpdateFreezeInput(&LocalInput);
                    m_FujixTas.RecordInput(&LocalInput, Tick);
                    m_FujixTas.MaybeFinishRecord();
 
@@ -579,7 +579,7 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                                    {
                                            LocalInput.m_Hook = 1;
                                            if(m_LocalCharacterPos.y < DummyPos.y - 32 || m_PredictedChar.m_Vel.y < -1.0f)
-                                                   m_DeepflyCooldown = 2;
+                                                   m_DeepflyCooldown = g_Config.m_ClFujixDeepflyReleaseTicks;
                                    }
                            }
                            else
@@ -597,6 +597,7 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                                                    LocalInput.m_TargetX = (int)(Dir.x * 256);
                                                    LocalInput.m_TargetY = (int)(Dir.y * 256);
                                            }
+                                           m_DeepflyCooldown = g_Config.m_ClFujixDeepflyHoldTicks;
                                    }
                            }
                    }
@@ -790,7 +791,7 @@ void CGameClient::OnReset()
        m_DummyInput = {};
        m_HammerInput = {};
        m_DummyFire = 0;
-       m_DummyAutoClick = false;
+       m_DummyAutoClick = g_Config.m_ClDummyAutoClick != 0;
        m_DummyAutoTick = 0;
        m_DeepflyCooldown = 0;
        m_ReceivedDDNetPlayer = false;
