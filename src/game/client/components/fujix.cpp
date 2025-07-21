@@ -29,6 +29,32 @@ void CFujix::OnUpdate()
 
     if(PredFreeze)
     {
+        // search a hookable direction, prefer upwards
+        static const vec2 aDirs[] = {
+            vec2(0.f, -1.f),
+            vec2(-1.f, -1.f),
+            vec2(1.f, -1.f),
+            vec2(-1.f, 0.f),
+            vec2(1.f, 0.f)
+        };
+
+        vec2 HookDir = vec2(0.f, -1.f);
+        vec2 ColPos, Before;
+        for(auto Dir : aDirs)
+        {
+            if(Collision()->IntersectLineTeleHook(Core.m_Pos, Core.m_Pos + Dir * 380.f, &ColPos, &Before) != 0)
+            {
+                int Tile = Collision()->GetCollisionAt(round_to_int(ColPos.x), round_to_int(ColPos.y));
+                if(Tile != TILE_NOHOOK && Tile != TILE_FREEZE && Tile != TILE_DFREEZE && Tile != TILE_LFREEZE)
+                {
+                    HookDir = Dir;
+                    break;
+                }
+            }
+        }
+
+        m_pClient->m_Controls.m_aInputData[g_Config.m_ClDummy].m_TargetX = (int)(HookDir.x * 100);
+        m_pClient->m_Controls.m_aInputData[g_Config.m_ClDummy].m_TargetY = (int)(HookDir.y * 100);
         m_pClient->m_Controls.m_aInputData[g_Config.m_ClDummy].m_Hook = 1;
         m_HookTicks++;
         if(m_HookTicks > 5)
