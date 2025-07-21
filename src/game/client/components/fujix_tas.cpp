@@ -43,6 +43,7 @@ CFujixTas::CFujixTas()
 
     m_LastHookState = HOOK_RETRACTED;
     m_LastHookedPlayer = -1;
+    m_RageHookTicks = 0;
 }
 
 int CFujixTas::Sizeof() const
@@ -360,9 +361,92 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     *pInput = Adjusted;
 }
 
+void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
+{
+    if(!g_Config.m_ClFujixBlockFreezeRage || !GameClient()->m_Snap.m_pLocalCharacter)
+        return;
+
+    if(m_RageHookTicks > 0)
+    {
+        pInput->m_Hook = 1;
+        m_RageHookTicks--;
+        return;
+    }
+
+    const int Steps = 24;
+    auto PredictFreeze = [&](const CNetObj_PlayerInput &Input) {
+        CCharacterCore Core = GameClient()->m_PredictedChar;
+        Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
+        for(int i = 0; i < Steps; i++)
+        {
+            Core.m_Input = Input;
+            Core.Tick(true);
+            Core.Move();
+            Core.Quantize();
+            int Index = Collision()->GetPureMapIndex(Core.m_Pos.x, Core.m_Pos.y);
+            int Tile = Collision()->GetTileIndex(Index);
+            int Front = Collision()->GetFrontTileIndex(Index);
+            bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
+                          Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
+            if(Freeze)
+                return i + 1;
+        }
+        return 0;
+    };
+
+    CNetObj_PlayerInput Base = *pInput;
+    int FreezeCurrent = PredictFreeze(Base);
+    if(!FreezeCurrent)
+        return;
+
+    CNetObj_PlayerInput Best = Base;
+    int BestFreeze = FreezeCurrent;
+
+    if(pInput->m_Hook)
+        return;
+
+    static const vec2 s_aDirs[] = {
+        vec2(0.f, -1.f), vec2(1.f, -1.f), vec2(-1.f, -1.f), vec2(1.f, 0.f),
+        vec2(-1.f, 0.f)};
+
+    const float HookLen = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookLength;
+    const float AimLen = HookLen;
+    for(const vec2 &Dir : s_aDirs)
+    {
+        vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
+        vec2 To = Pos + Dir * HookLen;
+        vec2 Col;
+        int Hit = Collision()->IntersectLineTeleHook(Pos, To, &Col, nullptr);
+        if(Hit && Hit != TILE_NOHOOK)
+        {
+            CNetObj_PlayerInput Test = Base;
+            Test.m_Hook = 1;
+            Test.m_TargetX = (int)(Dir.x * AimLen);
+            Test.m_TargetY = (int)(Dir.y * AimLen);
+            int Freeze = PredictFreeze(Test);
+            if(!Freeze || Freeze > BestFreeze)
+            {
+                Best = Test;
+                BestFreeze = Freeze ? Freeze : Steps;
+                if(!Freeze)
+                    break;
+            }
+        }
+    }
+
+    if(BestFreeze > FreezeCurrent)
+    {
+        *pInput = Best;
+        m_RageHookTicks = RAGE_HOOK_HOLD;
+    }
+}
+
 void CFujixTas::UpdateFreezeInput(CNetObj_PlayerInput *pInput)
 {
-    BlockFreezeInput(pInput);
+    if(g_Config.m_ClFujixBlockFreezeRage)
+        BlockFreezeRageInput(pInput);
+    else
+        BlockFreezeInput(pInput);
 }
 
 void CFujixTas::StartPlay()
