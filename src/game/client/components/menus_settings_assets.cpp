@@ -32,7 +32,8 @@ enum
 	ASSETS_TAB_PARTICLES = 3,
 	ASSETS_TAB_HUD = 4,
 	ASSETS_TAB_EXTRAS = 5,
-	NUMBER_OF_ASSETS_TABS = 6,
+	ASSETS_TAB_FUJIX = 6,
+	NUMBER_OF_ASSETS_TABS = 7,
 };
 
 void CMenus::LoadEntities(SCustomEntities *pEntitiesItem, void *pUser)
@@ -209,16 +210,21 @@ int CMenus::ExtrasScan(const char *pName, int IsDir, int DirType, void *pUser)
 	return AssetScan(pName, IsDir, DirType, pThis->m_vExtrasList, "extras", pGraphics, pUser);
 }
 
+int CMenus::FujixScan(const char *pName, int IsDir, int DirType, void *pUser)
+{
+	auto *pRealUser = (SMenuAssetScanUser *)pUser;
+	auto *pThis = (CMenus *)pRealUser->m_pUser;
+	IGraphics *pGraphics = pThis->Graphics();
+	return AssetScan(pName, IsDir, DirType, pThis->m_vFujixList, "fujix", pGraphics, pUser);
+}
+
 static std::vector<const CMenus::SCustomEntities *> gs_vpSearchEntitiesList;
 static std::vector<const CMenus::SCustomGame *> gs_vpSearchGamesList;
 static std::vector<const CMenus::SCustomEmoticon *> gs_vpSearchEmoticonsList;
 static std::vector<const CMenus::SCustomParticle *> gs_vpSearchParticlesList;
 static std::vector<const CMenus::SCustomHud *> gs_vpSearchHudList;
 static std::vector<const CMenus::SCustomExtras *> gs_vpSearchExtrasList;
-
-static bool gs_aInitCustomList[NUMBER_OF_ASSETS_TABS] = {
-	true,
-};
+static std::vector<const CMenus::SCustomFujix *> gs_vpSearchFujixList;
 
 static size_t gs_aCustomListSize[NUMBER_OF_ASSETS_TABS] = {
 	0,
@@ -242,6 +248,8 @@ static const CMenus::SCustomItem *GetCustomItem(int CurTab, size_t Index)
 		return gs_vpSearchHudList[Index];
 	else if(CurTab == ASSETS_TAB_EXTRAS)
 		return gs_vpSearchExtrasList[Index];
+	else if(CurTab == ASSETS_TAB_FUJIX)
+		return nullptr;
 
 	return nullptr;
 }
@@ -307,6 +315,10 @@ void CMenus::ClearCustomItems(int CurTab)
 		// reload current DDNet particles skin
 		GameClient()->LoadExtrasSkin(g_Config.m_ClAssetExtras);
 	}
+	else if(CurTab == ASSETS_TAB_FUJIX)
+	{
+		// reload fujix
+	}
 	gs_aInitCustomList[CurTab] = true;
 }
 
@@ -353,13 +365,14 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 	MainView.HSplitTop(20.0f, &TabBar, &MainView);
 	const float TabWidth = TabBar.w / NUMBER_OF_ASSETS_TABS;
 	static CButtonContainer s_aPageTabs[NUMBER_OF_ASSETS_TABS] = {};
-	const char *apTabNames[NUMBER_OF_ASSETS_TABS] = {
+const char *apTabNames[NUMBER_OF_ASSETS_TABS] = {
 		Localize("Entities"),
 		Localize("Game"),
 		Localize("Emoticons"),
 		Localize("Particles"),
 		Localize("HUD"),
-		Localize("Extras")};
+		Localize("Extras"),
+		Localize("FUJIX")};
 
 	for(int Tab = ASSETS_TAB_ENTITIES; Tab < NUMBER_OF_ASSETS_TABS; ++Tab)
 	{
@@ -379,21 +392,150 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
 		if(time_get_nanoseconds() - LoadStartTime > 500ms)
 			RenderLoading(Localize("Loading assets"), "", 0);
 	};
-	if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
-	{
-		if(m_vEntitiesList.empty())
+		if(s_CurCustomTab == ASSETS_TAB_ENTITIES)
+			str_copy(aBufFull, "assets/entities");
+		else if(s_CurCustomTab == ASSETS_TAB_GAME)
+			str_copy(aBufFull, "assets/game");
+		else if(s_CurCustomTab == ASSETS_TAB_EMOTICONS)
+			str_copy(aBufFull, "assets/emoticons");
+		else if(s_CurCustomTab == ASSETS_TAB_PARTICLES)
+			str_copy(aBufFull, "assets/particles");
+		else if(s_CurCustomTab == ASSETS_TAB_HUD)
+			str_copy(aBufFull, "assets/hud");
+		else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+			str_copy(aBufFull, "assets/extras");
+		else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+			str_copy(aBufFull, "assets/fujix");
+			else if(s_CurCustomTab == ASSETS_TAB_GAME)
+			{
+				str_copy(g_Config.m_ClAssetGame, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+				GameClient()->LoadGameSkin(g_Config.m_ClAssetGame);
+			}
+			else if(s_CurCustomTab == ASSETS_TAB_EMOTICONS)
+			{
+				str_copy(g_Config.m_ClAssetEmoticons, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+				GameClient()->LoadEmoticonsSkin(g_Config.m_ClAssetEmoticons);
+			}
+			else if(s_CurCustomTab == ASSETS_TAB_PARTICLES)
+			{
+				str_copy(g_Config.m_ClAssetParticles, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+				GameClient()->LoadParticlesSkin(g_Config.m_ClAssetParticles);
+			}
+			else if(s_CurCustomTab == ASSETS_TAB_HUD)
+			{
+				str_copy(g_Config.m_ClAssetHud, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+				GameClient()->LoadHudSkin(g_Config.m_ClAssetHud);
+			}
+			else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+			{
+				str_copy(g_Config.m_ClAssetExtras, GetCustomItem(s_CurCustomTab, NewSelected)->m_aName);
+				GameClient()->LoadExtrasSkin(g_Config.m_ClAssetExtras);
+			}
+			else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+			{
+				// new selected fujix
+			}
+		else if(s_CurCustomTab == ASSETS_TAB_GAME)
 		{
-			SCustomEntities EntitiesItem;
-			str_copy(EntitiesItem.m_aName, "default");
-			LoadEntities(&EntitiesItem, &User);
-			m_vEntitiesList.push_back(EntitiesItem);
-
-			// load entities
-			Storage()->ListDirectory(IStorage::TYPE_ALL, "assets/entities", EntitiesScan, &User);
-			std::sort(m_vEntitiesList.begin(), m_vEntitiesList.end());
+			if(str_comp(pItem->m_aName, g_Config.m_ClAssetGame) == 0)
+				OldSelected = i;
 		}
-		if(m_vEntitiesList.size() != gs_aCustomListSize[s_CurCustomTab])
-			gs_aInitCustomList[s_CurCustomTab] = true;
+		else if(s_CurCustomTab == ASSETS_TAB_EMOTICONS)
+		{
+			if(str_comp(pItem->m_aName, g_Config.m_ClAssetEmoticons) == 0)
+				OldSelected = i;
+		}
+		else if(s_CurCustomTab == ASSETS_TAB_PARTICLES)
+		{
+			if(str_comp(pItem->m_aName, g_Config.m_ClAssetParticles) == 0)
+				OldSelected = i;
+		}
+		else if(s_CurCustomTab == ASSETS_TAB_HUD)
+		{
+			if(str_comp(pItem->m_aName, g_Config.m_ClAssetHud) == 0)
+				OldSelected = i;
+		}
+		else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+		{
+			if(str_comp(pItem->m_aName, g_Config.m_ClAssetExtras) == 0)
+				OldSelected = i;
+		}
+		else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+		{
+			// old selected fujix
+		}
+	else if(s_CurCustomTab == ASSETS_TAB_GAME)
+	{
+		SearchListSize = gs_vpSearchGamesList.size();
+		TextureHeight = 75;
+	}
+	else if(s_CurCustomTab == ASSETS_TAB_EMOTICONS)
+	{
+		SearchListSize = gs_vpSearchEmoticonsList.size();
+	}
+	else if(s_CurCustomTab == ASSETS_TAB_PARTICLES)
+	{
+		SearchListSize = gs_vpSearchParticlesList.size();
+	}
+	else if(s_CurCustomTab == ASSETS_TAB_HUD)
+	{
+		SearchListSize = gs_vpSearchHudList.size();
+	}
+	else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+	{
+		SearchListSize = gs_vpSearchExtrasList.size();
+	}
+	else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+	{
+		// search list size fujix
+	}
+		else if(s_CurCustomTab == ASSETS_TAB_GAME)
+		{
+			ListSize = InitSearchList(gs_vpSearchGamesList, m_vGameList);
+		}
+		else if(s_CurCustomTab == ASSETS_TAB_EMOTICONS)
+		{
+			ListSize = InitSearchList(gs_vpSearchEmoticonsList, m_vEmoticonList);
+		}
+		else if(s_CurCustomTab == ASSETS_TAB_PARTICLES)
+		{
+			ListSize = InitSearchList(gs_vpSearchParticlesList, m_vParticlesList);
+		}
+		else if(s_CurCustomTab == ASSETS_TAB_HUD)
+		{
+			ListSize = InitSearchList(gs_vpSearchHudList, m_vHudList);
+		}
+		else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+		{
+			ListSize = InitSearchList(gs_vpSearchExtrasList, m_vExtrasList);
+		}
+		else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+		{
+			// search fujix
+		}
+	else if(s_CurCustomTab == ASSETS_TAB_GAME)
+	{
+		InitAssetList(m_vGameList, "assets/game", "game", GameScan, Graphics(), Storage(), &User);
+	}
+	else if(s_CurCustomTab == ASSETS_TAB_EMOTICONS)
+	{
+		InitAssetList(m_vEmoticonList, "assets/emoticons", "emoticons", EmoticonsScan, Graphics(), Storage(), &User);
+	}
+	else if(s_CurCustomTab == ASSETS_TAB_PARTICLES)
+	{
+		InitAssetList(m_vParticlesList, "assets/particles", "particles", ParticlesScan, Graphics(), Storage(), &User);
+	}
+	else if(s_CurCustomTab == ASSETS_TAB_HUD)
+	{
+		InitAssetList(m_vHudList, "assets/hud", "hud", HudScan, Graphics(), Storage(), &User);
+	}
+	else if(s_CurCustomTab == ASSETS_TAB_EXTRAS)
+	{
+		InitAssetList(m_vExtrasList, "assets/extras", "extras", ExtrasScan, Graphics(), Storage(), &User);
+	}
+	else if(s_CurCustomTab == ASSETS_TAB_FUJIX)
+	{
+		// Init fujix
 	}
 	else if(s_CurCustomTab == ASSETS_TAB_GAME)
 	{

@@ -1,0 +1,229 @@
+Determining if the __i386 exist failed with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_35b77/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_35b77.dir/build.make CMakeFiles/cmTC_35b77.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_35b77.dir/CheckSymbolExists.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_35b77.dir/CheckSymbolExists.c.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/CheckSymbolExists.c: In function ‘main’:
+/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/CheckSymbolExists.c:7:19: error: ‘__i386’ undeclared (first use in this function)
+    7 |   return ((int*)(&__i386))[argc];
+      |                   ^~~~~~
+/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/CheckSymbolExists.c:7:19: note: each undeclared identifier is reported only once for each function it appears in
+gmake[1]: *** [CMakeFiles/cmTC_35b77.dir/build.make:85: CMakeFiles/cmTC_35b77.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:140: cmTC_35b77/fast] Error 2
+
+
+File /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef __i386
+  return ((int*)(&__i386))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+Performing C SOURCE FILE Test FLAG_SUPPORTED_fuse_ld_mold failed with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_64852/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_64852.dir/build.make CMakeFiles/cmTC_64852.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_64852.dir/src.c.o
+/usr/bin/cc   -DFLAG_SUPPORTED_fuse_ld_mold -o CMakeFiles/cmTC_64852.dir/src.c.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_64852
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_64852.dir/link.txt --verbose=1
+/usr/bin/cc  -DFLAG_SUPPORTED_fuse_ld_mold -fuse-ld=mold CMakeFiles/cmTC_64852.dir/src.c.o -o cmTC_64852 
+cc: error: unrecognized command-line option '-fuse-ld=mold'; did you mean '-fuse-ld=gold'?
+gmake[1]: *** [CMakeFiles/cmTC_64852.dir/build.make:106: cmTC_64852] Error 1
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:140: cmTC_64852/fast] Error 2
+
+
+Source file was:
+int main() { return 0; }
+Performing C SOURCE FILE Test FLAG_SUPPORTED_fuse_ld_lld failed with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_6b847/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_6b847.dir/build.make CMakeFiles/cmTC_6b847.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_6b847.dir/src.c.o
+/usr/bin/cc   -DFLAG_SUPPORTED_fuse_ld_lld -o CMakeFiles/cmTC_6b847.dir/src.c.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_6b847
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_6b847.dir/link.txt --verbose=1
+/usr/bin/cc  -DFLAG_SUPPORTED_fuse_ld_lld -fuse-ld=lld CMakeFiles/cmTC_6b847.dir/src.c.o -o cmTC_6b847 
+collect2: fatal error: cannot find 'ld'
+compilation terminated.
+gmake[1]: *** [CMakeFiles/cmTC_6b847.dir/build.make:106: cmTC_6b847] Error 1
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:140: cmTC_6b847/fast] Error 2
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wshadow_all failed with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_27b11/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_27b11.dir/build.make CMakeFiles/cmTC_27b11.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_27b11.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wshadow_all   -Wshadow-all -o CMakeFiles/cmTC_27b11.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+c++: error: unrecognized command-line option '-Wshadow-all'; did you mean '-Wshadow'?
+gmake[1]: *** [CMakeFiles/cmTC_27b11.dir/build.make:85: CMakeFiles/cmTC_27b11.dir/src.cxx.o] Error 1
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:140: cmTC_27b11/fast] Error 2
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wthread_safety failed with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_fe035/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_fe035.dir/build.make CMakeFiles/cmTC_fe035.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_fe035.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wthread_safety   -Wthread-safety -o CMakeFiles/cmTC_fe035.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+c++: error: unrecognized command-line option '-Wthread-safety'
+gmake[1]: *** [CMakeFiles/cmTC_fe035.dir/build.make:85: CMakeFiles/cmTC_fe035.dir/src.cxx.o] Error 1
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:140: cmTC_fe035/fast] Error 2
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wthread_safety_negative failed with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_4ed66/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_4ed66.dir/build.make CMakeFiles/cmTC_4ed66.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_4ed66.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wthread_safety_negative   -Wthread-safety-negative -o CMakeFiles/cmTC_4ed66.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+c++: error: unrecognized command-line option '-Wthread-safety-negative'
+gmake[1]: *** [CMakeFiles/cmTC_4ed66.dir/build.make:85: CMakeFiles/cmTC_4ed66.dir/src.cxx.o] Error 1
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:140: cmTC_4ed66/fast] Error 2
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wdynamic_class_memaccess failed with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_02403/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_02403.dir/build.make CMakeFiles/cmTC_02403.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_02403.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wdynamic_class_memaccess   -Wdynamic-class-memaccess -o CMakeFiles/cmTC_02403.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+c++: error: unrecognized command-line option '-Wdynamic-class-memaccess'; did you mean '-Wno-class-memaccess'?
+gmake[1]: *** [CMakeFiles/cmTC_02403.dir/build.make:85: CMakeFiles/cmTC_02403.dir/src.cxx.o] Error 1
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:140: cmTC_02403/fast] Error 2
+
+
+Source file was:
+int main() { return 0; }
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_70f98/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_70f98.dir/build.make CMakeFiles/cmTC_70f98.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_70f98.dir/src.c.o
+/usr/bin/cc   -DCMAKE_HAVE_LIBC_PTHREAD -o CMakeFiles/cmTC_70f98.dir/src.c.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_70f98
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_70f98.dir/link.txt --verbose=1
+/usr/bin/cc  -DCMAKE_HAVE_LIBC_PTHREAD CMakeFiles/cmTC_70f98.dir/src.c.o -o cmTC_70f98 
+/usr/bin/ld: CMakeFiles/cmTC_70f98.dir/src.c.o: in function `main':
+src.c:(.text+0x34): undefined reference to `pthread_create'
+/usr/bin/ld: src.c:(.text+0x3c): undefined reference to `pthread_detach'
+/usr/bin/ld: src.c:(.text+0x44): undefined reference to `pthread_cancel'
+/usr/bin/ld: src.c:(.text+0x50): undefined reference to `pthread_join'
+collect2: error: ld returned 1 exit status
+gmake[1]: *** [CMakeFiles/cmTC_70f98.dir/build.make:106: cmTC_70f98] Error 1
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:140: cmTC_70f98/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_cancel(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the WavpackOpenFileInputEx exist failed with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_6c973/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_6c973.dir/build.make CMakeFiles/cmTC_6c973.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_6c973.dir/CheckSymbolExists.c.o
+/usr/bin/cc  -I/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src/engine/external/wavpack  -o CMakeFiles/cmTC_6c973.dir/CheckSymbolExists.c.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/CheckSymbolExists.c:2:10: fatal error: wavpack.h: No such file or directory
+    2 | #include <wavpack.h>
+      |          ^~~~~~~~~~~
+compilation terminated.
+gmake[1]: *** [CMakeFiles/cmTC_6c973.dir/build.make:85: CMakeFiles/cmTC_6c973.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:140: cmTC_6c973/fast] Error 2
+
+
+File /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <wavpack.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef WavpackOpenFileInputEx
+  return ((int*)(&WavpackOpenFileInputEx))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+Determining if the WavpackCloseFile exist failed with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_b272e/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_b272e.dir/build.make CMakeFiles/cmTC_b272e.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_b272e.dir/CheckSymbolExists.c.o
+/usr/bin/cc  -I/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src/engine/external/wavpack  -o CMakeFiles/cmTC_b272e.dir/CheckSymbolExists.c.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/CheckSymbolExists.c:2:10: fatal error: wavpack.h: No such file or directory
+    2 | #include <wavpack.h>
+      |          ^~~~~~~~~~~
+compilation terminated.
+gmake[1]: *** [CMakeFiles/cmTC_b272e.dir/build.make:85: CMakeFiles/cmTC_b272e.dir/CheckSymbolExists.c.o] Error 1
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:140: cmTC_b272e/fast] Error 2
+
+
+File /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <wavpack.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef WavpackCloseFile
+  return ((int*)(&WavpackCloseFile))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}

@@ -1,0 +1,783 @@
+The system is: Linux - 4.19.87-27102101 - aarch64
+Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+Compiler: /usr/bin/cc 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+
+
+Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.out"
+
+The C compiler identification is GNU, found in "/home/userland/v1/v2/sandbox/CMakeFiles/3.18.4/CompilerIdC/a.out"
+
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: /usr/bin/c++ 
+Build flags: 
+Id flags:  
+
+The output was:
+0
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.out"
+
+The CXX compiler identification is GNU, found in "/home/userland/v1/v2/sandbox/CMakeFiles/3.18.4/CompilerIdCXX/a.out"
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_0c49e/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_0c49e.dir/build.make CMakeFiles/cmTC_0c49e.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o
+/usr/bin/cc   -v -o CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake-3.18/Modules/CMakeCCompilerABI.c
+Using built-in specs.
+COLLECT_GCC=/usr/bin/cc
+Target: aarch64-linux-gnu
+Configured with: ../src/configure -v --with-pkgversion='Debian 10.2.1-6' --with-bugurl=file:///usr/share/doc/gcc-10/README.Bugs --enable-languages=c,ada,c++,go,d,fortran,objc,obj-c++,m2 --prefix=/usr --with-gcc-major-version-only --program-suffix=-10 --program-prefix=aarch64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-libquadmath --disable-libquadmath-support --enable-plugin --enable-default-pie --with-system-zlib --enable-libphobos-checking=release --with-target-system-zlib=auto --enable-objc-gc=auto --enable-multiarch --enable-fix-cortex-a53-843419 --disable-werror --enable-checking=release --build=aarch64-linux-gnu --host=aarch64-linux-gnu --target=aarch64-linux-gnu --with-build-config=bootstrap-lto-lean --enable-link-mutex
+Thread model: posix
+Supported LTO compression algorithms: zlib zstd
+gcc version 10.2.1 20210110 (Debian 10.2.1-6) 
+COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o' '-c' '-mlittle-endian' '-mabi=lp64'
+ /usr/lib/gcc/aarch64-linux-gnu/10/cc1 -quiet -v -imultiarch aarch64-linux-gnu /usr/share/cmake-3.18/Modules/CMakeCCompilerABI.c -quiet -dumpbase CMakeCCompilerABI.c -mlittle-endian -mabi=lp64 -auxbase-strip CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o -version -fasynchronous-unwind-tables -o /tmp/ccqwWtSd.s
+GNU C17 (Debian 10.2.1-6) version 10.2.1 20210110 (aarch64-linux-gnu)
+	compiled by GNU C version 10.2.1 20210110, GMP version 6.2.1, MPFR version 4.1.0, MPC version 1.2.0, isl version isl-0.23-GMP
+
+GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+ignoring nonexistent directory "/usr/local/include/aarch64-linux-gnu"
+ignoring nonexistent directory "/usr/lib/gcc/aarch64-linux-gnu/10/include-fixed"
+ignoring nonexistent directory "/usr/lib/gcc/aarch64-linux-gnu/10/../../../../aarch64-linux-gnu/include"
+#include "..." search starts here:
+#include <...> search starts here:
+ /usr/lib/gcc/aarch64-linux-gnu/10/include
+ /usr/local/include
+ /usr/include/aarch64-linux-gnu
+ /usr/include
+End of search list.
+GNU C17 (Debian 10.2.1-6) version 10.2.1 20210110 (aarch64-linux-gnu)
+	compiled by GNU C version 10.2.1 20210110, GMP version 6.2.1, MPFR version 4.1.0, MPC version 1.2.0, isl version isl-0.23-GMP
+
+GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+Compiler executable checksum: 09f7dee817ee0ac81dbfe2e711a5f862
+COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o' '-c' '-mlittle-endian' '-mabi=lp64'
+ as -v -EL -mabi=lp64 -o CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o /tmp/ccqwWtSd.s
+GNU assembler version 2.35.2 (aarch64-linux-gnu) using BFD version (GNU Binutils for Debian) 2.35.2
+COMPILER_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/
+LIBRARY_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib/:/lib/aarch64-linux-gnu/:/lib/../lib/:/usr/lib/aarch64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../:/lib/:/usr/lib/
+COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o' '-c' '-mlittle-endian' '-mabi=lp64'
+Linking C executable cmTC_0c49e
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_0c49e.dir/link.txt --verbose=1
+/usr/bin/cc  -v CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o -o cmTC_0c49e 
+Using built-in specs.
+COLLECT_GCC=/usr/bin/cc
+COLLECT_LTO_WRAPPER=/usr/lib/gcc/aarch64-linux-gnu/10/lto-wrapper
+Target: aarch64-linux-gnu
+Configured with: ../src/configure -v --with-pkgversion='Debian 10.2.1-6' --with-bugurl=file:///usr/share/doc/gcc-10/README.Bugs --enable-languages=c,ada,c++,go,d,fortran,objc,obj-c++,m2 --prefix=/usr --with-gcc-major-version-only --program-suffix=-10 --program-prefix=aarch64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-libquadmath --disable-libquadmath-support --enable-plugin --enable-default-pie --with-system-zlib --enable-libphobos-checking=release --with-target-system-zlib=auto --enable-objc-gc=auto --enable-multiarch --enable-fix-cortex-a53-843419 --disable-werror --enable-checking=release --build=aarch64-linux-gnu --host=aarch64-linux-gnu --target=aarch64-linux-gnu --with-build-config=bootstrap-lto-lean --enable-link-mutex
+Thread model: posix
+Supported LTO compression algorithms: zlib zstd
+gcc version 10.2.1 20210110 (Debian 10.2.1-6) 
+COMPILER_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/
+LIBRARY_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib/:/lib/aarch64-linux-gnu/:/lib/../lib/:/usr/lib/aarch64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../:/lib/:/usr/lib/
+COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_0c49e' '-mlittle-endian' '-mabi=lp64'
+ /usr/lib/gcc/aarch64-linux-gnu/10/collect2 -plugin /usr/lib/gcc/aarch64-linux-gnu/10/liblto_plugin.so -plugin-opt=/usr/lib/gcc/aarch64-linux-gnu/10/lto-wrapper -plugin-opt=-fresolution=/tmp/ccX8P1lI.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --build-id --eh-frame-hdr --hash-style=gnu --as-needed -dynamic-linker /lib/ld-linux-aarch64.so.1 -X -EL -maarch64linux --fix-cortex-a53-843419 -pie -o cmTC_0c49e /usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/Scrt1.o /usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/crti.o /usr/lib/gcc/aarch64-linux-gnu/10/crtbeginS.o -L/usr/lib/gcc/aarch64-linux-gnu/10 -L/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu -L/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib -L/lib/aarch64-linux-gnu -L/lib/../lib -L/usr/lib/aarch64-linux-gnu -L/usr/lib/../lib -L/usr/lib/gcc/aarch64-linux-gnu/10/../../.. CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /usr/lib/gcc/aarch64-linux-gnu/10/crtendS.o /usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/crtn.o
+COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_0c49e' '-mlittle-endian' '-mabi=lp64'
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+
+Parsed C implicit include dir info from above output: rv=done
+  found start of include info
+  found start of implicit include info
+    add: [/usr/lib/gcc/aarch64-linux-gnu/10/include]
+    add: [/usr/local/include]
+    add: [/usr/include/aarch64-linux-gnu]
+    add: [/usr/include]
+  end of search list found
+  collapse include dir [/usr/lib/gcc/aarch64-linux-gnu/10/include] ==> [/usr/lib/gcc/aarch64-linux-gnu/10/include]
+  collapse include dir [/usr/local/include] ==> [/usr/local/include]
+  collapse include dir [/usr/include/aarch64-linux-gnu] ==> [/usr/include/aarch64-linux-gnu]
+  collapse include dir [/usr/include] ==> [/usr/include]
+  implicit include dirs: [/usr/lib/gcc/aarch64-linux-gnu/10/include;/usr/local/include;/usr/include/aarch64-linux-gnu;/usr/include]
+
+
+Parsed C implicit link information from above output:
+  link line regex: [^( *|.*[/\])(ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command(s):/usr/bin/gmake cmTC_0c49e/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_0c49e.dir/build.make CMakeFiles/cmTC_0c49e.dir/build]
+  ignore line: [gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp']
+  ignore line: [Building C object CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o]
+  ignore line: [/usr/bin/cc   -v -o CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake-3.18/Modules/CMakeCCompilerABI.c]
+  ignore line: [Using built-in specs.]
+  ignore line: [COLLECT_GCC=/usr/bin/cc]
+  ignore line: [Target: aarch64-linux-gnu]
+  ignore line: [Configured with: ../src/configure -v --with-pkgversion='Debian 10.2.1-6' --with-bugurl=file:///usr/share/doc/gcc-10/README.Bugs --enable-languages=c ada c++ go d fortran objc obj-c++ m2 --prefix=/usr --with-gcc-major-version-only --program-suffix=-10 --program-prefix=aarch64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-libquadmath --disable-libquadmath-support --enable-plugin --enable-default-pie --with-system-zlib --enable-libphobos-checking=release --with-target-system-zlib=auto --enable-objc-gc=auto --enable-multiarch --enable-fix-cortex-a53-843419 --disable-werror --enable-checking=release --build=aarch64-linux-gnu --host=aarch64-linux-gnu --target=aarch64-linux-gnu --with-build-config=bootstrap-lto-lean --enable-link-mutex]
+  ignore line: [Thread model: posix]
+  ignore line: [Supported LTO compression algorithms: zlib zstd]
+  ignore line: [gcc version 10.2.1 20210110 (Debian 10.2.1-6) ]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o' '-c' '-mlittle-endian' '-mabi=lp64']
+  ignore line: [ /usr/lib/gcc/aarch64-linux-gnu/10/cc1 -quiet -v -imultiarch aarch64-linux-gnu /usr/share/cmake-3.18/Modules/CMakeCCompilerABI.c -quiet -dumpbase CMakeCCompilerABI.c -mlittle-endian -mabi=lp64 -auxbase-strip CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o -version -fasynchronous-unwind-tables -o /tmp/ccqwWtSd.s]
+  ignore line: [GNU C17 (Debian 10.2.1-6) version 10.2.1 20210110 (aarch64-linux-gnu)]
+  ignore line: [	compiled by GNU C version 10.2.1 20210110  GMP version 6.2.1  MPFR version 4.1.0  MPC version 1.2.0  isl version isl-0.23-GMP]
+  ignore line: []
+  ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+  ignore line: [ignoring nonexistent directory "/usr/local/include/aarch64-linux-gnu"]
+  ignore line: [ignoring nonexistent directory "/usr/lib/gcc/aarch64-linux-gnu/10/include-fixed"]
+  ignore line: [ignoring nonexistent directory "/usr/lib/gcc/aarch64-linux-gnu/10/../../../../aarch64-linux-gnu/include"]
+  ignore line: [#include "..." search starts here:]
+  ignore line: [#include <...> search starts here:]
+  ignore line: [ /usr/lib/gcc/aarch64-linux-gnu/10/include]
+  ignore line: [ /usr/local/include]
+  ignore line: [ /usr/include/aarch64-linux-gnu]
+  ignore line: [ /usr/include]
+  ignore line: [End of search list.]
+  ignore line: [GNU C17 (Debian 10.2.1-6) version 10.2.1 20210110 (aarch64-linux-gnu)]
+  ignore line: [	compiled by GNU C version 10.2.1 20210110  GMP version 6.2.1  MPFR version 4.1.0  MPC version 1.2.0  isl version isl-0.23-GMP]
+  ignore line: []
+  ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+  ignore line: [Compiler executable checksum: 09f7dee817ee0ac81dbfe2e711a5f862]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o' '-c' '-mlittle-endian' '-mabi=lp64']
+  ignore line: [ as -v -EL -mabi=lp64 -o CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o /tmp/ccqwWtSd.s]
+  ignore line: [GNU assembler version 2.35.2 (aarch64-linux-gnu) using BFD version (GNU Binutils for Debian) 2.35.2]
+  ignore line: [COMPILER_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/]
+  ignore line: [LIBRARY_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib/:/lib/aarch64-linux-gnu/:/lib/../lib/:/usr/lib/aarch64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../:/lib/:/usr/lib/]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o' '-c' '-mlittle-endian' '-mabi=lp64']
+  ignore line: [Linking C executable cmTC_0c49e]
+  ignore line: [/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_0c49e.dir/link.txt --verbose=1]
+  ignore line: [/usr/bin/cc  -v CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o -o cmTC_0c49e ]
+  ignore line: [Using built-in specs.]
+  ignore line: [COLLECT_GCC=/usr/bin/cc]
+  ignore line: [COLLECT_LTO_WRAPPER=/usr/lib/gcc/aarch64-linux-gnu/10/lto-wrapper]
+  ignore line: [Target: aarch64-linux-gnu]
+  ignore line: [Configured with: ../src/configure -v --with-pkgversion='Debian 10.2.1-6' --with-bugurl=file:///usr/share/doc/gcc-10/README.Bugs --enable-languages=c ada c++ go d fortran objc obj-c++ m2 --prefix=/usr --with-gcc-major-version-only --program-suffix=-10 --program-prefix=aarch64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-libquadmath --disable-libquadmath-support --enable-plugin --enable-default-pie --with-system-zlib --enable-libphobos-checking=release --with-target-system-zlib=auto --enable-objc-gc=auto --enable-multiarch --enable-fix-cortex-a53-843419 --disable-werror --enable-checking=release --build=aarch64-linux-gnu --host=aarch64-linux-gnu --target=aarch64-linux-gnu --with-build-config=bootstrap-lto-lean --enable-link-mutex]
+  ignore line: [Thread model: posix]
+  ignore line: [Supported LTO compression algorithms: zlib zstd]
+  ignore line: [gcc version 10.2.1 20210110 (Debian 10.2.1-6) ]
+  ignore line: [COMPILER_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/]
+  ignore line: [LIBRARY_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib/:/lib/aarch64-linux-gnu/:/lib/../lib/:/usr/lib/aarch64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../:/lib/:/usr/lib/]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_0c49e' '-mlittle-endian' '-mabi=lp64']
+  link line: [ /usr/lib/gcc/aarch64-linux-gnu/10/collect2 -plugin /usr/lib/gcc/aarch64-linux-gnu/10/liblto_plugin.so -plugin-opt=/usr/lib/gcc/aarch64-linux-gnu/10/lto-wrapper -plugin-opt=-fresolution=/tmp/ccX8P1lI.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s --build-id --eh-frame-hdr --hash-style=gnu --as-needed -dynamic-linker /lib/ld-linux-aarch64.so.1 -X -EL -maarch64linux --fix-cortex-a53-843419 -pie -o cmTC_0c49e /usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/Scrt1.o /usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/crti.o /usr/lib/gcc/aarch64-linux-gnu/10/crtbeginS.o -L/usr/lib/gcc/aarch64-linux-gnu/10 -L/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu -L/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib -L/lib/aarch64-linux-gnu -L/lib/../lib -L/usr/lib/aarch64-linux-gnu -L/usr/lib/../lib -L/usr/lib/gcc/aarch64-linux-gnu/10/../../.. CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o -lgcc --push-state --as-needed -lgcc_s --pop-state -lc -lgcc --push-state --as-needed -lgcc_s --pop-state /usr/lib/gcc/aarch64-linux-gnu/10/crtendS.o /usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/crtn.o]
+    arg [/usr/lib/gcc/aarch64-linux-gnu/10/collect2] ==> ignore
+    arg [-plugin] ==> ignore
+    arg [/usr/lib/gcc/aarch64-linux-gnu/10/liblto_plugin.so] ==> ignore
+    arg [-plugin-opt=/usr/lib/gcc/aarch64-linux-gnu/10/lto-wrapper] ==> ignore
+    arg [-plugin-opt=-fresolution=/tmp/ccX8P1lI.res] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+    arg [-plugin-opt=-pass-through=-lc] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [--hash-style=gnu] ==> ignore
+    arg [--as-needed] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/lib/ld-linux-aarch64.so.1] ==> ignore
+    arg [-X] ==> ignore
+    arg [-EL] ==> ignore
+    arg [-maarch64linux] ==> ignore
+    arg [--fix-cortex-a53-843419] ==> ignore
+    arg [-pie] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_0c49e] ==> ignore
+    arg [/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/Scrt1.o] ==> ignore
+    arg [/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/crti.o] ==> ignore
+    arg [/usr/lib/gcc/aarch64-linux-gnu/10/crtbeginS.o] ==> ignore
+    arg [-L/usr/lib/gcc/aarch64-linux-gnu/10] ==> dir [/usr/lib/gcc/aarch64-linux-gnu/10]
+    arg [-L/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu] ==> dir [/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu]
+    arg [-L/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib] ==> dir [/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib]
+    arg [-L/lib/aarch64-linux-gnu] ==> dir [/lib/aarch64-linux-gnu]
+    arg [-L/lib/../lib] ==> dir [/lib/../lib]
+    arg [-L/usr/lib/aarch64-linux-gnu] ==> dir [/usr/lib/aarch64-linux-gnu]
+    arg [-L/usr/lib/../lib] ==> dir [/usr/lib/../lib]
+    arg [-L/usr/lib/gcc/aarch64-linux-gnu/10/../../..] ==> dir [/usr/lib/gcc/aarch64-linux-gnu/10/../../..]
+    arg [CMakeFiles/cmTC_0c49e.dir/CMakeCCompilerABI.c.o] ==> ignore
+    arg [-lgcc] ==> lib [gcc]
+    arg [--push-state] ==> ignore
+    arg [--as-needed] ==> ignore
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [--pop-state] ==> ignore
+    arg [-lc] ==> lib [c]
+    arg [-lgcc] ==> lib [gcc]
+    arg [--push-state] ==> ignore
+    arg [--as-needed] ==> ignore
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [--pop-state] ==> ignore
+    arg [/usr/lib/gcc/aarch64-linux-gnu/10/crtendS.o] ==> ignore
+    arg [/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/crtn.o] ==> ignore
+  collapse library dir [/usr/lib/gcc/aarch64-linux-gnu/10] ==> [/usr/lib/gcc/aarch64-linux-gnu/10]
+  collapse library dir [/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu] ==> [/usr/lib/aarch64-linux-gnu]
+  collapse library dir [/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib] ==> [/usr/lib]
+  collapse library dir [/lib/aarch64-linux-gnu] ==> [/lib/aarch64-linux-gnu]
+  collapse library dir [/lib/../lib] ==> [/lib]
+  collapse library dir [/usr/lib/aarch64-linux-gnu] ==> [/usr/lib/aarch64-linux-gnu]
+  collapse library dir [/usr/lib/../lib] ==> [/usr/lib]
+  collapse library dir [/usr/lib/gcc/aarch64-linux-gnu/10/../../..] ==> [/usr/lib]
+  implicit libs: [gcc;gcc_s;c;gcc;gcc_s]
+  implicit dirs: [/usr/lib/gcc/aarch64-linux-gnu/10;/usr/lib/aarch64-linux-gnu;/usr/lib;/lib/aarch64-linux-gnu;/lib]
+  implicit fwks: []
+
+
+Detecting CXX compiler ABI info compiled with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_c84d0/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_c84d0.dir/build.make CMakeFiles/cmTC_c84d0.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o
+/usr/bin/c++   -v -o CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake-3.18/Modules/CMakeCXXCompilerABI.cpp
+Using built-in specs.
+COLLECT_GCC=/usr/bin/c++
+Target: aarch64-linux-gnu
+Configured with: ../src/configure -v --with-pkgversion='Debian 10.2.1-6' --with-bugurl=file:///usr/share/doc/gcc-10/README.Bugs --enable-languages=c,ada,c++,go,d,fortran,objc,obj-c++,m2 --prefix=/usr --with-gcc-major-version-only --program-suffix=-10 --program-prefix=aarch64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-libquadmath --disable-libquadmath-support --enable-plugin --enable-default-pie --with-system-zlib --enable-libphobos-checking=release --with-target-system-zlib=auto --enable-objc-gc=auto --enable-multiarch --enable-fix-cortex-a53-843419 --disable-werror --enable-checking=release --build=aarch64-linux-gnu --host=aarch64-linux-gnu --target=aarch64-linux-gnu --with-build-config=bootstrap-lto-lean --enable-link-mutex
+Thread model: posix
+Supported LTO compression algorithms: zlib zstd
+gcc version 10.2.1 20210110 (Debian 10.2.1-6) 
+COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mlittle-endian' '-mabi=lp64'
+ /usr/lib/gcc/aarch64-linux-gnu/10/cc1plus -quiet -v -imultiarch aarch64-linux-gnu -D_GNU_SOURCE /usr/share/cmake-3.18/Modules/CMakeCXXCompilerABI.cpp -quiet -dumpbase CMakeCXXCompilerABI.cpp -mlittle-endian -mabi=lp64 -auxbase-strip CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o -version -fasynchronous-unwind-tables -o /tmp/ccNTgvre.s
+GNU C++14 (Debian 10.2.1-6) version 10.2.1 20210110 (aarch64-linux-gnu)
+	compiled by GNU C version 10.2.1 20210110, GMP version 6.2.1, MPFR version 4.1.0, MPC version 1.2.0, isl version isl-0.23-GMP
+
+GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+ignoring duplicate directory "/usr/include/aarch64-linux-gnu/c++/10"
+ignoring nonexistent directory "/usr/local/include/aarch64-linux-gnu"
+ignoring nonexistent directory "/usr/lib/gcc/aarch64-linux-gnu/10/include-fixed"
+ignoring nonexistent directory "/usr/lib/gcc/aarch64-linux-gnu/10/../../../../aarch64-linux-gnu/include"
+#include "..." search starts here:
+#include <...> search starts here:
+ /usr/include/c++/10
+ /usr/include/aarch64-linux-gnu/c++/10
+ /usr/include/c++/10/backward
+ /usr/lib/gcc/aarch64-linux-gnu/10/include
+ /usr/local/include
+ /usr/include/aarch64-linux-gnu
+ /usr/include
+End of search list.
+GNU C++14 (Debian 10.2.1-6) version 10.2.1 20210110 (aarch64-linux-gnu)
+	compiled by GNU C version 10.2.1 20210110, GMP version 6.2.1, MPFR version 4.1.0, MPC version 1.2.0, isl version isl-0.23-GMP
+
+GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+Compiler executable checksum: 7ff9b3e77ba341f92c3fc11acba5d5f9
+COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mlittle-endian' '-mabi=lp64'
+ as -v -EL -mabi=lp64 -o CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o /tmp/ccNTgvre.s
+GNU assembler version 2.35.2 (aarch64-linux-gnu) using BFD version (GNU Binutils for Debian) 2.35.2
+COMPILER_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/
+LIBRARY_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib/:/lib/aarch64-linux-gnu/:/lib/../lib/:/usr/lib/aarch64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../:/lib/:/usr/lib/
+COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mlittle-endian' '-mabi=lp64'
+Linking CXX executable cmTC_c84d0
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_c84d0.dir/link.txt --verbose=1
+/usr/bin/c++  -v CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_c84d0 
+Using built-in specs.
+COLLECT_GCC=/usr/bin/c++
+COLLECT_LTO_WRAPPER=/usr/lib/gcc/aarch64-linux-gnu/10/lto-wrapper
+Target: aarch64-linux-gnu
+Configured with: ../src/configure -v --with-pkgversion='Debian 10.2.1-6' --with-bugurl=file:///usr/share/doc/gcc-10/README.Bugs --enable-languages=c,ada,c++,go,d,fortran,objc,obj-c++,m2 --prefix=/usr --with-gcc-major-version-only --program-suffix=-10 --program-prefix=aarch64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-libquadmath --disable-libquadmath-support --enable-plugin --enable-default-pie --with-system-zlib --enable-libphobos-checking=release --with-target-system-zlib=auto --enable-objc-gc=auto --enable-multiarch --enable-fix-cortex-a53-843419 --disable-werror --enable-checking=release --build=aarch64-linux-gnu --host=aarch64-linux-gnu --target=aarch64-linux-gnu --with-build-config=bootstrap-lto-lean --enable-link-mutex
+Thread model: posix
+Supported LTO compression algorithms: zlib zstd
+gcc version 10.2.1 20210110 (Debian 10.2.1-6) 
+COMPILER_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/
+LIBRARY_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib/:/lib/aarch64-linux-gnu/:/lib/../lib/:/usr/lib/aarch64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../:/lib/:/usr/lib/
+COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_c84d0' '-shared-libgcc' '-mlittle-endian' '-mabi=lp64'
+ /usr/lib/gcc/aarch64-linux-gnu/10/collect2 -plugin /usr/lib/gcc/aarch64-linux-gnu/10/liblto_plugin.so -plugin-opt=/usr/lib/gcc/aarch64-linux-gnu/10/lto-wrapper -plugin-opt=-fresolution=/tmp/cc7p8ewF.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --eh-frame-hdr --hash-style=gnu --as-needed -dynamic-linker /lib/ld-linux-aarch64.so.1 -X -EL -maarch64linux --fix-cortex-a53-843419 -pie -o cmTC_c84d0 /usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/Scrt1.o /usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/crti.o /usr/lib/gcc/aarch64-linux-gnu/10/crtbeginS.o -L/usr/lib/gcc/aarch64-linux-gnu/10 -L/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu -L/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib -L/lib/aarch64-linux-gnu -L/lib/../lib -L/usr/lib/aarch64-linux-gnu -L/usr/lib/../lib -L/usr/lib/gcc/aarch64-linux-gnu/10/../../.. CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/aarch64-linux-gnu/10/crtendS.o /usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/crtn.o
+COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_c84d0' '-shared-libgcc' '-mlittle-endian' '-mabi=lp64'
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+
+Parsed CXX implicit include dir info from above output: rv=done
+  found start of include info
+  found start of implicit include info
+    add: [/usr/include/c++/10]
+    add: [/usr/include/aarch64-linux-gnu/c++/10]
+    add: [/usr/include/c++/10/backward]
+    add: [/usr/lib/gcc/aarch64-linux-gnu/10/include]
+    add: [/usr/local/include]
+    add: [/usr/include/aarch64-linux-gnu]
+    add: [/usr/include]
+  end of search list found
+  collapse include dir [/usr/include/c++/10] ==> [/usr/include/c++/10]
+  collapse include dir [/usr/include/aarch64-linux-gnu/c++/10] ==> [/usr/include/aarch64-linux-gnu/c++/10]
+  collapse include dir [/usr/include/c++/10/backward] ==> [/usr/include/c++/10/backward]
+  collapse include dir [/usr/lib/gcc/aarch64-linux-gnu/10/include] ==> [/usr/lib/gcc/aarch64-linux-gnu/10/include]
+  collapse include dir [/usr/local/include] ==> [/usr/local/include]
+  collapse include dir [/usr/include/aarch64-linux-gnu] ==> [/usr/include/aarch64-linux-gnu]
+  collapse include dir [/usr/include] ==> [/usr/include]
+  implicit include dirs: [/usr/include/c++/10;/usr/include/aarch64-linux-gnu/c++/10;/usr/include/c++/10/backward;/usr/lib/gcc/aarch64-linux-gnu/10/include;/usr/local/include;/usr/include/aarch64-linux-gnu;/usr/include]
+
+
+Parsed CXX implicit link information from above output:
+  link line regex: [^( *|.*[/\])(ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command(s):/usr/bin/gmake cmTC_c84d0/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_c84d0.dir/build.make CMakeFiles/cmTC_c84d0.dir/build]
+  ignore line: [gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp']
+  ignore line: [Building CXX object CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o]
+  ignore line: [/usr/bin/c++   -v -o CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake-3.18/Modules/CMakeCXXCompilerABI.cpp]
+  ignore line: [Using built-in specs.]
+  ignore line: [COLLECT_GCC=/usr/bin/c++]
+  ignore line: [Target: aarch64-linux-gnu]
+  ignore line: [Configured with: ../src/configure -v --with-pkgversion='Debian 10.2.1-6' --with-bugurl=file:///usr/share/doc/gcc-10/README.Bugs --enable-languages=c ada c++ go d fortran objc obj-c++ m2 --prefix=/usr --with-gcc-major-version-only --program-suffix=-10 --program-prefix=aarch64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-libquadmath --disable-libquadmath-support --enable-plugin --enable-default-pie --with-system-zlib --enable-libphobos-checking=release --with-target-system-zlib=auto --enable-objc-gc=auto --enable-multiarch --enable-fix-cortex-a53-843419 --disable-werror --enable-checking=release --build=aarch64-linux-gnu --host=aarch64-linux-gnu --target=aarch64-linux-gnu --with-build-config=bootstrap-lto-lean --enable-link-mutex]
+  ignore line: [Thread model: posix]
+  ignore line: [Supported LTO compression algorithms: zlib zstd]
+  ignore line: [gcc version 10.2.1 20210110 (Debian 10.2.1-6) ]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mlittle-endian' '-mabi=lp64']
+  ignore line: [ /usr/lib/gcc/aarch64-linux-gnu/10/cc1plus -quiet -v -imultiarch aarch64-linux-gnu -D_GNU_SOURCE /usr/share/cmake-3.18/Modules/CMakeCXXCompilerABI.cpp -quiet -dumpbase CMakeCXXCompilerABI.cpp -mlittle-endian -mabi=lp64 -auxbase-strip CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o -version -fasynchronous-unwind-tables -o /tmp/ccNTgvre.s]
+  ignore line: [GNU C++14 (Debian 10.2.1-6) version 10.2.1 20210110 (aarch64-linux-gnu)]
+  ignore line: [	compiled by GNU C version 10.2.1 20210110  GMP version 6.2.1  MPFR version 4.1.0  MPC version 1.2.0  isl version isl-0.23-GMP]
+  ignore line: []
+  ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+  ignore line: [ignoring duplicate directory "/usr/include/aarch64-linux-gnu/c++/10"]
+  ignore line: [ignoring nonexistent directory "/usr/local/include/aarch64-linux-gnu"]
+  ignore line: [ignoring nonexistent directory "/usr/lib/gcc/aarch64-linux-gnu/10/include-fixed"]
+  ignore line: [ignoring nonexistent directory "/usr/lib/gcc/aarch64-linux-gnu/10/../../../../aarch64-linux-gnu/include"]
+  ignore line: [#include "..." search starts here:]
+  ignore line: [#include <...> search starts here:]
+  ignore line: [ /usr/include/c++/10]
+  ignore line: [ /usr/include/aarch64-linux-gnu/c++/10]
+  ignore line: [ /usr/include/c++/10/backward]
+  ignore line: [ /usr/lib/gcc/aarch64-linux-gnu/10/include]
+  ignore line: [ /usr/local/include]
+  ignore line: [ /usr/include/aarch64-linux-gnu]
+  ignore line: [ /usr/include]
+  ignore line: [End of search list.]
+  ignore line: [GNU C++14 (Debian 10.2.1-6) version 10.2.1 20210110 (aarch64-linux-gnu)]
+  ignore line: [	compiled by GNU C version 10.2.1 20210110  GMP version 6.2.1  MPFR version 4.1.0  MPC version 1.2.0  isl version isl-0.23-GMP]
+  ignore line: []
+  ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+  ignore line: [Compiler executable checksum: 7ff9b3e77ba341f92c3fc11acba5d5f9]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mlittle-endian' '-mabi=lp64']
+  ignore line: [ as -v -EL -mabi=lp64 -o CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o /tmp/ccNTgvre.s]
+  ignore line: [GNU assembler version 2.35.2 (aarch64-linux-gnu) using BFD version (GNU Binutils for Debian) 2.35.2]
+  ignore line: [COMPILER_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/]
+  ignore line: [LIBRARY_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib/:/lib/aarch64-linux-gnu/:/lib/../lib/:/usr/lib/aarch64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../:/lib/:/usr/lib/]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mlittle-endian' '-mabi=lp64']
+  ignore line: [Linking CXX executable cmTC_c84d0]
+  ignore line: [/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_c84d0.dir/link.txt --verbose=1]
+  ignore line: [/usr/bin/c++  -v CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_c84d0 ]
+  ignore line: [Using built-in specs.]
+  ignore line: [COLLECT_GCC=/usr/bin/c++]
+  ignore line: [COLLECT_LTO_WRAPPER=/usr/lib/gcc/aarch64-linux-gnu/10/lto-wrapper]
+  ignore line: [Target: aarch64-linux-gnu]
+  ignore line: [Configured with: ../src/configure -v --with-pkgversion='Debian 10.2.1-6' --with-bugurl=file:///usr/share/doc/gcc-10/README.Bugs --enable-languages=c ada c++ go d fortran objc obj-c++ m2 --prefix=/usr --with-gcc-major-version-only --program-suffix=-10 --program-prefix=aarch64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-libquadmath --disable-libquadmath-support --enable-plugin --enable-default-pie --with-system-zlib --enable-libphobos-checking=release --with-target-system-zlib=auto --enable-objc-gc=auto --enable-multiarch --enable-fix-cortex-a53-843419 --disable-werror --enable-checking=release --build=aarch64-linux-gnu --host=aarch64-linux-gnu --target=aarch64-linux-gnu --with-build-config=bootstrap-lto-lean --enable-link-mutex]
+  ignore line: [Thread model: posix]
+  ignore line: [Supported LTO compression algorithms: zlib zstd]
+  ignore line: [gcc version 10.2.1 20210110 (Debian 10.2.1-6) ]
+  ignore line: [COMPILER_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/]
+  ignore line: [LIBRARY_PATH=/usr/lib/gcc/aarch64-linux-gnu/10/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib/:/lib/aarch64-linux-gnu/:/lib/../lib/:/usr/lib/aarch64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/aarch64-linux-gnu/10/../../../:/lib/:/usr/lib/]
+  ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_c84d0' '-shared-libgcc' '-mlittle-endian' '-mabi=lp64']
+  link line: [ /usr/lib/gcc/aarch64-linux-gnu/10/collect2 -plugin /usr/lib/gcc/aarch64-linux-gnu/10/liblto_plugin.so -plugin-opt=/usr/lib/gcc/aarch64-linux-gnu/10/lto-wrapper -plugin-opt=-fresolution=/tmp/cc7p8ewF.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --eh-frame-hdr --hash-style=gnu --as-needed -dynamic-linker /lib/ld-linux-aarch64.so.1 -X -EL -maarch64linux --fix-cortex-a53-843419 -pie -o cmTC_c84d0 /usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/Scrt1.o /usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/crti.o /usr/lib/gcc/aarch64-linux-gnu/10/crtbeginS.o -L/usr/lib/gcc/aarch64-linux-gnu/10 -L/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu -L/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib -L/lib/aarch64-linux-gnu -L/lib/../lib -L/usr/lib/aarch64-linux-gnu -L/usr/lib/../lib -L/usr/lib/gcc/aarch64-linux-gnu/10/../../.. CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/aarch64-linux-gnu/10/crtendS.o /usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/crtn.o]
+    arg [/usr/lib/gcc/aarch64-linux-gnu/10/collect2] ==> ignore
+    arg [-plugin] ==> ignore
+    arg [/usr/lib/gcc/aarch64-linux-gnu/10/liblto_plugin.so] ==> ignore
+    arg [-plugin-opt=/usr/lib/gcc/aarch64-linux-gnu/10/lto-wrapper] ==> ignore
+    arg [-plugin-opt=-fresolution=/tmp/cc7p8ewF.res] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+    arg [-plugin-opt=-pass-through=-lc] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+    arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [--hash-style=gnu] ==> ignore
+    arg [--as-needed] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/lib/ld-linux-aarch64.so.1] ==> ignore
+    arg [-X] ==> ignore
+    arg [-EL] ==> ignore
+    arg [-maarch64linux] ==> ignore
+    arg [--fix-cortex-a53-843419] ==> ignore
+    arg [-pie] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_c84d0] ==> ignore
+    arg [/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/Scrt1.o] ==> ignore
+    arg [/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/crti.o] ==> ignore
+    arg [/usr/lib/gcc/aarch64-linux-gnu/10/crtbeginS.o] ==> ignore
+    arg [-L/usr/lib/gcc/aarch64-linux-gnu/10] ==> dir [/usr/lib/gcc/aarch64-linux-gnu/10]
+    arg [-L/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu] ==> dir [/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu]
+    arg [-L/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib] ==> dir [/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib]
+    arg [-L/lib/aarch64-linux-gnu] ==> dir [/lib/aarch64-linux-gnu]
+    arg [-L/lib/../lib] ==> dir [/lib/../lib]
+    arg [-L/usr/lib/aarch64-linux-gnu] ==> dir [/usr/lib/aarch64-linux-gnu]
+    arg [-L/usr/lib/../lib] ==> dir [/usr/lib/../lib]
+    arg [-L/usr/lib/gcc/aarch64-linux-gnu/10/../../..] ==> dir [/usr/lib/gcc/aarch64-linux-gnu/10/../../..]
+    arg [CMakeFiles/cmTC_c84d0.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+    arg [-lstdc++] ==> lib [stdc++]
+    arg [-lm] ==> lib [m]
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-lc] ==> lib [c]
+    arg [-lgcc_s] ==> lib [gcc_s]
+    arg [-lgcc] ==> lib [gcc]
+    arg [/usr/lib/gcc/aarch64-linux-gnu/10/crtendS.o] ==> ignore
+    arg [/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu/crtn.o] ==> ignore
+  collapse library dir [/usr/lib/gcc/aarch64-linux-gnu/10] ==> [/usr/lib/gcc/aarch64-linux-gnu/10]
+  collapse library dir [/usr/lib/gcc/aarch64-linux-gnu/10/../../../aarch64-linux-gnu] ==> [/usr/lib/aarch64-linux-gnu]
+  collapse library dir [/usr/lib/gcc/aarch64-linux-gnu/10/../../../../lib] ==> [/usr/lib]
+  collapse library dir [/lib/aarch64-linux-gnu] ==> [/lib/aarch64-linux-gnu]
+  collapse library dir [/lib/../lib] ==> [/lib]
+  collapse library dir [/usr/lib/aarch64-linux-gnu] ==> [/usr/lib/aarch64-linux-gnu]
+  collapse library dir [/usr/lib/../lib] ==> [/usr/lib]
+  collapse library dir [/usr/lib/gcc/aarch64-linux-gnu/10/../../..] ==> [/usr/lib]
+  implicit libs: [stdc++;m;gcc_s;gcc;c;gcc_s;gcc]
+  implicit dirs: [/usr/lib/gcc/aarch64-linux-gnu/10;/usr/lib/aarch64-linux-gnu;/usr/lib;/lib/aarch64-linux-gnu;/lib]
+  implicit fwks: []
+
+
+Performing C++ SOURCE FILE Test HAVE_ATOMICS_WITHOUT_LIB succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_78abe/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_78abe.dir/build.make CMakeFiles/cmTC_78abe.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_78abe.dir/src.cxx.o
+/usr/bin/c++   -DHAVE_ATOMICS_WITHOUT_LIB  -std=c++11 -o CMakeFiles/cmTC_78abe.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_78abe
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_78abe.dir/link.txt --verbose=1
+/usr/bin/c++  -DHAVE_ATOMICS_WITHOUT_LIB  -std=c++11 CMakeFiles/cmTC_78abe.dir/src.cxx.o -o cmTC_78abe 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+
+#include <atomic>
+#include <cstdint>
+std::atomic<int> x1;
+std::atomic<short> x2;
+std::atomic<char> x3;
+std::atomic<uint64_t> x (0);
+int main() {
+  uint64_t i = x.load(std::memory_order_relaxed);
+  (void)i;
+  ++x3;
+  ++x2;
+  return ++x1;
+}
+
+Performing C SOURCE FILE Test FLAG_SUPPORTED_fuse_ld_gold succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_b5a2f/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_b5a2f.dir/build.make CMakeFiles/cmTC_b5a2f.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_b5a2f.dir/src.c.o
+/usr/bin/cc   -DFLAG_SUPPORTED_fuse_ld_gold -o CMakeFiles/cmTC_b5a2f.dir/src.c.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_b5a2f
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b5a2f.dir/link.txt --verbose=1
+/usr/bin/cc  -DFLAG_SUPPORTED_fuse_ld_gold -fuse-ld=gold CMakeFiles/cmTC_b5a2f.dir/src.c.o -o cmTC_b5a2f 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_fstack_protector_strong succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_76146/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_76146.dir/build.make CMakeFiles/cmTC_76146.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_76146.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_fstack_protector_strong   -fstack-protector-strong -o CMakeFiles/cmTC_76146.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_76146
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_76146.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_fstack_protector_strong CMakeFiles/cmTC_76146.dir/src.cxx.o -o cmTC_76146 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_fno_exceptions succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_85850/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_85850.dir/build.make CMakeFiles/cmTC_85850.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_85850.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_fno_exceptions   -fno-exceptions -o CMakeFiles/cmTC_85850.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_85850
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_85850.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_fno_exceptions CMakeFiles/cmTC_85850.dir/src.cxx.o -o cmTC_85850 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_fsigned_char succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_45ff2/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_45ff2.dir/build.make CMakeFiles/cmTC_45ff2.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_45ff2.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_fsigned_char   -fsigned-char -o CMakeFiles/cmTC_45ff2.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_45ff2
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_45ff2.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_fsigned_char CMakeFiles/cmTC_45ff2.dir/src.cxx.o -o cmTC_45ff2 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wall succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_32829/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_32829.dir/build.make CMakeFiles/cmTC_32829.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_32829.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wall   -Wall -o CMakeFiles/cmTC_32829.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_32829
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_32829.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_Wall CMakeFiles/cmTC_32829.dir/src.cxx.o -o cmTC_32829 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wextra succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_5bccf/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_5bccf.dir/build.make CMakeFiles/cmTC_5bccf.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_5bccf.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wextra   -Wextra -o CMakeFiles/cmTC_5bccf.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_5bccf
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_5bccf.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_Wextra CMakeFiles/cmTC_5bccf.dir/src.cxx.o -o cmTC_5bccf 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wno_psabi succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_c1d1b/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_c1d1b.dir/build.make CMakeFiles/cmTC_c1d1b.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_c1d1b.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wno_psabi   -Wno-psabi -o CMakeFiles/cmTC_c1d1b.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_c1d1b
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_c1d1b.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_Wno_psabi CMakeFiles/cmTC_c1d1b.dir/src.cxx.o -o cmTC_c1d1b 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wno_unused_parameter succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_48562/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_48562.dir/build.make CMakeFiles/cmTC_48562.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_48562.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wno_unused_parameter   -Wno-unused-parameter -o CMakeFiles/cmTC_48562.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_48562
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_48562.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_Wno_unused_parameter CMakeFiles/cmTC_48562.dir/src.cxx.o -o cmTC_48562 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wno_missing_field_initializers succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_1c33f/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_1c33f.dir/build.make CMakeFiles/cmTC_1c33f.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_1c33f.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wno_missing_field_initializers   -Wno-missing-field-initializers -o CMakeFiles/cmTC_1c33f.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_1c33f
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_1c33f.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_Wno_missing_field_initializers CMakeFiles/cmTC_1c33f.dir/src.cxx.o -o cmTC_1c33f 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wno_format succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_62d21/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_62d21.dir/build.make CMakeFiles/cmTC_62d21.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_62d21.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wno_format   -Wno-format -o CMakeFiles/cmTC_62d21.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_62d21
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_62d21.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_Wno_format CMakeFiles/cmTC_62d21.dir/src.cxx.o -o cmTC_62d21 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C SOURCE FILE Test FLAG_SUPPORTED_Wno_implicit_function_declaration succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_841bb/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_841bb.dir/build.make CMakeFiles/cmTC_841bb.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_841bb.dir/src.c.o
+/usr/bin/cc   -DFLAG_SUPPORTED_Wno_implicit_function_declaration   -Wno-implicit-function-declaration -o CMakeFiles/cmTC_841bb.dir/src.c.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_841bb
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_841bb.dir/link.txt --verbose=1
+/usr/bin/cc  -DFLAG_SUPPORTED_Wno_implicit_function_declaration CMakeFiles/cmTC_841bb.dir/src.c.o -o cmTC_841bb 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main(void) { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wno_nullability_completeness succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_7a6ca/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_7a6ca.dir/build.make CMakeFiles/cmTC_7a6ca.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_7a6ca.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wno_nullability_completeness   -Wno-nullability-completeness -o CMakeFiles/cmTC_7a6ca.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_7a6ca
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_7a6ca.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_Wno_nullability_completeness CMakeFiles/cmTC_7a6ca.dir/src.cxx.o -o cmTC_7a6ca 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wduplicated_cond succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_eb7bb/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_eb7bb.dir/build.make CMakeFiles/cmTC_eb7bb.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_eb7bb.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wduplicated_cond   -Wduplicated-cond -o CMakeFiles/cmTC_eb7bb.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_eb7bb
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_eb7bb.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_Wduplicated_cond CMakeFiles/cmTC_eb7bb.dir/src.cxx.o -o cmTC_eb7bb 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wduplicated_branches succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_c5c90/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_c5c90.dir/build.make CMakeFiles/cmTC_c5c90.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_c5c90.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wduplicated_branches   -Wduplicated-branches -o CMakeFiles/cmTC_c5c90.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_c5c90
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_c5c90.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_Wduplicated_branches CMakeFiles/cmTC_c5c90.dir/src.cxx.o -o cmTC_c5c90 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wlogical_op succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_40c0f/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_40c0f.dir/build.make CMakeFiles/cmTC_40c0f.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_40c0f.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wlogical_op   -Wlogical-op -o CMakeFiles/cmTC_40c0f.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_40c0f
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_40c0f.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_Wlogical_op CMakeFiles/cmTC_40c0f.dir/src.cxx.o -o cmTC_40c0f 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wrestrict succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_363c2/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_363c2.dir/build.make CMakeFiles/cmTC_363c2.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_363c2.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wrestrict   -Wrestrict -o CMakeFiles/cmTC_363c2.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_363c2
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_363c2.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_Wrestrict CMakeFiles/cmTC_363c2.dir/src.cxx.o -o cmTC_363c2 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wshadow_global succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_d8623/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_d8623.dir/build.make CMakeFiles/cmTC_d8623.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_d8623.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wshadow_global   -Wshadow=global -o CMakeFiles/cmTC_d8623.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_d8623
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_d8623.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_Wshadow_global CMakeFiles/cmTC_d8623.dir/src.cxx.o -o cmTC_d8623 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wsuggest_override succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_52039/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_52039.dir/build.make CMakeFiles/cmTC_52039.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_52039.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wsuggest_override   -Wsuggest-override -o CMakeFiles/cmTC_52039.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_52039
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_52039.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_Wsuggest_override CMakeFiles/cmTC_52039.dir/src.cxx.o -o cmTC_52039 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C++ SOURCE FILE Test FLAG_SUPPORTED_Wclass_memaccess succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_c5557/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_c5557.dir/build.make CMakeFiles/cmTC_c5557.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_c5557.dir/src.cxx.o
+/usr/bin/c++   -DFLAG_SUPPORTED_Wclass_memaccess   -Wclass-memaccess -o CMakeFiles/cmTC_c5557.dir/src.cxx.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_c5557
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_c5557.dir/link.txt --verbose=1
+/usr/bin/c++  -DFLAG_SUPPORTED_Wclass_memaccess CMakeFiles/cmTC_c5557.dir/src.cxx.o -o cmTC_c5557 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C SOURCE FILE Test FLAG_SUPPORTED_Wno_alloc_size_larger_than succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_34540/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_34540.dir/build.make CMakeFiles/cmTC_34540.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_34540.dir/src.c.o
+/usr/bin/cc   -DFLAG_SUPPORTED_Wno_alloc_size_larger_than -o CMakeFiles/cmTC_34540.dir/src.c.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_34540
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_34540.dir/link.txt --verbose=1
+/usr/bin/cc  -DFLAG_SUPPORTED_Wno_alloc_size_larger_than -Wno-alloc-size-larger-than CMakeFiles/cmTC_34540.dir/src.c.o -o cmTC_34540 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main() { return 0; }
+Performing C SOURCE FILE Test DEFINE_FORTIFY_SOURCE succeeded with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_34730/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_34730.dir/build.make CMakeFiles/cmTC_34730.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_34730.dir/src.c.o
+/usr/bin/cc -D_FORTIFY_SOURCE=2  -DDEFINE_FORTIFY_SOURCE   -O2 -Wp,-Werror -o CMakeFiles/cmTC_34730.dir/src.c.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_34730
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_34730.dir/link.txt --verbose=1
+/usr/bin/cc  -DDEFINE_FORTIFY_SOURCE CMakeFiles/cmTC_34730.dir/src.c.o -o cmTC_34730 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+Source file was:
+int main(void) { return 0; }
+Determining if the include file pthread.h exists passed with the following output:
+Change Dir: /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_b297d/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_b297d.dir/build.make CMakeFiles/cmTC_b297d.dir/build
+gmake[1]: Entering directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_b297d.dir/CheckIncludeFile.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_b297d.dir/CheckIncludeFile.c.o -c /home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_b297d
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b297d.dir/link.txt --verbose=1
+/usr/bin/cc CMakeFiles/cmTC_b297d.dir/CheckIncludeFile.c.o -o cmTC_b297d 
+gmake[1]: Leaving directory '/home/userland/v1/v2/sandbox/CMakeFiles/CMakeTmp'
+
+
+

@@ -148,6 +148,10 @@ public:
 	{
 	};
 
+	struct SCustomFujix : public SCustomItem
+	{
+	};
+
 protected:
 	std::vector<SCustomEntities> m_vEntitiesList;
 	std::vector<SCustomGame> m_vGameList;
@@ -155,48 +159,7 @@ protected:
 	std::vector<SCustomParticle> m_vParticlesList;
 	std::vector<SCustomHud> m_vHudList;
 	std::vector<SCustomExtras> m_vExtrasList;
-
-	bool m_IsInit = false;
-
-	static void LoadEntities(struct SCustomEntities *pEntitiesItem, void *pUser);
-	static int EntitiesScan(const char *pName, int IsDir, int DirType, void *pUser);
-
-	static int GameScan(const char *pName, int IsDir, int DirType, void *pUser);
-	static int EmoticonsScan(const char *pName, int IsDir, int DirType, void *pUser);
-	static int ParticlesScan(const char *pName, int IsDir, int DirType, void *pUser);
-	static int HudScan(const char *pName, int IsDir, int DirType, void *pUser);
-	static int ExtrasScan(const char *pName, int IsDir, int DirType, void *pUser);
-
-	static void ConchainAssetsEntities(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
-	static void ConchainAssetGame(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
-	static void ConchainAssetParticles(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
-	static void ConchainAssetEmoticons(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
-	static void ConchainAssetHud(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
-	static void ConchainAssetExtras(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
-
-	void ClearCustomItems(int CurTab);
-
-	int m_MenuPage;
-	int m_GamePage;
-	int m_Popup;
-	bool m_ShowStart;
-	bool m_MenuActive;
-
-	bool m_DummyNamePlatePreview = false;
-
-	bool m_JoinTutorial = false;
-	bool m_CreateDefaultFavoriteCommunities = false;
-	bool m_ForceRefreshLanPage = false;
-
-	char m_aNextServer[256];
-
-	// images
-	struct CMenuImage
-	{
-		char m_aName[64];
-		IGraphics::CTextureHandle m_OrgTexture;
-		IGraphics::CTextureHandle m_GreyTexture;
-	};
+	std::vector<SCustomFujix> m_vFujixList;
 	std::vector<CMenuImage> m_vMenuImages;
 	static int MenuImageScan(const char *pName, int IsDir, int DirType, void *pUser);
 	const CMenuImage *FindMenuImage(const char *pName);

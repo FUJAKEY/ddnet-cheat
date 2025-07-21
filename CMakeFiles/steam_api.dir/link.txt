@@ -1,0 +1,2 @@
+/usr/bin/ar qc libsteam_api.a CMakeFiles/steam_api.dir/src/steam/steam_api_stub.cpp.o
+/usr/bin/ranlib libsteam_api.a
