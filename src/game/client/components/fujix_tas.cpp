@@ -360,9 +360,104 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     *pInput = Adjusted;
 }
 
+void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
+{
+    if(!g_Config.m_ClFujixBlockFreezeRage || !GameClient()->m_Snap.m_pLocalCharacter)
+        return;
+
+    auto PredictFreeze = [&](const CNetObj_PlayerInput &Input, int HookMode) {
+        CCharacterCore Core = GameClient()->m_PredictedChar;
+        Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
+        const int Steps = 24;
+        for(int i = 0; i < Steps; i++)
+        {
+            CNetObj_PlayerInput Step = Input;
+            if(HookMode == 0)
+                Step.m_Hook = 0;
+            else if(HookMode == 1)
+                Step.m_Hook = 1;
+            else if(HookMode == 2)
+                Step.m_Hook = i == 0 ? 1 : 0;
+            Core.m_Input = Step;
+            Core.Tick(true);
+            Core.Move();
+            Core.Quantize();
+            int Index = Collision()->GetPureMapIndex(Core.m_Pos.x, Core.m_Pos.y);
+            int Tile = Collision()->GetTileIndex(Index);
+            int Front = Collision()->GetFrontTileIndex(Index);
+            bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
+                          Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
+            if(Freeze)
+                return i + 1;
+        }
+        return 0;
+    };
+
+    int FreezeCurrent = PredictFreeze(*pInput, -1);
+    if(!FreezeCurrent)
+        return;
+
+    CNetObj_PlayerInput Adjusted = *pInput;
+
+    int FreezeNoHook = PredictFreeze(Adjusted, 0);
+    int FreezeFullHook = PredictFreeze(Adjusted, 1);
+    int FreezeShortHook = PredictFreeze(Adjusted, 2);
+
+    if(GameClient()->m_PredictedChar.m_Vel.y < 0 && FreezeFullHook &&
+       (!FreezeNoHook || FreezeFullHook <= FreezeNoHook))
+    {
+        if(!FreezeShortHook || FreezeShortHook >= FreezeFullHook)
+            Adjusted.m_Hook = 0;
+    }
+
+    if(FreezeFullHook && (!FreezeNoHook || FreezeFullHook < FreezeNoHook))
+    {
+        if(!(FreezeShortHook && (!FreezeNoHook || FreezeShortHook < FreezeNoHook)))
+            Adjusted.m_Hook = 0;
+    }
+    else if(FreezeNoHook && !FreezeFullHook)
+    {
+        Adjusted.m_Hook = 1;
+        if(GameClient()->m_PredictedChar.m_Vel.y < 0)
+            Adjusted.m_Jump = 1;
+    }
+
+    if(GameClient()->m_PredictedChar.m_Vel.y > 1.0f)
+        Adjusted.m_Jump = 1;
+
+    CCharacter *pLocalChar = GameClient()->m_PredictedWorld.GetCharacterById(GameClient()->m_Snap.m_LocalClientId);
+    bool OnGround = pLocalChar && pLocalChar->IsGrounded();
+
+    if(!OnGround)
+    {
+        float VelX = GameClient()->m_PredictedChar.m_Vel.x;
+        if(VelX > 0.5f)
+            Adjusted.m_Direction = -1;
+        else if(VelX < -0.5f)
+            Adjusted.m_Direction = 1;
+        else
+            Adjusted.m_Direction = 0;
+
+        if(FreezeCurrent <= 5)
+        {
+            if(VelX > 0.1f)
+                Adjusted.m_Direction = -1;
+            else if(VelX < -0.1f)
+                Adjusted.m_Direction = 1;
+        }
+    }
+    else
+        Adjusted.m_Direction = 0;
+
+    *pInput = Adjusted;
+}
+
 void CFujixTas::UpdateFreezeInput(CNetObj_PlayerInput *pInput)
 {
-    BlockFreezeInput(pInput);
+    if(g_Config.m_ClFujixBlockFreezeRage)
+        BlockFreezeRageInput(pInput);
+    else
+        BlockFreezeInput(pInput);
 }
 
 void CFujixTas::StartPlay()
