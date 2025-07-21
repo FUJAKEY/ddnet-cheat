@@ -365,6 +365,17 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     if(!g_Config.m_ClFujixBlockFreezeRage || !GameClient()->m_Snap.m_pLocalCharacter)
         return;
 
+    const CCharacterCore &Pred = GameClient()->m_PredictedChar;
+
+    if(Pred.m_HookState != HOOK_IDLE)
+    {
+        pInput->m_Hook = 1;
+        return;
+    }
+
+    if(pInput->m_Hook)
+        return;
+
     const int Steps = 24;
     auto PredictFreeze = [&](const CNetObj_PlayerInput &Input) {
         CCharacterCore Core = GameClient()->m_PredictedChar;
@@ -395,10 +406,10 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     int BestFreeze = FreezeCurrent;
 
     static const vec2 s_aDirs[] = {
-        vec2(0.f, -1.f), vec2(1.f, -1.f), vec2(-1.f, -1.f), vec2(1.f, 0.f),
-        vec2(-1.f, 0.f), vec2(1.f, 1.f), vec2(-1.f, 1.f)};
+        vec2(0.f, -1.f), vec2(1.f, -1.f), vec2(-1.f, -1.f),
+        vec2(1.f, 0.f), vec2(-1.f, 0.f)};
 
-    const float AimLen = 200.0f;
+    const float AimLen = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookLength;
     for(const vec2 &Dir : s_aDirs)
     {
         vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
