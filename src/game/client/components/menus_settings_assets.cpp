@@ -623,9 +623,8 @@ void CMenus::RenderSettingsCustom(CUIRect MainView)
                                }
                        }
                }
-       }
-       // end of ListBox block
-       }
+}
+// end of ListBox block
 
        if(s_CurCustomTab != ASSETS_TAB_FUJIX)
        {
