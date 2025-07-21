@@ -55,6 +55,10 @@ int m_HookPlayIndex;
 int m_LastHookState;
 int m_LastHookedPlayer;
 
+// Rage autopilot
+bool m_RageActive;
+vec2 m_RageTarget;
+
 // Phantom
 bool m_PhantomActive;
 int m_PhantomTick;
@@ -104,6 +108,7 @@ bool FetchPlaybackInput(CNetObj_PlayerInput *pInput);
 void RecordInput(const CNetObj_PlayerInput *pInput, int Tick);
 void MaybeFinishRecord();
 void BlockFreezeInput(CNetObj_PlayerInput *pInput);
+void BlockFreezeRageInput(CNetObj_PlayerInput *pInput);
 void UpdateFreezeInput(CNetObj_PlayerInput *pInput); // legacy compatibility
 };
 
