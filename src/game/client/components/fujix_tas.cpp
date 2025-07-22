@@ -45,6 +45,7 @@ CFujixTas::CFujixTas()
     m_LastHookedPlayer = -1;
     m_RageHookTicks = 0;
     m_RageMoveDir = 0;
+    m_RageMoveTicks = 0;
 }
 
 int CFujixTas::Sizeof() const
@@ -373,11 +374,18 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         pInput->m_Direction = m_RageMoveDir;
         m_RageHookTicks--;
         if(GameClient()->m_PredictedChar.m_HookState != HOOK_FLYING)
-        {
             m_RageHookTicks = 0;
+        if(m_RageHookTicks == 0 && m_RageMoveTicks == 0)
             m_RageMoveDir = 0;
-        }
         return;
+    }
+
+    if(m_RageMoveTicks > 0)
+    {
+        pInput->m_Direction = m_RageMoveDir;
+        m_RageMoveTicks--;
+        if(m_RageMoveTicks == 0)
+            m_RageMoveDir = 0;
     }
 
     const int Steps = 24;
@@ -406,6 +414,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     if(!FreezeCurrent)
     {
         m_RageMoveDir = 0;
+        m_RageMoveTicks = 0;
         return;
     }
 
@@ -417,6 +426,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     if(pInput->m_Hook)
     {
         m_RageMoveDir = 0;
+        m_RageMoveTicks = 0;
         return;
     }
 
@@ -426,6 +436,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
 
     const float HookLen = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookLength;
     const float AimLen = HookLen;
+    int BestDir = 0;
     for(const vec2 &DirRaw : s_aDirs)
     {
         vec2 Dir = DirRaw;
@@ -439,51 +450,36 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         int Hit = Collision()->IntersectLineTeleHook(Pos, To, &Col, nullptr);
         if(Hit && Hit != TILE_NOHOOK)
         {
-            CNetObj_PlayerInput Test = Base;
-            Test.m_Hook = 1;
-            Test.m_TargetX = (int)(Dir.x * AimLen);
-            Test.m_TargetY = (int)(Dir.y * AimLen);
-            int Freeze = PredictFreeze(Test);
-            if(!Freeze || Freeze > BestFreeze)
+            static const int aMove[] = {-1, 0, 1};
+            for(int Move : aMove)
             {
-                Best = Test;
-                BestFreeze = Freeze ? Freeze : Steps;
-                BestCol = Col;
-                BestWall = Wall;
-                if(!Freeze)
-                    break;
+                CNetObj_PlayerInput Test = Base;
+                Test.m_Hook = 1;
+                Test.m_TargetX = (int)(Dir.x * AimLen);
+                Test.m_TargetY = (int)(Dir.y * AimLen);
+                Test.m_Direction = Move;
+                int Freeze = PredictFreeze(Test);
+                if(!Freeze || Freeze > BestFreeze)
+                {
+                    Best = Test;
+                    BestFreeze = Freeze ? Freeze : Steps;
+                    BestCol = Col;
+                    BestWall = Wall;
+                    BestDir = Move;
+                    if(!Freeze)
+                        break;
+                }
             }
+            if(BestFreeze == Steps)
+                break;
         }
     }
 
     if(BestFreeze > FreezeCurrent)
     {
         *pInput = Best;
-
-        // Evaluate horizontal compensation while the hook is held.
-        static const int aDirs[] = {-1, 0, 1};
-        int MoveDir = 0;
-        int BestDirFreeze = -1;
-        for(int Dir : aDirs)
-        {
-            CNetObj_PlayerInput Test = Best;
-            Test.m_Direction = Dir;
-            int Freeze = PredictFreeze(Test);
-            if(Freeze == 0)
-            {
-                MoveDir = Dir;
-                BestDirFreeze = Steps;
-                break;
-            }
-            if(Freeze > BestDirFreeze)
-            {
-                BestDirFreeze = Freeze;
-                MoveDir = Dir;
-            }
-        }
-
-        m_RageMoveDir = MoveDir;
-        pInput->m_Direction = MoveDir;
+        m_RageMoveDir = BestDir;
+        pInput->m_Direction = BestDir;
 
         float Speed = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookFireSpeed;
         float Dist = distance(GameClient()->m_PredictedChar.m_Pos, BestCol);
@@ -491,6 +487,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         if(Hold < RAGE_HOOK_HOLD_MIN)
             Hold = RAGE_HOOK_HOLD_MIN;
         m_RageHookTicks = Hold;
+        m_RageMoveTicks = Hold + RAGE_MOVE_EXTRA;
     }
 }
 
