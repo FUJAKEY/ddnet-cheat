@@ -44,6 +44,7 @@ CFujixTas::CFujixTas()
     m_LastHookState = HOOK_RETRACTED;
     m_LastHookedPlayer = -1;
     m_RageHookTicks = 0;
+    m_RageMoveDir = 0;
 }
 
 int CFujixTas::Sizeof() const
@@ -369,9 +370,13 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     if(m_RageHookTicks > 0)
     {
         pInput->m_Hook = 1;
+        pInput->m_Direction = m_RageMoveDir;
         m_RageHookTicks--;
         if(GameClient()->m_PredictedChar.m_HookState != HOOK_FLYING)
+        {
             m_RageHookTicks = 0;
+            m_RageMoveDir = 0;
+        }
         return;
     }
 
@@ -399,7 +404,10 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     CNetObj_PlayerInput Base = *pInput;
     int FreezeCurrent = PredictFreeze(Base);
     if(!FreezeCurrent)
+    {
+        m_RageMoveDir = 0;
         return;
+    }
 
     CNetObj_PlayerInput Best = Base;
     int BestFreeze = FreezeCurrent;
@@ -407,7 +415,10 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     bool BestWall = false;
 
     if(pInput->m_Hook)
+    {
+        m_RageMoveDir = 0;
         return;
+    }
 
     static const vec2 s_aDirs[] = {
         vec2(0.f, -1.f), vec2(1.f, -1.f), vec2(-1.f, -1.f), vec2(1.f, 0.f),
@@ -451,8 +462,11 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         if(BestWall)
         {
             vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
-            pInput->m_Direction = Pos.x < BestCol.x ? -1 : 1; // move away from the wall
+            m_RageMoveDir = Pos.x < BestCol.x ? -1 : 1; // move away from the wall
+            pInput->m_Direction = m_RageMoveDir;
         }
+        else
+            m_RageMoveDir = 0;
         float Speed = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookFireSpeed;
         float Dist = distance(GameClient()->m_PredictedChar.m_Pos, BestCol);
         int Hold = (int)ceilf(Dist / Speed) + 1;
