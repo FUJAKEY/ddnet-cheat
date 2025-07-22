@@ -404,6 +404,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     CNetObj_PlayerInput Best = Base;
     int BestFreeze = FreezeCurrent;
     vec2 BestCol = vec2(0.f, 0.f);
+    bool BestWall = false;
 
     if(pInput->m_Hook)
         return;
@@ -414,8 +415,13 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
 
     const float HookLen = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookLength;
     const float AimLen = HookLen;
-    for(const vec2 &Dir : s_aDirs)
+    for(const vec2 &DirRaw : s_aDirs)
     {
+        vec2 Dir = DirRaw;
+        bool Wall = Dir.y == 0.f && Dir.x != 0.f;
+        if(Wall)
+            Dir.y = -0.25f; // aim slightly upward when hooking a wall
+        Dir = normalize(Dir);
         vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
         vec2 To = Pos + Dir * HookLen;
         vec2 Col;
@@ -432,6 +438,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
                 Best = Test;
                 BestFreeze = Freeze ? Freeze : Steps;
                 BestCol = Col;
+                BestWall = Wall;
                 if(!Freeze)
                     break;
             }
@@ -441,6 +448,11 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     if(BestFreeze > FreezeCurrent)
     {
         *pInput = Best;
+        if(BestWall)
+        {
+            vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
+            pInput->m_Direction = Pos.x < BestCol.x ? -1 : 1; // move away from the wall
+        }
         float Speed = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookFireSpeed;
         float Dist = distance(GameClient()->m_PredictedChar.m_Pos, BestCol);
         int Hold = (int)ceilf(Dist / Speed) + 1;
