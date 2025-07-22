@@ -425,15 +425,20 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
 
     if(pInput->m_Hook)
     {
-        m_RageMoveDir = 0;
-        m_RageMoveTicks = 0;
-        return;
+        int Freeze = PredictFreeze(Base);
+        if(!Freeze)
+        {
+            m_RageMoveDir = 0;
+            m_RageMoveTicks = 0;
+            return;
+        }
     }
 
     std::vector<vec2> vDirs = {
         vec2(0.f, -1.f), vec2(1.f, -1.f), vec2(-1.f, -1.f), vec2(0.5f, -1.f),
         vec2(-0.5f, -1.f), vec2(0.75f, -1.f), vec2(-0.75f, -1.f),
-        vec2(1.f, 0.f), vec2(-1.f, 0.f)};
+        vec2(1.f, 0.f),  vec2(-1.f, 0.f),
+        vec2(0.f, 1.f),  vec2(1.f, 1.f),  vec2(-1.f, 1.f)};
     int WantedDir = clamp(Base.m_Direction, -1, 1);
     if(WantedDir)
     {
@@ -486,7 +491,13 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         vec2 To = Pos + Dir * HookLen;
         vec2 Col;
         int Hit = Collision()->IntersectLineTeleHook(Pos, To, &Col, nullptr);
-        if(Hit && Hit != TILE_NOHOOK)
+        int ColIndex = Collision()->GetPureMapIndex(Col.x, Col.y);
+        int ColTile = Collision()->GetTileIndex(ColIndex);
+        int ColFront = Collision()->GetFrontTileIndex(ColIndex);
+        bool ColFreeze = ColTile == TILE_FREEZE || ColTile == TILE_DFREEZE ||
+                         ColTile == TILE_LFREEZE || ColFront == TILE_FREEZE ||
+                         ColFront == TILE_DFREEZE || ColFront == TILE_LFREEZE;
+        if(Hit && Hit != TILE_NOHOOK && !ColFreeze)
         {
             int aMove[3];
             if(WantedDir)
@@ -504,7 +515,11 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
             for(int Move : aMove)
             {
                 float Dist = distance(Pos, Col);
-                int Hold = (int)ceilf(Dist / HookSpeed) + 1;
+                int Hold;
+                if(DirRaw.y > 0.f)
+                    Hold = RAGE_HOOK_DOWN_HOLD;
+                else
+                    Hold = (int)ceilf(Dist / HookSpeed) + 1;
                 if(Hold < RAGE_HOOK_HOLD_MIN)
                     Hold = RAGE_HOOK_HOLD_MIN;
                 else if(Hold > RAGE_HOOK_HOLD_MAX)
