@@ -12,6 +12,7 @@
 #include <game/client/components/players.h>
 #include <game/client/prediction/entities/character.h>
 #include <base/system.h>
+#include <vector>
 #include <cstdlib>
 #include <ctime>
 #include <cmath>
@@ -430,14 +431,18 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         return;
     }
 
-    static const vec2 s_aDirs[] = {
-        vec2(0.f, -1.f), vec2(1.f, -1.f), vec2(-1.f, -1.f), vec2(1.f, 0.f),
-        vec2(-1.f, 0.f)};
+    std::vector<vec2> vDirs = {vec2(0.f, -1.f), vec2(1.f, -1.f), vec2(-1.f, -1.f), vec2(1.f, 0.f), vec2(-1.f, 0.f)};
+    int WantedDir = clamp(Base.m_Direction, -1, 1);
+    if(WantedDir)
+    {
+        vDirs.push_back(normalize(vec2(WantedDir * 0.25f, -1.f)));
+        vDirs.push_back(normalize(vec2(WantedDir * 0.5f, -1.f)));
+    }
 
     const float HookLen = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookLength;
     const float AimLen = HookLen;
     int BestDir = 0;
-    for(const vec2 &DirRaw : s_aDirs)
+    for(const vec2 &DirRaw : vDirs)
     {
         vec2 Dir = DirRaw;
         bool Wall = Dir.y == 0.f && Dir.x != 0.f;
@@ -450,7 +455,19 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         int Hit = Collision()->IntersectLineTeleHook(Pos, To, &Col, nullptr);
         if(Hit && Hit != TILE_NOHOOK)
         {
-            static const int aMove[] = {-1, 0, 1};
+            int aMove[3];
+            if(WantedDir)
+            {
+                aMove[0] = WantedDir;
+                aMove[1] = 0;
+                aMove[2] = -WantedDir;
+            }
+            else
+            {
+                aMove[0] = 0;
+                aMove[1] = 1;
+                aMove[2] = -1;
+            }
             for(int Move : aMove)
             {
                 CNetObj_PlayerInput Test = Base;
@@ -486,6 +503,8 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         int Hold = (int)ceilf(Dist / Speed) + 1;
         if(Hold < RAGE_HOOK_HOLD_MIN)
             Hold = RAGE_HOOK_HOLD_MIN;
+        else if(Hold > RAGE_HOOK_HOLD_MAX)
+            Hold = RAGE_HOOK_HOLD_MAX;
         m_RageHookTicks = Hold;
         m_RageMoveTicks = Hold + RAGE_MOVE_EXTRA;
     }
