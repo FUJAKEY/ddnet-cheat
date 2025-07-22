@@ -459,14 +459,32 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     if(BestFreeze > FreezeCurrent)
     {
         *pInput = Best;
-        if(BestWall)
+
+        // Evaluate horizontal compensation while the hook is held.
+        static const int aDirs[] = {-1, 0, 1};
+        int MoveDir = 0;
+        int BestDirFreeze = -1;
+        for(int Dir : aDirs)
         {
-            vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
-            m_RageMoveDir = Pos.x < BestCol.x ? -1 : 1; // move away from the wall
-            pInput->m_Direction = m_RageMoveDir;
+            CNetObj_PlayerInput Test = Best;
+            Test.m_Direction = Dir;
+            int Freeze = PredictFreeze(Test);
+            if(Freeze == 0)
+            {
+                MoveDir = Dir;
+                BestDirFreeze = Steps;
+                break;
+            }
+            if(Freeze > BestDirFreeze)
+            {
+                BestDirFreeze = Freeze;
+                MoveDir = Dir;
+            }
         }
-        else
-            m_RageMoveDir = 0;
+
+        m_RageMoveDir = MoveDir;
+        pInput->m_Direction = MoveDir;
+
         float Speed = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookFireSpeed;
         float Dist = distance(GameClient()->m_PredictedChar.m_Pos, BestCol);
         int Hold = (int)ceilf(Dist / Speed) + 1;
