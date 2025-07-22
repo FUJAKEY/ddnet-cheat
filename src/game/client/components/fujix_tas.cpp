@@ -370,6 +370,8 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     {
         pInput->m_Hook = 1;
         m_RageHookTicks--;
+        if(GameClient()->m_PredictedChar.m_HookState != HOOK_FLYING)
+            m_RageHookTicks = 0;
         return;
     }
 
