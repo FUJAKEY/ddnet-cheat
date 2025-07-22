@@ -373,6 +373,13 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         return;
     }
 
+    int HookState = GameClient()->m_PredictedChar.m_HookState;
+    if(HookState == HOOK_FLYING || HookState == HOOK_GRABBED)
+    {
+        pInput->m_Hook = 1;
+        return;
+    }
+
     const int Steps = 24;
     auto PredictFreeze = [&](const CNetObj_PlayerInput &Input) {
         CCharacterCore Core = GameClient()->m_PredictedChar;
