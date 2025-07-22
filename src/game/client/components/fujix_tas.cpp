@@ -422,7 +422,6 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     CNetObj_PlayerInput Best = Base;
     int BestFreeze = FreezeCurrent;
     vec2 BestCol = vec2(0.f, 0.f);
-    bool BestWall = false;
 
     if(pInput->m_Hook)
     {
@@ -445,7 +444,37 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
 
     const float HookLen = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookLength;
     const float AimLen = HookLen;
+    float HookSpeed = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookFireSpeed;
+
+    auto PredictFreezeSeq = [&](const vec2 &Dir, int Move, int Hold) {
+        CCharacterCore Core = GameClient()->m_PredictedChar;
+        Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
+        for(int i = 0; i < Steps; i++)
+        {
+            CNetObj_PlayerInput Step = Base;
+            Step.m_Direction = Move;
+            if(i == 0)
+            {
+                Step.m_TargetX = (int)(Dir.x * AimLen);
+                Step.m_TargetY = (int)(Dir.y * AimLen);
+            }
+            Step.m_Hook = i < Hold ? 1 : 0;
+            Core.m_Input = Step;
+            Core.Tick(true);
+            Core.Move();
+            Core.Quantize();
+            int Index = Collision()->GetPureMapIndex(Core.m_Pos.x, Core.m_Pos.y);
+            int Tile = Collision()->GetTileIndex(Index);
+            int Front = Collision()->GetFrontTileIndex(Index);
+            bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
+                          Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
+            if(Freeze)
+                return i + 1;
+        }
+        return 0;
+    };
     int BestDir = 0;
+    int BestHold = 0;
     for(const vec2 &DirRaw : vDirs)
     {
         vec2 Dir = DirRaw;
@@ -474,21 +503,31 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
             }
             for(int Move : aMove)
             {
-                CNetObj_PlayerInput Test = Base;
-                Test.m_Hook = 1;
-                Test.m_TargetX = (int)(Dir.x * AimLen);
-                Test.m_TargetY = (int)(Dir.y * AimLen);
-                Test.m_Direction = Move;
-                int Freeze = PredictFreeze(Test);
-                if(Freeze && Freeze <= RAGE_HOOK_HOLD_MIN)
+                float Dist = distance(Pos, Col);
+                int Hold = (int)ceilf(Dist / HookSpeed) + 1;
+                if(Hold < RAGE_HOOK_HOLD_MIN)
+                    Hold = RAGE_HOOK_HOLD_MIN;
+                else if(Hold > RAGE_HOOK_HOLD_MAX)
+                    Hold = RAGE_HOOK_HOLD_MAX;
+                int Freeze = PredictFreezeSeq(Dir, Move, Hold);
+                if(Freeze && Freeze <= Hold && Hold > 1)
+                {
+                    Hold = Freeze - 1;
+                    Freeze = PredictFreezeSeq(Dir, Move, Hold);
+                }
+                if(Freeze && Freeze <= Hold)
                     continue;
                 if(!Freeze || Freeze > BestFreeze)
                 {
-                    Best = Test;
+                    Best = Base;
+                    Best.m_Hook = 1;
+                    Best.m_TargetX = (int)(Dir.x * AimLen);
+                    Best.m_TargetY = (int)(Dir.y * AimLen);
+                    Best.m_Direction = Move;
                     BestFreeze = Freeze ? Freeze : Steps;
                     BestCol = Col;
-                    BestWall = Wall;
                     BestDir = Move;
+                    BestHold = Hold;
                     if(!Freeze)
                         break;
                 }
@@ -504,17 +543,8 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         m_RageMoveDir = BestDir;
         pInput->m_Direction = BestDir;
 
-        float Speed = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookFireSpeed;
-        float Dist = distance(GameClient()->m_PredictedChar.m_Pos, BestCol);
-        int Hold = (int)ceilf(Dist / Speed) + 1;
-        if(BestFreeze && BestFreeze < Hold)
-            Hold = BestFreeze - 1;
-        if(Hold < RAGE_HOOK_HOLD_MIN)
-            Hold = RAGE_HOOK_HOLD_MIN;
-        else if(Hold > RAGE_HOOK_HOLD_MAX)
-            Hold = RAGE_HOOK_HOLD_MAX;
-        m_RageHookTicks = Hold;
-        m_RageMoveTicks = Hold + RAGE_MOVE_EXTRA;
+        m_RageHookTicks = BestHold;
+        m_RageMoveTicks = BestHold + RAGE_MOVE_EXTRA;
     }
 }
 
