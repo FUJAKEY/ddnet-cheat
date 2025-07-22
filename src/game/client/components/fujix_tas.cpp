@@ -389,7 +389,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
             m_RageMoveDir = 0;
     }
 
-    const int Steps = 24;
+    const int Steps = RAGE_PREDICT_STEPS;
     auto PredictFreeze = [&](const CNetObj_PlayerInput &Input) {
         CCharacterCore Core = GameClient()->m_PredictedChar;
         Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
@@ -431,12 +431,16 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         return;
     }
 
-    std::vector<vec2> vDirs = {vec2(0.f, -1.f), vec2(1.f, -1.f), vec2(-1.f, -1.f), vec2(1.f, 0.f), vec2(-1.f, 0.f)};
+    std::vector<vec2> vDirs = {
+        vec2(0.f, -1.f), vec2(1.f, -1.f), vec2(-1.f, -1.f), vec2(0.5f, -1.f),
+        vec2(-0.5f, -1.f), vec2(0.75f, -1.f), vec2(-0.75f, -1.f),
+        vec2(1.f, 0.f), vec2(-1.f, 0.f)};
     int WantedDir = clamp(Base.m_Direction, -1, 1);
     if(WantedDir)
     {
         vDirs.push_back(normalize(vec2(WantedDir * 0.25f, -1.f)));
         vDirs.push_back(normalize(vec2(WantedDir * 0.5f, -1.f)));
+        vDirs.push_back(normalize(vec2(WantedDir * 0.75f, -1.f)));
     }
 
     const float HookLen = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookLength;
@@ -476,6 +480,8 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
                 Test.m_TargetY = (int)(Dir.y * AimLen);
                 Test.m_Direction = Move;
                 int Freeze = PredictFreeze(Test);
+                if(Freeze && Freeze <= RAGE_HOOK_HOLD_MIN)
+                    continue;
                 if(!Freeze || Freeze > BestFreeze)
                 {
                     Best = Test;
@@ -501,6 +507,8 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         float Speed = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookFireSpeed;
         float Dist = distance(GameClient()->m_PredictedChar.m_Pos, BestCol);
         int Hold = (int)ceilf(Dist / Speed) + 1;
+        if(BestFreeze && BestFreeze < Hold)
+            Hold = BestFreeze - 1;
         if(Hold < RAGE_HOOK_HOLD_MIN)
             Hold = RAGE_HOOK_HOLD_MIN;
         else if(Hold > RAGE_HOOK_HOLD_MAX)
