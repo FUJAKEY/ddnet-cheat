@@ -66,7 +66,8 @@ int m_PhantomStep;
 CNetObj_PlayerInput m_PhantomInput;
 int m_PhantomPlayIndex;
 int m_RageHookTicks;
-static const int RAGE_HOOK_HOLD = 6;
+static const int RAGE_HOOK_HOLD_MIN = 6;
+static const float RAGE_HOOK_SIDE_OFFSET = 32.f;
 
 void GetPath(char *pBuf, int Size) const;
 void GetHookPath(char *pBuf, int Size) const;
