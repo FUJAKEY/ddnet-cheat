@@ -432,6 +432,8 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
             Test.m_Hook = 1;
             Test.m_TargetX = (int)(Dir.x * AimLen);
             Test.m_TargetY = (int)(Dir.y * AimLen);
+            if(Wall)
+                Test.m_Direction = Pos.x < Col.x ? -1 : 1; // predict moving away from the wall
             int Freeze = PredictFreeze(Test);
             if(!Freeze || Freeze > BestFreeze)
             {
