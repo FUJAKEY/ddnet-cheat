@@ -65,6 +65,8 @@ CTeeRenderInfo m_PhantomRenderInfo;
 int m_PhantomStep;
 CNetObj_PlayerInput m_PhantomInput;
 int m_PhantomPlayIndex;
+int m_RageHookTicks;
+static const int RAGE_HOOK_HOLD = 15;
 
 void GetPath(char *pBuf, int Size) const;
 void GetHookPath(char *pBuf, int Size) const;
@@ -105,6 +107,7 @@ bool FetchPlaybackInput(CNetObj_PlayerInput *pInput);
 void RecordInput(const CNetObj_PlayerInput *pInput, int Tick);
 void MaybeFinishRecord();
 void BlockFreezeInput(CNetObj_PlayerInput *pInput);
+void BlockFreezeRageInput(CNetObj_PlayerInput *pInput);
 void UpdateFreezeInput(CNetObj_PlayerInput *pInput); // legacy compatibility
 };
 
