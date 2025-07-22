@@ -370,6 +370,8 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     {
         pInput->m_Hook = 1;
         m_RageHookTicks--;
+        if(GameClient()->m_PredictedChar.m_HookState != HOOK_FLYING)
+            m_RageHookTicks = 0;
         return;
     }
 
@@ -401,6 +403,8 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
 
     CNetObj_PlayerInput Best = Base;
     int BestFreeze = FreezeCurrent;
+    vec2 BestCol = vec2(0.f, 0.f);
+    vec2 BestDir = vec2(0.f, 0.f);
 
     if(pInput->m_Hook)
         return;
@@ -414,20 +418,26 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     for(const vec2 &Dir : s_aDirs)
     {
         vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
-        vec2 To = Pos + Dir * HookLen;
+        vec2 AimVec = Dir * HookLen;
+        if(Dir.y == 0.f && Dir.x != 0.f)
+            AimVec.y -= RAGE_HOOK_SIDE_OFFSET;
+        vec2 DirAim = normalize(AimVec);
+        vec2 To = Pos + DirAim * HookLen;
         vec2 Col;
         int Hit = Collision()->IntersectLineTeleHook(Pos, To, &Col, nullptr);
         if(Hit && Hit != TILE_NOHOOK)
         {
             CNetObj_PlayerInput Test = Base;
             Test.m_Hook = 1;
-            Test.m_TargetX = (int)(Dir.x * AimLen);
-            Test.m_TargetY = (int)(Dir.y * AimLen);
+            Test.m_TargetX = (int)(DirAim.x * AimLen);
+            Test.m_TargetY = (int)(DirAim.y * AimLen);
             int Freeze = PredictFreeze(Test);
             if(!Freeze || Freeze > BestFreeze)
             {
                 Best = Test;
                 BestFreeze = Freeze ? Freeze : Steps;
+                BestCol = Col;
+                BestDir = Dir;
                 if(!Freeze)
                     break;
             }
@@ -437,7 +447,17 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     if(BestFreeze > FreezeCurrent)
     {
         *pInput = Best;
-        m_RageHookTicks = RAGE_HOOK_HOLD;
+        float Speed = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookFireSpeed;
+        float Dist = distance(GameClient()->m_PredictedChar.m_Pos, BestCol);
+        int Hold = (int)ceilf(Dist / Speed) + 1;
+        if(Hold < RAGE_HOOK_HOLD_MIN)
+            Hold = RAGE_HOOK_HOLD_MIN;
+        m_RageHookTicks = Hold;
+
+        if(BestDir.x > 0.0f)
+            pInput->m_Direction = -1;
+        else if(BestDir.x < 0.0f)
+            pInput->m_Direction = 1;
     }
 }
 
