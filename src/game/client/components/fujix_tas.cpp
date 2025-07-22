@@ -401,6 +401,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
 
     CNetObj_PlayerInput Best = Base;
     int BestFreeze = FreezeCurrent;
+    vec2 BestCol = vec2(0.f, 0.f);
 
     if(pInput->m_Hook)
         return;
@@ -428,6 +429,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
             {
                 Best = Test;
                 BestFreeze = Freeze ? Freeze : Steps;
+                BestCol = Col;
                 if(!Freeze)
                     break;
             }
@@ -437,7 +439,12 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     if(BestFreeze > FreezeCurrent)
     {
         *pInput = Best;
-        m_RageHookTicks = RAGE_HOOK_HOLD;
+        float Speed = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookFireSpeed;
+        float Dist = distance(GameClient()->m_PredictedChar.m_Pos, BestCol);
+        int Hold = (int)ceilf(Dist / Speed) + 1;
+        if(Hold < RAGE_HOOK_HOLD_MIN)
+            Hold = RAGE_HOOK_HOLD_MIN;
+        m_RageHookTicks = Hold;
     }
 }
 
