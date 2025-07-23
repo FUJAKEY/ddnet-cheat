@@ -279,7 +279,7 @@ void CFujixTas::MaybeFinishRecord()
 bool CFujixTas::NearFreeze(vec2 Pos)
 {
     const float Half = CCharacterCore::PhysicalSize() / 2.f;
-    const float ExtraMargin = 4.0f;
+    const float ExtraMargin = RAGE_NEAR_MARGIN;
     for(float x = -Half - ExtraMargin; x <= Half + ExtraMargin; x += 4.0f)
     {
         for(float y = -Half - ExtraMargin; y <= Half + ExtraMargin; y += 4.0f)
@@ -471,9 +471,8 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     int WantedDir = clamp(Base.m_Direction, -1, 1);
     if(WantedDir)
     {
-        vDirs.push_back(normalize(vec2(WantedDir * 0.25f, -1.f)));
-        vDirs.push_back(normalize(vec2(WantedDir * 0.5f, -1.f)));
-        vDirs.push_back(normalize(vec2(WantedDir * 0.75f, -1.f)));
+        for(float f = 0.2f; f <= 1.0f; f += 0.2f)
+            vDirs.push_back(normalize(vec2(WantedDir * f, -1.f)));
     }
 
     const float HookLen = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookLength;
@@ -554,7 +553,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
                     HoldBase = RAGE_HOOK_HOLD_MIN;
                 else if(HoldBase > RAGE_HOOK_HOLD_MAX)
                     HoldBase = RAGE_HOOK_HOLD_MAX;
-                for(int Offset : {-2, 0, 2})
+                for(int Offset : {-3, -1, 0, 1, 3})
                 {
                     if(ScenarioCount >= RAGE_SCENARIO_COUNT)
                         break;

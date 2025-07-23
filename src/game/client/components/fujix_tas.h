@@ -71,13 +71,13 @@ int m_RageMoveTicks;
 static constexpr int RAGE_HOOK_HOLD_MIN = 6;
 static constexpr int RAGE_HOOK_HOLD_MAX = 20;
 static constexpr int RAGE_MOVE_EXTRA = 4;
-static constexpr int RAGE_PREDICT_STEPS = 24;
+static constexpr int RAGE_PREDICT_STEPS = 30;
 static constexpr int RAGE_HOOK_DOWN_HOLD = 3;
-static constexpr float RAGE_NEAR_MARGIN = 2.f;
+static constexpr float RAGE_NEAR_MARGIN = 3.f;
 static constexpr int RAGE_EXTRA_AFTER_HOLD = 10;
 static constexpr int RAGE_RELEASE_SAFE = 6;
-static constexpr int RAGE_DIR_TOTAL = 24;
-static constexpr int RAGE_SCENARIO_COUNT = 20;
+static constexpr int RAGE_DIR_TOTAL = 32;
+static constexpr int RAGE_SCENARIO_COUNT = 100;
 
 bool NearFreeze(vec2 Pos);
 void EmergencyFreezeStop(CNetObj_PlayerInput *pInput);
