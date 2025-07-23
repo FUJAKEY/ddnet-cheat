@@ -68,12 +68,12 @@ int m_PhantomPlayIndex;
 int m_RageHookTicks;
 int m_RageMoveDir;
 int m_RageMoveTicks;
-static const int RAGE_HOOK_HOLD_MIN = 6;
-static const int RAGE_HOOK_HOLD_MAX = 20;
-static const int RAGE_MOVE_EXTRA = 4;
-static const int RAGE_PREDICT_STEPS = 25;
-static const int RAGE_HOOK_DOWN_HOLD = 3;
-static const float RAGE_NEAR_MARGIN = 4.f;
+static constexpr int RAGE_HOOK_HOLD_MIN = 6;
+static constexpr int RAGE_HOOK_HOLD_MAX = 20;
+static constexpr int RAGE_MOVE_EXTRA = 4;
+static constexpr int RAGE_PREDICT_STEPS = 25;
+static constexpr int RAGE_HOOK_DOWN_HOLD = 3;
+static constexpr float RAGE_NEAR_MARGIN = 4.f;
 
 void GetPath(char *pBuf, int Size) const;
 void GetHookPath(char *pBuf, int Size) const;
