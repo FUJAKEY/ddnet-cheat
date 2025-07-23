@@ -507,8 +507,11 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     };
     int BestDir = 0;
     int BestHold = 0;
+    int ScenarioCount = 0;
     for(const vec2 &DirRaw : vDirs)
     {
+        if(ScenarioCount >= RAGE_SCENARIO_COUNT)
+            break;
         vec2 Dir = DirRaw;
         bool Wall = Dir.y == 0.f && Dir.x != 0.f;
         if(Wall)
@@ -542,43 +545,54 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
             for(int Move : aMove)
             {
                 float Dist = distance(Pos, Col);
-                int Hold;
+                int HoldBase;
                 if(DirRaw.y > 0.f)
-                    Hold = RAGE_HOOK_DOWN_HOLD;
+                    HoldBase = RAGE_HOOK_DOWN_HOLD;
                 else
-                    Hold = (int)ceilf(Dist / HookSpeed) + 1;
-                if(Hold < RAGE_HOOK_HOLD_MIN)
-                    Hold = RAGE_HOOK_HOLD_MIN;
-                else if(Hold > RAGE_HOOK_HOLD_MAX)
-                    Hold = RAGE_HOOK_HOLD_MAX;
-                int Freeze = PredictFreezeSeq(Dir, Move, Hold);
-                if(Freeze && Freeze <= Hold && Hold > 1)
+                    HoldBase = (int)ceilf(Dist / HookSpeed) + 1;
+                if(HoldBase < RAGE_HOOK_HOLD_MIN)
+                    HoldBase = RAGE_HOOK_HOLD_MIN;
+                else if(HoldBase > RAGE_HOOK_HOLD_MAX)
+                    HoldBase = RAGE_HOOK_HOLD_MAX;
+                for(int Offset : {-2, 0, 2})
                 {
-                    Hold = Freeze - 1;
-                    Freeze = PredictFreezeSeq(Dir, Move, Hold);
-                }
-                if(Freeze && Freeze <= Hold)
-                    continue;
-                if(Freeze && Freeze <= Hold + RAGE_RELEASE_SAFE)
-                    continue;
-                if(!Freeze || Freeze > BestFreeze)
-                {
-                    Best = Base;
-                    Best.m_Hook = 1;
-                    Best.m_TargetX = (int)(Dir.x * AimLen);
-                    Best.m_TargetY = (int)(Dir.y * AimLen);
-                    Best.m_Direction = Move;
-                    BestFreeze = Freeze ? Freeze : Steps;
-                    BestCol = Col;
-                    BestDir = Move;
-                    BestHold = Hold;
-                    if(!Freeze)
+                    if(ScenarioCount >= RAGE_SCENARIO_COUNT)
                         break;
+                    int Hold = clamp(HoldBase + Offset, RAGE_HOOK_HOLD_MIN, RAGE_HOOK_HOLD_MAX);
+                    int Freeze = PredictFreezeSeq(Dir, Move, Hold);
+                    ScenarioCount++;
+                    if(Freeze && Freeze <= Hold && Hold > 1)
+                    {
+                        Hold = Freeze - 1;
+                        Freeze = PredictFreezeSeq(Dir, Move, Hold);
+                    }
+                    if(Freeze && Freeze <= Hold)
+                        continue;
+                    if(Freeze && Freeze <= Hold + RAGE_RELEASE_SAFE)
+                        continue;
+                    if(!Freeze || Freeze > BestFreeze)
+                    {
+                        Best = Base;
+                        Best.m_Hook = 1;
+                        Best.m_TargetX = (int)(Dir.x * AimLen);
+                        Best.m_TargetY = (int)(Dir.y * AimLen);
+                        Best.m_Direction = Move;
+                        BestFreeze = Freeze ? Freeze : Steps;
+                        BestCol = Col;
+                        BestDir = Move;
+                        BestHold = Hold;
+                        if(!Freeze)
+                            break;
+                    }
                 }
+                if(ScenarioCount >= RAGE_SCENARIO_COUNT)
+                    break;
             }
-            if(BestFreeze == Steps)
+            if(BestFreeze == Steps || ScenarioCount >= RAGE_SCENARIO_COUNT)
                 break;
         }
+        if(ScenarioCount >= RAGE_SCENARIO_COUNT)
+            break;
     }
 
     if(BestFreeze > FreezeCurrent)
@@ -594,9 +608,11 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
 
 void CFujixTas::UpdateFreezeInput(CNetObj_PlayerInput *pInput)
 {
-    EmergencyFreezeStop(pInput);
     if(g_Config.m_ClFujixBlockFreezeRage)
+    {
+        EmergencyFreezeStop(pInput);
         BlockFreezeRageInput(pInput);
+    }
     else
         BlockFreezeInput(pInput);
 }

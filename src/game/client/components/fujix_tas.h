@@ -77,6 +77,7 @@ static constexpr float RAGE_NEAR_MARGIN = 2.f;
 static constexpr int RAGE_EXTRA_AFTER_HOLD = 10;
 static constexpr int RAGE_RELEASE_SAFE = 6;
 static constexpr int RAGE_DIR_TOTAL = 24;
+static constexpr int RAGE_SCENARIO_COUNT = 20;
 
 bool NearFreeze(vec2 Pos);
 void EmergencyFreezeStop(CNetObj_PlayerInput *pInput);
