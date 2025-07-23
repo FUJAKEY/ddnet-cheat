@@ -73,7 +73,8 @@ static constexpr int RAGE_HOOK_HOLD_MAX = 20;
 static constexpr int RAGE_MOVE_EXTRA = 4;
 static constexpr int RAGE_PREDICT_STEPS = 25;
 static constexpr int RAGE_HOOK_DOWN_HOLD = 3;
-static constexpr float RAGE_NEAR_MARGIN = 4.f;
+static constexpr float RAGE_NEAR_MARGIN = 6.f;
+static constexpr int RAGE_EXTRA_AFTER_HOLD = 10;
 
 void GetPath(char *pBuf, int Size) const;
 void GetHookPath(char *pBuf, int Size) const;
