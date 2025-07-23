@@ -424,6 +424,18 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         }
         return false;
     };
+    auto PathNearFreeze = [&](vec2 From, vec2 To) {
+        float Dist = distance(From, To);
+        int StepsLine = maximum(1, (int)(Dist / RAGE_PATH_STEP));
+        for(int i = 0; i <= StepsLine; i++)
+        {
+            float a = i / (float)StepsLine;
+            vec2 Pos = mix(From, To, a);
+            if(NearFreeze(Pos))
+                return true;
+        }
+        return false;
+    };
     auto PredictFreeze = [&](const CNetObj_PlayerInput &Input) {
         CCharacterCore Core = GameClient()->m_PredictedChar;
         Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
@@ -526,7 +538,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         bool ColFreeze = ColTile == TILE_FREEZE || ColTile == TILE_DFREEZE ||
                          ColTile == TILE_LFREEZE || ColFront == TILE_FREEZE ||
                          ColFront == TILE_DFREEZE || ColFront == TILE_LFREEZE;
-        if(Hit && Hit != TILE_NOHOOK && !ColFreeze)
+        if(Hit && Hit != TILE_NOHOOK && !ColFreeze && !PathNearFreeze(Pos, Col))
         {
             int aMove[3];
             if(WantedDir)
