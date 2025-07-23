@@ -463,11 +463,13 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         }
     }
 
-    std::vector<vec2> vDirs = {
-        vec2(0.f, -1.f), vec2(1.f, -1.f), vec2(-1.f, -1.f), vec2(0.5f, -1.f),
-        vec2(-0.5f, -1.f), vec2(0.75f, -1.f), vec2(-0.75f, -1.f),
-        vec2(1.f, 0.f),  vec2(-1.f, 0.f),
-        vec2(0.f, 1.f),  vec2(1.f, 1.f),  vec2(-1.f, 1.f)};
+    std::vector<vec2> vDirs;
+    vDirs.reserve(RAGE_DIR_TOTAL + 6);
+    for(int i = 0; i < RAGE_DIR_TOTAL; i++)
+    {
+        float a = 2.f * pi * i / RAGE_DIR_TOTAL;
+        vDirs.push_back(vec2(cosf(a), sinf(a)));
+    }
     int WantedDir = clamp(Base.m_Direction, -1, 1);
     if(WantedDir)
     {
