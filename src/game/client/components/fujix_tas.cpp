@@ -12,6 +12,8 @@
 #include <game/client/components/players.h>
 #include <game/client/prediction/entities/character.h>
 #include <base/system.h>
+#include <array>
+#include <vector>
 #include <cstdlib>
 #include <ctime>
 #include <cmath>
@@ -44,6 +46,8 @@ CFujixTas::CFujixTas()
     m_LastHookState = HOOK_RETRACTED;
     m_LastHookedPlayer = -1;
     m_RageHookTicks = 0;
+    m_RageMoveDir = 0;
+    m_RageMoveTicks = 0;
 }
 
 int CFujixTas::Sizeof() const
@@ -272,6 +276,42 @@ void CFujixTas::MaybeFinishRecord()
         FinishRecord();
 }
 
+bool CFujixTas::NearFreeze(vec2 Pos)
+{
+    const float Half = CCharacterCore::PhysicalSize() / 2.f;
+    const float ExtraMargin = 4.0f;
+    for(float x = -Half - ExtraMargin; x <= Half + ExtraMargin; x += 4.0f)
+    {
+        for(float y = -Half - ExtraMargin; y <= Half + ExtraMargin; y += 4.0f)
+        {
+            int Idx = Collision()->GetPureMapIndex(Pos.x + x, Pos.y + y);
+            int Tile = Collision()->GetTileIndex(Idx);
+            int Front = Collision()->GetFrontTileIndex(Idx);
+            bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
+                          Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
+            if(Freeze)
+                return true;
+        }
+    }
+    return false;
+}
+
+void CFujixTas::EmergencyFreezeStop(CNetObj_PlayerInput *pInput)
+{
+    vec2 Vel = GameClient()->m_PredictedChar.m_Vel;
+    vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
+    vec2 NextPos = Pos + Vel * 0.5f;
+    if(NearFreeze(NextPos))
+    {
+        pInput->m_Direction = 0;
+        pInput->m_Jump = 0;
+        if(Vel.y < -5.0f)
+            pInput->m_Hook = 0;
+        if(fabsf(Vel.x) > 0.1f)
+            pInput->m_Direction = Vel.x > 0 ? -1 : 1;
+    }
+}
+
 void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
 {
     if(!g_Config.m_ClFujixBlockFreezeLegit || !GameClient()->m_Snap.m_pLocalCharacter)
@@ -280,7 +320,7 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     auto PredictFreeze = [&](const CNetObj_PlayerInput &Input, int HookMode) {
         CCharacterCore Core = GameClient()->m_PredictedChar;
         Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
-        const int Steps = 12;
+        const int Steps = RAGE_PREDICT_STEPS;
         for(int i = 0; i < Steps; i++)
         {
             CNetObj_PlayerInput Step = Input;
@@ -294,12 +334,7 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
             Core.Tick(true);
             Core.Move();
             Core.Quantize();
-            int Index = Collision()->GetPureMapIndex(Core.m_Pos.x, Core.m_Pos.y);
-            int Tile = Collision()->GetTileIndex(Index);
-            int Front = Collision()->GetFrontTileIndex(Index);
-            bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
-                          Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
-            if(Freeze)
+            if(NearFreeze(Core.m_Pos))
                 return i + 1;
         }
         return 0;
@@ -369,13 +404,24 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     if(m_RageHookTicks > 0)
     {
         pInput->m_Hook = 1;
+        pInput->m_Direction = m_RageMoveDir;
         m_RageHookTicks--;
         if(GameClient()->m_PredictedChar.m_HookState != HOOK_FLYING)
             m_RageHookTicks = 0;
+        if(m_RageHookTicks == 0 && m_RageMoveTicks == 0)
+            m_RageMoveDir = 0;
         return;
     }
 
-    const int Steps = 24;
+    if(m_RageMoveTicks > 0)
+    {
+        pInput->m_Direction = m_RageMoveDir;
+        m_RageMoveTicks--;
+        if(m_RageMoveTicks == 0)
+            m_RageMoveDir = 0;
+    }
+
+    const int Steps = RAGE_PREDICT_STEPS;
     auto PredictFreeze = [&](const CNetObj_PlayerInput &Input) {
         CCharacterCore Core = GameClient()->m_PredictedChar;
         Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
@@ -385,12 +431,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
             Core.Tick(true);
             Core.Move();
             Core.Quantize();
-            int Index = Collision()->GetPureMapIndex(Core.m_Pos.x, Core.m_Pos.y);
-            int Tile = Collision()->GetTileIndex(Index);
-            int Front = Collision()->GetFrontTileIndex(Index);
-            bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
-                          Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
-            if(Freeze)
+            if(NearFreeze(Core.m_Pos))
                 return i + 1;
         }
         return 0;
@@ -399,23 +440,74 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     CNetObj_PlayerInput Base = *pInput;
     int FreezeCurrent = PredictFreeze(Base);
     if(!FreezeCurrent)
+    {
+        m_RageMoveDir = 0;
+        m_RageMoveTicks = 0;
         return;
+    }
 
     CNetObj_PlayerInput Best = Base;
     int BestFreeze = FreezeCurrent;
     vec2 BestCol = vec2(0.f, 0.f);
-    bool BestWall = false;
 
     if(pInput->m_Hook)
-        return;
+    {
+        int Freeze = PredictFreeze(Base);
+        if(!Freeze)
+        {
+            m_RageMoveDir = 0;
+            m_RageMoveTicks = 0;
+            return;
+        }
+    }
 
-    static const vec2 s_aDirs[] = {
-        vec2(0.f, -1.f), vec2(1.f, -1.f), vec2(-1.f, -1.f), vec2(1.f, 0.f),
-        vec2(-1.f, 0.f)};
+    std::vector<vec2> vDirs;
+    vDirs.reserve(RAGE_DIR_TOTAL + 6);
+    for(int i = 0; i < RAGE_DIR_TOTAL; i++)
+    {
+        float a = 2.f * pi * i / RAGE_DIR_TOTAL;
+        vDirs.push_back(vec2(cosf(a), sinf(a)));
+    }
+    int WantedDir = clamp(Base.m_Direction, -1, 1);
+    if(WantedDir)
+    {
+        vDirs.push_back(normalize(vec2(WantedDir * 0.25f, -1.f)));
+        vDirs.push_back(normalize(vec2(WantedDir * 0.5f, -1.f)));
+        vDirs.push_back(normalize(vec2(WantedDir * 0.75f, -1.f)));
+    }
 
     const float HookLen = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookLength;
     const float AimLen = HookLen;
-    for(const vec2 &DirRaw : s_aDirs)
+    float HookSpeed = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookFireSpeed;
+
+    auto PredictFreezeSeq = [&](const vec2 &Dir, int Move, int Hold) {
+        CCharacterCore Core = GameClient()->m_PredictedChar;
+        Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
+        int StepLimit = Hold + RAGE_EXTRA_AFTER_HOLD + RAGE_RELEASE_SAFE;
+        if(StepLimit < Steps)
+            StepLimit = Steps;
+        for(int i = 0; i < StepLimit; i++)
+        {
+            CNetObj_PlayerInput Step = Base;
+            Step.m_Direction = Move;
+            if(i == 0)
+            {
+                Step.m_TargetX = (int)(Dir.x * AimLen);
+                Step.m_TargetY = (int)(Dir.y * AimLen);
+            }
+            Step.m_Hook = i < Hold ? 1 : 0;
+            Core.m_Input = Step;
+            Core.Tick(true);
+            Core.Move();
+            Core.Quantize();
+            if(NearFreeze(Core.m_Pos))
+                return i + 1;
+        }
+        return 0;
+    };
+    int BestDir = 0;
+    int BestHold = 0;
+    for(const vec2 &DirRaw : vDirs)
     {
         vec2 Dir = DirRaw;
         bool Wall = Dir.y == 0.f && Dir.x != 0.f;
@@ -426,44 +518,83 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         vec2 To = Pos + Dir * HookLen;
         vec2 Col;
         int Hit = Collision()->IntersectLineTeleHook(Pos, To, &Col, nullptr);
-        if(Hit && Hit != TILE_NOHOOK)
+        int ColIndex = Collision()->GetPureMapIndex(Col.x, Col.y);
+        int ColTile = Collision()->GetTileIndex(ColIndex);
+        int ColFront = Collision()->GetFrontTileIndex(ColIndex);
+        bool ColFreeze = ColTile == TILE_FREEZE || ColTile == TILE_DFREEZE ||
+                         ColTile == TILE_LFREEZE || ColFront == TILE_FREEZE ||
+                         ColFront == TILE_DFREEZE || ColFront == TILE_LFREEZE;
+        if(Hit && Hit != TILE_NOHOOK && !ColFreeze)
         {
-            CNetObj_PlayerInput Test = Base;
-            Test.m_Hook = 1;
-            Test.m_TargetX = (int)(Dir.x * AimLen);
-            Test.m_TargetY = (int)(Dir.y * AimLen);
-            int Freeze = PredictFreeze(Test);
-            if(!Freeze || Freeze > BestFreeze)
+            int aMove[3];
+            if(WantedDir)
             {
-                Best = Test;
-                BestFreeze = Freeze ? Freeze : Steps;
-                BestCol = Col;
-                BestWall = Wall;
-                if(!Freeze)
-                    break;
+                aMove[0] = WantedDir;
+                aMove[1] = 0;
+                aMove[2] = -WantedDir;
             }
+            else
+            {
+                aMove[0] = 0;
+                aMove[1] = 1;
+                aMove[2] = -1;
+            }
+            for(int Move : aMove)
+            {
+                float Dist = distance(Pos, Col);
+                int Hold;
+                if(DirRaw.y > 0.f)
+                    Hold = RAGE_HOOK_DOWN_HOLD;
+                else
+                    Hold = (int)ceilf(Dist / HookSpeed) + 1;
+                if(Hold < RAGE_HOOK_HOLD_MIN)
+                    Hold = RAGE_HOOK_HOLD_MIN;
+                else if(Hold > RAGE_HOOK_HOLD_MAX)
+                    Hold = RAGE_HOOK_HOLD_MAX;
+                int Freeze = PredictFreezeSeq(Dir, Move, Hold);
+                if(Freeze && Freeze <= Hold && Hold > 1)
+                {
+                    Hold = Freeze - 1;
+                    Freeze = PredictFreezeSeq(Dir, Move, Hold);
+                }
+                if(Freeze && Freeze <= Hold)
+                    continue;
+                if(Freeze && Freeze <= Hold + RAGE_RELEASE_SAFE)
+                    continue;
+                if(!Freeze || Freeze > BestFreeze)
+                {
+                    Best = Base;
+                    Best.m_Hook = 1;
+                    Best.m_TargetX = (int)(Dir.x * AimLen);
+                    Best.m_TargetY = (int)(Dir.y * AimLen);
+                    Best.m_Direction = Move;
+                    BestFreeze = Freeze ? Freeze : Steps;
+                    BestCol = Col;
+                    BestDir = Move;
+                    BestHold = Hold;
+                    if(!Freeze)
+                        break;
+                }
+            }
+            if(BestFreeze == Steps)
+                break;
         }
     }
 
     if(BestFreeze > FreezeCurrent)
     {
         *pInput = Best;
-        if(BestWall)
-        {
-            vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
-            pInput->m_Direction = Pos.x < BestCol.x ? -1 : 1; // move away from the wall
-        }
-        float Speed = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookFireSpeed;
-        float Dist = distance(GameClient()->m_PredictedChar.m_Pos, BestCol);
-        int Hold = (int)ceilf(Dist / Speed) + 1;
-        if(Hold < RAGE_HOOK_HOLD_MIN)
-            Hold = RAGE_HOOK_HOLD_MIN;
-        m_RageHookTicks = Hold;
+        m_RageMoveDir = BestDir;
+        pInput->m_Direction = BestDir;
+
+        m_RageHookTicks = BestHold;
+        m_RageMoveTicks = BestHold + RAGE_MOVE_EXTRA;
     }
 }
 
 void CFujixTas::UpdateFreezeInput(CNetObj_PlayerInput *pInput)
 {
+    EmergencyFreezeStop(pInput);
     if(g_Config.m_ClFujixBlockFreezeRage)
         BlockFreezeRageInput(pInput);
     else
