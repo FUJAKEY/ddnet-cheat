@@ -424,17 +424,29 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         }
         return false;
     };
+    auto PathNearFreeze = [&](vec2 From, vec2 To) {
+        const int Samples = 4;
+        for(int i = 1; i <= Samples; i++)
+        {
+            vec2 Pos = mix(From, To, i / (float)Samples);
+            if(NearFreeze(Pos))
+                return true;
+        }
+        return false;
+    };
     auto PredictFreeze = [&](const CNetObj_PlayerInput &Input) {
         CCharacterCore Core = GameClient()->m_PredictedChar;
         Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
+        vec2 PrevPos = Core.m_Pos;
         for(int i = 0; i < Steps; i++)
         {
             Core.m_Input = Input;
             Core.Tick(true);
             Core.Move();
             Core.Quantize();
-            if(NearFreeze(Core.m_Pos))
+            if(PathNearFreeze(PrevPos, Core.m_Pos))
                 return i + 1;
+            PrevPos = Core.m_Pos;
         }
         return 0;
     };
@@ -488,6 +500,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         int StepLimit = Hold + RAGE_EXTRA_AFTER_HOLD + RAGE_RELEASE_SAFE;
         if(StepLimit < Steps)
             StepLimit = Steps;
+        vec2 PrevPos = Core.m_Pos;
         for(int i = 0; i < StepLimit; i++)
         {
             CNetObj_PlayerInput Step = Base;
@@ -502,8 +515,9 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
             Core.Tick(true);
             Core.Move();
             Core.Quantize();
-            if(NearFreeze(Core.m_Pos))
+            if(PathNearFreeze(PrevPos, Core.m_Pos))
                 return i + 1;
+            PrevPos = Core.m_Pos;
         }
         return 0;
     };
