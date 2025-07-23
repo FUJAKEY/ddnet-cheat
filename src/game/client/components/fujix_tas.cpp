@@ -48,6 +48,7 @@ CFujixTas::CFujixTas()
     m_RageHookTicks = 0;
     m_RageMoveDir = 0;
     m_RageMoveTicks = 0;
+    m_LastWantedDir = 0;
 }
 
 int CFujixTas::Sizeof() const
@@ -438,11 +439,17 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     };
 
     CNetObj_PlayerInput Base = *pInput;
+    if(Base.m_Direction)
+        m_LastWantedDir = clamp(Base.m_Direction, -1, 1);
     int FreezeCurrent = PredictFreeze(Base);
     if(!FreezeCurrent)
     {
         m_RageMoveDir = 0;
         m_RageMoveTicks = 0;
+        if(Base.m_Direction)
+            m_LastWantedDir = clamp(Base.m_Direction, -1, 1);
+        else
+            m_LastWantedDir = 0;
         return;
     }
 
@@ -457,6 +464,10 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         {
             m_RageMoveDir = 0;
             m_RageMoveTicks = 0;
+            if(Base.m_Direction)
+                m_LastWantedDir = clamp(Base.m_Direction, -1, 1);
+            else
+                m_LastWantedDir = 0;
             return;
         }
     }
@@ -468,7 +479,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         float a = 2.f * pi * i / RAGE_DIR_TOTAL;
         vDirs.push_back(vec2(cosf(a), sinf(a)));
     }
-    int WantedDir = clamp(Base.m_Direction, -1, 1);
+    int WantedDir = m_LastWantedDir;
     if(WantedDir)
     {
         for(float f = 0.2f; f <= 1.0f; f += 0.2f)
@@ -520,13 +531,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         vec2 To = Pos + Dir * HookLen;
         vec2 Col;
         int Hit = Collision()->IntersectLineTeleHook(Pos, To, &Col, nullptr);
-        int ColIndex = Collision()->GetPureMapIndex(Col.x, Col.y);
-        int ColTile = Collision()->GetTileIndex(ColIndex);
-        int ColFront = Collision()->GetFrontTileIndex(ColIndex);
-        bool ColFreeze = ColTile == TILE_FREEZE || ColTile == TILE_DFREEZE ||
-                         ColTile == TILE_LFREEZE || ColFront == TILE_FREEZE ||
-                         ColFront == TILE_DFREEZE || ColFront == TILE_LFREEZE;
-        if(Hit && Hit != TILE_NOHOOK && !ColFreeze)
+        if(Hit && Hit != TILE_NOHOOK)
         {
             int aMove[3];
             if(WantedDir)

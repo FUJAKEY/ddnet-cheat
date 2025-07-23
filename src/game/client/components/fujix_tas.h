@@ -68,6 +68,7 @@ int m_PhantomPlayIndex;
 int m_RageHookTicks;
 int m_RageMoveDir;
 int m_RageMoveTicks;
+int m_LastWantedDir;
 static constexpr int RAGE_HOOK_HOLD_MIN = 6;
 static constexpr int RAGE_HOOK_HOLD_MAX = 20;
 static constexpr int RAGE_MOVE_EXTRA = 4;
