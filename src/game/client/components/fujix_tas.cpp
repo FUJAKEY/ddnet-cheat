@@ -483,7 +483,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     auto PredictFreezeSeq = [&](const vec2 &Dir, int Move, int Hold) {
         CCharacterCore Core = GameClient()->m_PredictedChar;
         Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
-        int StepLimit = Hold + RAGE_EXTRA_AFTER_HOLD;
+        int StepLimit = Hold + RAGE_EXTRA_AFTER_HOLD + RAGE_RELEASE_SAFE;
         if(StepLimit < Steps)
             StepLimit = Steps;
         for(int i = 0; i < StepLimit; i++)
@@ -558,6 +558,8 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
                     Freeze = PredictFreezeSeq(Dir, Move, Hold);
                 }
                 if(Freeze && Freeze <= Hold)
+                    continue;
+                if(Freeze && Freeze <= Hold + RAGE_RELEASE_SAFE)
                     continue;
                 if(!Freeze || Freeze > BestFreeze)
                 {
