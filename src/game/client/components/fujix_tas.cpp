@@ -12,6 +12,7 @@
 #include <game/client/components/players.h>
 #include <game/client/prediction/entities/character.h>
 #include <base/system.h>
+#include <array>
 #include <vector>
 #include <cstdlib>
 #include <ctime>
@@ -280,6 +281,25 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     if(!g_Config.m_ClFujixBlockFreezeLegit || !GameClient()->m_Snap.m_pLocalCharacter)
         return;
 
+    auto NearFreeze = [&](vec2 Pos) {
+        const float Half = CCharacterCore::PhysicalSize() / 2.f;
+        std::array<vec2,5> aOff = {vec2(0.f, 0.f),
+                                   vec2(0.f, -Half - RAGE_NEAR_MARGIN),
+                                   vec2(0.f, Half + RAGE_NEAR_MARGIN),
+                                   vec2(Half + RAGE_NEAR_MARGIN, 0.f),
+                                   vec2(-Half - RAGE_NEAR_MARGIN, 0.f)};
+        for(const vec2 &Off : aOff)
+        {
+            int Idx = Collision()->GetPureMapIndex(Pos.x + Off.x, Pos.y + Off.y);
+            int Tile = Collision()->GetTileIndex(Idx);
+            int Front = Collision()->GetFrontTileIndex(Idx);
+            bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
+                          Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
+            if(Freeze)
+                return true;
+        }
+        return false;
+    };
     auto PredictFreeze = [&](const CNetObj_PlayerInput &Input, int HookMode) {
         CCharacterCore Core = GameClient()->m_PredictedChar;
         Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
@@ -297,12 +317,7 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
             Core.Tick(true);
             Core.Move();
             Core.Quantize();
-            int Index = Collision()->GetPureMapIndex(Core.m_Pos.x, Core.m_Pos.y);
-            int Tile = Collision()->GetTileIndex(Index);
-            int Front = Collision()->GetFrontTileIndex(Index);
-            bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
-                          Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
-            if(Freeze)
+            if(NearFreeze(Core.m_Pos))
                 return i + 1;
         }
         return 0;
@@ -390,6 +405,25 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     }
 
     const int Steps = RAGE_PREDICT_STEPS;
+    auto NearFreeze = [&](vec2 Pos) {
+        const float Half = CCharacterCore::PhysicalSize() / 2.f;
+        std::array<vec2,5> aOff = {vec2(0.f, 0.f),
+                                   vec2(0.f, -Half - RAGE_NEAR_MARGIN),
+                                   vec2(0.f, Half + RAGE_NEAR_MARGIN),
+                                   vec2(Half + RAGE_NEAR_MARGIN, 0.f),
+                                   vec2(-Half - RAGE_NEAR_MARGIN, 0.f)};
+        for(const vec2 &Off : aOff)
+        {
+            int Idx = Collision()->GetPureMapIndex(Pos.x + Off.x, Pos.y + Off.y);
+            int Tile = Collision()->GetTileIndex(Idx);
+            int Front = Collision()->GetFrontTileIndex(Idx);
+            bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
+                          Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
+            if(Freeze)
+                return true;
+        }
+        return false;
+    };
     auto PredictFreeze = [&](const CNetObj_PlayerInput &Input) {
         CCharacterCore Core = GameClient()->m_PredictedChar;
         Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
@@ -399,12 +433,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
             Core.Tick(true);
             Core.Move();
             Core.Quantize();
-            int Index = Collision()->GetPureMapIndex(Core.m_Pos.x, Core.m_Pos.y);
-            int Tile = Collision()->GetTileIndex(Index);
-            int Front = Collision()->GetFrontTileIndex(Index);
-            bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
-                          Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
-            if(Freeze)
+            if(NearFreeze(Core.m_Pos))
                 return i + 1;
         }
         return 0;
@@ -468,12 +497,7 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
             Core.Tick(true);
             Core.Move();
             Core.Quantize();
-            int Index = Collision()->GetPureMapIndex(Core.m_Pos.x, Core.m_Pos.y);
-            int Tile = Collision()->GetTileIndex(Index);
-            int Front = Collision()->GetFrontTileIndex(Index);
-            bool Freeze = Tile == TILE_FREEZE || Tile == TILE_DFREEZE || Tile == TILE_LFREEZE ||
-                          Front == TILE_FREEZE || Front == TILE_DFREEZE || Front == TILE_LFREEZE;
-            if(Freeze)
+            if(NearFreeze(Core.m_Pos))
                 return i + 1;
         }
         return 0;
