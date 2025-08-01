@@ -66,36 +66,22 @@ int m_PhantomStep;
 CNetObj_PlayerInput m_PhantomInput;
 int m_PhantomPlayIndex;
 
-// Rage control state
+// Rage control (упрощенный и надежный)
 int m_RageHookTicks;
-int m_RageMoveDir;
 int m_RageMoveTicks;
-
-// New safety/hysteresis state
-int m_RageHysteresisTicks;
-int m_RageSafeGraceTicks;
-int m_RageSoftReleaseTicks;
-int m_LastFreezeDetectedAt; // 0 means no current danger, else ticks to freeze predicted
-int m_LastSafeTick;
+int m_RageMoveDir;
 int m_LastInterventionTick;
 
-// Tunables
-static constexpr int RAGE_HOOK_HOLD_MIN = 6;
-static constexpr int RAGE_HOOK_HOLD_MAX = 24;
-static constexpr int RAGE_MOVE_EXTRA = 5;
-static constexpr int RAGE_PREDICT_STEPS = 80;
-static constexpr int RAGE_HOOK_DOWN_HOLD = 3;
-static constexpr float RAGE_NEAR_MARGIN = 7.0f;
-static constexpr int RAGE_EXTRA_AFTER_HOLD = 12;
-static constexpr int RAGE_RELEASE_SAFE = 8;
-static constexpr int RAGE_DIR_TOTAL = 32;
-static constexpr float RAGE_PATH_STEP = 3.0f;
-static constexpr int RAGE_HYSTERESIS_TICKS = 5;
-static constexpr int RAGE_SAFE_GRACE_TICKS = 6;
-static constexpr int RAGE_SOFT_RELEASE_TICKS = 8;
-static constexpr int RAGE_INTERVENTION_SOFT_LIMIT = 22; // max hard enforcement window
-static constexpr float RAGE_MAX_REVERSAL_SPEED = 0.9f; // if |vx| < this, allow reversal, else clamp softer
-static constexpr float RAGE_CAPSULE_SIDE_OFFSET = 2.0f; // for path sampling with lateral offsets
+// Настройки спасателя
+static constexpr int SAFE_PRED_STEPS = 64;
+static constexpr float SAFE_MARGIN = 7.0f;
+static constexpr float PATH_STEP = 3.0f;
+static constexpr int MAX_INTERVENTION_WINDOW = 16;
+static constexpr int HOOK_HOLD_MIN = 3;
+static constexpr int HOOK_HOLD_MAX = 8;
+static constexpr float MAX_REVERSAL_VX = 1.1f;
+
+static constexpr float CAPSULE_SIDE_OFFSET = 0.0f; // 0 для упрощенной версии
 
 void GetPath(char *pBuf, int Size) const;
 void GetHookPath(char *pBuf, int Size) const;
@@ -108,11 +94,11 @@ void TickPhantomUpTo(int TargetTick);
 void RecordHookState(int Tick);
 void ApplyHookEvents(int PredTick, bool ToPhantom);
 
-// helpers shared by both blockers
+// helpers
 bool IsFreezeIndex(int Idx) const;
 bool NearFreezePos(vec2 Pos, float Margin) const;
-bool PathNearFreeze(vec2 From, vec2 To, float Step, float Margin, bool CapsuleSides) const;
-int PredictFreezeGeneric(const CNetObj_PlayerInput &Base, int Steps, float Margin, bool CapsuleSides, int HookMode /*-1 keep, 0 off, 1 on, 2 short*/) const;
+bool PathNearFreeze(vec2 From, vec2 To, float Step, float Margin) const;
+int PredictFreeze(const CNetObj_PlayerInput &Base, int Steps, float Margin, int HookMode) const; // HookMode: -1 keep, 0 off, 1 short, 2 long
 
 public:
 
@@ -144,7 +130,7 @@ void RecordInput(const CNetObj_PlayerInput *pInput, int Tick);
 void MaybeFinishRecord();
 void BlockFreezeInput(CNetObj_PlayerInput *pInput);
 void BlockFreezeRageInput(CNetObj_PlayerInput *pInput);
-void UpdateFreezeInput(CNetObj_PlayerInput *pInput); // legacy compatibility
+void UpdateFreezeInput(CNetObj_PlayerInput *pInput);
 };
 
 #endif // GAME_CLIENT_COMPONENTS_FUJIX_TAS_H
