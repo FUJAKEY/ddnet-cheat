@@ -45,15 +45,10 @@ CFujixTas::CFujixTas()
 
     m_LastHookState = HOOK_RETRACTED;
     m_LastHookedPlayer = -1;
+
     m_RageHookTicks = 0;
     m_RageMoveDir = 0;
     m_RageMoveTicks = 0;
-
-    m_RageHysteresisTicks = 0;
-    m_RageSafeGraceTicks = 0;
-    m_RageSoftReleaseTicks = 0;
-    m_LastFreezeDetectedAt = 0;
-    m_LastSafeTick = 0;
     m_LastInterventionTick = 0;
 }
 
@@ -148,7 +143,6 @@ void CFujixTas::ApplyHookEvents(int PredTick, bool ToPhantom)
         m_HookPlayIndex++;
     }
 }
-
 
 bool CFujixTas::FetchPlaybackInput(CNetObj_PlayerInput *pInput)
 {
@@ -284,8 +278,7 @@ bool CFujixTas::IsFreezeIndex(int Idx) const
 bool CFujixTas::NearFreezePos(vec2 Pos, float Margin) const
 {
     const float Half = CCharacterCore::PhysicalSize() / 2.f;
-    constexpr int N = 9;
-    const vec2 Offs[N] = {
+    const vec2 Offs[] = {
         vec2(0,0),
         vec2( Half+Margin, 0),
         vec2(-Half-Margin, 0),
@@ -296,16 +289,16 @@ bool CFujixTas::NearFreezePos(vec2 Pos, float Margin) const
         vec2( Half+Margin, -Half-Margin),
         vec2(-Half-Margin, -Half-Margin),
     };
-    for(int i=0;i<N;i++)
+    for(const vec2 &o : Offs)
     {
-        int Idx = Collision()->GetPureMapIndex(Pos.x + Offs[i].x, Pos.y + Offs[i].y);
+        int Idx = Collision()->GetPureMapIndex(Pos.x + o.x, Pos.y + o.y);
         if(IsFreezeIndex(Idx))
             return true;
     }
     return false;
 }
 
-bool CFujixTas::PathNearFreeze(vec2 From, vec2 To, float Step, float Margin, bool CapsuleSides) const
+bool CFujixTas::PathNearFreeze(vec2 From, vec2 To, float Step, float Margin) const
 {
     float Dist = distance(From, To);
     int StepsLine = maximum(1, (int)ceilf(Dist / Step));
@@ -316,28 +309,10 @@ bool CFujixTas::PathNearFreeze(vec2 From, vec2 To, float Step, float Margin, boo
         if(NearFreezePos(Pos, Margin))
             return true;
     }
-    if(!CapsuleSides)
-        return false;
-    vec2 Dir = normalize(To - From);
-    if(Dir.x == 0.0f && Dir.y == 0.0f)
-        return false;
-    vec2 Nrm = vec2(-Dir.y, Dir.x);
-    const float side = RAGE_CAPSULE_SIDE_OFFSET;
-    for(int s = -1; s <= 1; s += 2)
-    {
-        vec2 Off = Nrm * (side * (float)s); // фикс: vec2 * float
-        for(int i = 0; i <= StepsLine; i++)
-        {
-            float a = i / (float)StepsLine;
-            vec2 Pos = mix(From + Off, To + Off, a);
-            if(NearFreezePos(Pos, Margin))
-                return true;
-        }
-    }
     return false;
 }
 
-int CFujixTas::PredictFreezeGeneric(const CNetObj_PlayerInput &Base, int Steps, float Margin, bool CapsuleSides, int HookMode) const
+int CFujixTas::PredictFreeze(const CNetObj_PlayerInput &Base, int Steps, float Margin, int HookMode) const
 {
     CCharacterCore Core = GameClient()->m_PredictedChar;
     Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
@@ -345,15 +320,15 @@ int CFujixTas::PredictFreezeGeneric(const CNetObj_PlayerInput &Base, int Steps, 
     for(int i = 0; i < Steps; i++)
     {
         if(HookMode == 0) In.m_Hook = 0;
-        else if(HookMode == 1) In.m_Hook = 1;
-        else if(HookMode == 2) In.m_Hook = (i == 0) ? 1 : 0;
+        else if(HookMode == 1) In.m_Hook = (i < HOOK_HOLD_MIN) ? 1 : 0;
+        else if(HookMode == 2) In.m_Hook = (i < HOOK_HOLD_MAX) ? 1 : 0;
 
-        Core.m_Input = In;
         vec2 Prev = Core.m_Pos;
+        Core.m_Input = In;
         Core.Tick(true);
         Core.Move();
         Core.Quantize();
-        if(PathNearFreeze(Prev, Core.m_Pos, RAGE_PATH_STEP, Margin, CapsuleSides))
+        if(PathNearFreeze(Prev, Core.m_Pos, PATH_STEP, Margin))
             return i + 1;
     }
     return 0;
@@ -364,59 +339,42 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     if(!g_Config.m_ClFujixBlockFreezeLegit || !GameClient()->m_Snap.m_pLocalCharacter)
         return;
 
-    auto PredictFreeze = [&](const CNetObj_PlayerInput &Input, int HookMode)
-    {
-        return PredictFreezeGeneric(Input, 40, RAGE_NEAR_MARGIN, true, HookMode);
+    // Простая легит-версия: предикция 40 шагов и минимальные правки
+    auto Predict = [&](const CNetObj_PlayerInput &In, int HookMode){
+        return PredictFreeze(In, 40, SAFE_MARGIN, HookMode);
     };
 
-    int FreezeCurrent = PredictFreeze(*pInput, -1);
-    if(!FreezeCurrent)
-        return;
+    int F0 = Predict(*pInput, -1);
+    if(!F0) return;
 
-    CNetObj_PlayerInput Adjusted = *pInput;
-    int FreezeNoHook = PredictFreeze(Adjusted, 0);
-    int FreezeFullHook = PredictFreeze(Adjusted, 1);
-    int FreezeShortHook = PredictFreeze(Adjusted, 2);
+    CNetObj_PlayerInput Best = *pInput;
+    int BestScore = F0;
 
-    if(FreezeFullHook && (!FreezeNoHook || FreezeFullHook < FreezeNoHook))
+    // попробуем без хука
     {
-        if(!(FreezeShortHook && (!FreezeNoHook || FreezeShortHook < FreezeNoHook)))
-            Adjusted.m_Hook = 0;
+        CNetObj_PlayerInput T = *pInput;
+        T.m_Hook = 0;
+        int F = Predict(T, 0);
+        if(!F || F > BestScore) { Best = T; BestScore = F ? F : 40; }
     }
-    else if(FreezeNoHook && !FreezeFullHook)
+    // попробуем с коротким хуком
     {
-        Adjusted.m_Hook = 1;
-        if(GameClient()->m_PredictedChar.m_Vel.y < 0)
-            Adjusted.m_Jump = 1;
+        CNetObj_PlayerInput T = *pInput;
+        T.m_Hook = 1;
+        int F = Predict(T, 1);
+        if(!F || F > BestScore) { Best = T; BestScore = F ? F : 40; }
     }
-
-    CCharacter *pLocalChar = GameClient()->m_PredictedWorld.GetCharacterById(GameClient()->m_Snap.m_LocalClientId);
-    bool OnGround = pLocalChar && pLocalChar->IsGrounded();
-
-    float VelX = GameClient()->m_PredictedChar.m_Vel.x;
-    if(!OnGround)
+    // направление: если быстро летим к опасности — немного против
+    float vx = GameClient()->m_PredictedChar.m_Vel.x;
+    if(fabsf(vx) > 0.6f)
     {
-        if(fabsf(VelX) > 0.2f)
-        {
-            if(VelX > 0.0f) Adjusted.m_Direction = -1;
-            else Adjusted.m_Direction = 1;
-        }
-    }
-    else
-    {
-        if(fabsf(VelX) > 0.4f)
-        {
-            if(VelX > 0.0f) Adjusted.m_Direction = -1;
-            else Adjusted.m_Direction = 1;
-        }
-        else
-            Adjusted.m_Direction = 0;
+        CNetObj_PlayerInput T = *pInput;
+        T.m_Direction = (vx > 0 ? -1 : 1);
+        int F = Predict(T, -1);
+        if(!F || F > BestScore) { Best = T; BestScore = F ? F : 40; }
     }
 
-    int After = PredictFreeze(Adjusted, -1);
-    (void)After; // оставлено для возможных будущих эвристик
-
-    *pInput = Adjusted;
+    *pInput = Best;
 }
 
 void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
@@ -424,249 +382,130 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     if(!g_Config.m_ClFujixBlockFreezeRage || !GameClient()->m_Snap.m_pLocalCharacter)
         return;
 
-    int NowTick = Client()->PredGameTick(g_Config.m_ClDummy);
+    int Now = Client()->PredGameTick(g_Config.m_ClDummy);
 
+    // продолжить активное удержание, если оно есть
     if(m_RageHookTicks > 0)
     {
         pInput->m_Hook = 1;
-        pInput->m_Direction = m_RageMoveDir;
         m_RageHookTicks--;
-        m_LastInterventionTick = NowTick;
-        if(GameClient()->m_PredictedChar.m_HookState != HOOK_FLYING)
-            m_RageHookTicks = 0;
-        if(m_RageHookTicks == 0 && m_RageMoveTicks == 0)
-            m_RageMoveDir = 0;
-        return;
+        m_LastInterventionTick = Now;
     }
     if(m_RageMoveTicks > 0)
     {
         pInput->m_Direction = m_RageMoveDir;
         m_RageMoveTicks--;
-        m_LastInterventionTick = NowTick;
-        if(m_RageMoveTicks == 0)
-            m_RageMoveDir = 0;
+        m_LastInterventionTick = Now;
     }
 
+    // если вмешательство длится слишком долго — отпустить
+    if(m_RageHookTicks <= 0 && m_RageMoveTicks <= 0 && Now - m_LastInterventionTick > MAX_INTERVENTION_WINDOW)
+        m_RageMoveDir = 0;
+
+    // базовая проверка опасности
     CNetObj_PlayerInput Base = *pInput;
+    int FreezeKeep = PredictFreeze(Base, SAFE_PRED_STEPS, SAFE_MARGIN, -1);
+    if(!FreezeKeep)
+        return; // безопасно — не вмешиваемся
 
-    float Speed = length(GameClient()->m_PredictedChar.m_Vel);
-    int Steps = RAGE_PREDICT_STEPS + (int)clamp((Speed - 5.0f) * 2.0f, 0.0f, 30.0f);
-
-    auto PredictFreezeKeep = [&](const CNetObj_PlayerInput &In)
+    // если hook включен и хуже — отпустить
+    if(Base.m_Hook)
     {
-        return PredictFreezeGeneric(In, Steps, RAGE_NEAR_MARGIN, true, -1);
-    };
-
-    int FreezeCurrent = PredictFreezeKeep(Base);
-
-    if(!FreezeCurrent)
-    {
-        if(m_RageHysteresisTicks > 0) m_RageHysteresisTicks--;
-        if(m_RageSafeGraceTicks > 0) m_RageSafeGraceTicks--;
-        if(m_RageSoftReleaseTicks > 0) m_RageSoftReleaseTicks--;
-        m_LastFreezeDetectedAt = 0;
-        m_LastSafeTick = NowTick;
-
-        if(NowTick - m_LastInterventionTick > RAGE_INTERVENTION_SOFT_LIMIT/2)
+        CNetObj_PlayerInput Tmp = Base;
+        Tmp.m_Hook = 0;
+        if(PredictFreeze(Tmp, SAFE_PRED_STEPS, SAFE_MARGIN, 0) >= FreezeKeep)
         {
-            m_RageMoveDir = 0;
-            m_RageMoveTicks = 0;
+            pInput->m_Hook = 0;
+            Base.m_Hook = 0;
+            FreezeKeep = PredictFreeze(Base, SAFE_PRED_STEPS, SAFE_MARGIN, -1);
+            if(!FreezeKeep) return;
         }
-        return;
     }
 
-    m_LastFreezeDetectedAt = FreezeCurrent;
-
-    std::vector<vec2> vDirs;
-    vDirs.reserve(RAGE_DIR_TOTAL + 6);
-    for(int i = 0; i < RAGE_DIR_TOTAL; i++)
+    // попробовать сбросить направление
     {
-        float a = 2.f * pi * i / RAGE_DIR_TOTAL;
-        vDirs.push_back(vec2(cosf(a), sinf(a)));
-    }
-    int WantedDir = clamp(Base.m_Direction, -1, 1);
-    if(WantedDir)
-    {
-        vDirs.push_back(normalize(vec2(WantedDir * 0.25f, -1.f)));
-        vDirs.push_back(normalize(vec2(WantedDir * 0.5f, -1.f)));
-        vDirs.push_back(normalize(vec2(WantedDir * 0.75f, -1.f)));
+        CNetObj_PlayerInput Tmp = Base;
+        Tmp.m_Direction = 0;
+        int F = PredictFreeze(Tmp, SAFE_PRED_STEPS, SAFE_MARGIN, -1);
+        if(!F || F > FreezeKeep)
+        {
+            pInput->m_Direction = 0;
+            FreezeKeep = F ? F : SAFE_PRED_STEPS;
+        }
     }
 
+    // если всё еще опасно — попытаться коротким хуком изменить траекторию
     const float HookLen = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookLength;
     const float AimLen = HookLen;
-    float HookSpeed = GameClient()->GetTuning(g_Config.m_ClDummy)->m_HookFireSpeed;
 
-    auto PredictFreezeSeq = [&](const vec2 &Dir, int Move, int Hold) {
-        CCharacterCore Core = GameClient()->m_PredictedChar;
-        Core.SetCoreWorld(&GameClient()->m_PredictedWorld.m_Core, Collision(), GameClient()->m_PredictedWorld.Teams());
-        int StepLimit = Hold + RAGE_EXTRA_AFTER_HOLD + RAGE_RELEASE_SAFE;
-        if(StepLimit < Steps)
-            StepLimit = Steps;
-        for(int i = 0; i < StepLimit; i++)
-        {
-            CNetObj_PlayerInput Step = Base;
-            Step.m_Direction = Move;
-            if(i == 0)
-            {
-                Step.m_TargetX = (int)(Dir.x * AimLen);
-                Step.m_TargetY = (int)(Dir.y * AimLen);
-            }
-            Step.m_Hook = i < Hold ? 1 : 0;
-            vec2 Prev = Core.m_Pos;
-            Core.m_Input = Step;
-            Core.Tick(true);
-            Core.Move();
-            Core.Quantize();
-            if(PathNearFreeze(Prev, Core.m_Pos, RAGE_PATH_STEP, RAGE_NEAR_MARGIN, true))
-                return i + 1;
-        }
-        return 0;
-    };
-
-    CNetObj_PlayerInput Best = Base;
-    int BestFreeze = FreezeCurrent;
-    int BestDir = 0;
     int BestHold = 0;
+    int BestDir = pInput->m_Direction;
+    int BestScore = FreezeKeep;
+    bool Found = false;
 
-    for(const vec2 &DirRaw : vDirs)
+    for(int i = 0; i < 12; i++)
     {
-        vec2 Dir = DirRaw;
-        if(Dir.y == 0.f && Dir.x != 0.f) Dir.y = -0.25f;
-        Dir = normalize(Dir);
+        float a = 2.f * pi * (i / 12.f);
+        vec2 Aim = normalize(vec2(cosf(a), sinf(a)));
+        // предпочитаем верхние/боковые направления, избегаем сильного вниз
+        if(Aim.y > 0.35f) continue;
+
         vec2 Pos = GameClient()->m_PredictedChar.m_Pos;
-        vec2 To = Pos + Dir * HookLen;
+        vec2 To = Pos + Aim * HookLen;
         vec2 Col;
         int Hit = Collision()->IntersectLineTeleHook(Pos, To, &Col, nullptr);
+        if(!Hit || Hit == TILE_NOHOOK)
+            continue;
         int ColIndex = Collision()->GetPureMapIndex(Col.x, Col.y);
-        bool ColFreeze = IsFreezeIndex(ColIndex);
+        if(IsFreezeIndex(ColIndex))
+            continue;
+        if(PathNearFreeze(Pos, Col, PATH_STEP, SAFE_MARGIN))
+            continue;
 
-        if(Hit && Hit != TILE_NOHOOK && !ColFreeze && !PathNearFreeze(Pos, Col, RAGE_PATH_STEP, RAGE_NEAR_MARGIN, true))
+        for(int Hold : {HOOK_HOLD_MIN, HOOK_HOLD_MAX})
         {
-            int aMove[3];
-            if(WantedDir)
-            {
-                aMove[0] = WantedDir;
-                aMove[1] = 0;
-                aMove[2] = -WantedDir;
-            }
-            else
-            {
-                aMove[0] = 0;
-                aMove[1] = 1;
-                aMove[2] = -1;
-            }
-
-            for(int Move : aMove)
-            {
-                float Dist = distance(Pos, Col);
-                int Hold = (DirRaw.y > 0.f) ? RAGE_HOOK_DOWN_HOLD : (int)ceilf(Dist / HookSpeed) + 1;
-                Hold = clamp(Hold, RAGE_HOOK_HOLD_MIN, RAGE_HOOK_HOLD_MAX);
-
-                int Freeze = PredictFreezeSeq(Dir, Move, Hold);
-                if(Freeze && Freeze <= Hold && Hold > 1)
-                {
-                    Hold = Freeze - 1;
-                    Hold = maximum(Hold, 1);
-                    Freeze = PredictFreezeSeq(Dir, Move, Hold);
-                }
-                if(Freeze && Freeze <= Hold) continue;
-                if(Freeze && Freeze <= Hold + RAGE_RELEASE_SAFE) continue;
-
-                bool Better = false;
-                if(!Freeze)
-                {
-                    if(BestFreeze != Steps) Better = true;
-                }
-                else
-                {
-                    if(!BestFreeze || Freeze > BestFreeze) Better = true;
-                }
-
-                if(Better)
-                {
-                    Best = Base;
-                    Best.m_Hook = 1;
-                    Best.m_TargetX = (int)(Dir.x * AimLen);
-                    Best.m_TargetY = (int)(Dir.y * AimLen);
-                    Best.m_Direction = Move;
-                    BestFreeze = Freeze ? Freeze : Steps;
-                    BestDir = Move;
-                    BestHold = Hold;
-                    if(!Freeze)
-                        break;
-                }
-            }
-            if(BestFreeze == Steps)
-                break;
-        }
-    }
-
-    if(BestFreeze <= FreezeCurrent)
-    {
-        for(int Move : { WantedDir, 0, -WantedDir })
-        {
-            if(Move == 0 && WantedDir == 0) continue;
             CNetObj_PlayerInput Try = Base;
-            Try.m_Direction = clamp(Move, -1, 1);
-            int F = PredictFreezeKeep(Try);
-            if(!F || F > BestFreeze)
+            Try.m_Hook = 1;
+            Try.m_TargetX = (int)(Aim.x * AimLen);
+            Try.m_TargetY = (int)(Aim.y * AimLen);
+
+            float vx = GameClient()->m_PredictedChar.m_Vel.x;
+            int mdir = 0;
+            if(fabsf(vx) > MAX_REVERSAL_VX)
+                mdir = (vx > 0 ? -1 : 1);
+            Try.m_Direction = mdir;
+
+            int F = PredictFreeze(Try, SAFE_PRED_STEPS, SAFE_MARGIN, (Hold <= HOOK_HOLD_MIN ? 1 : 2));
+            if(!F || F > BestScore)
             {
-                Best = Try;
-                BestFreeze = F ? F : Steps;
-                BestDir = Try.m_Direction;
-                BestHold = 0;
+                BestScore = F ? F : SAFE_PRED_STEPS;
+                BestHold = Hold;
+                BestDir = mdir;
+                Found = true;
                 if(!F) break;
             }
         }
+        if(Found && BestScore == SAFE_PRED_STEPS)
+            break;
     }
 
-    if(BestFreeze > FreezeCurrent)
+    if(Found && BestScore > FreezeKeep)
     {
-        *pInput = Best;
-        float vx = GameClient()->m_PredictedChar.m_Vel.x;
-        int Dir = BestDir;
-        if(Dir != 0 && fabsf(vx) > RAGE_MAX_REVERSAL_SPEED)
-        {
-            if((vx > 0 && Dir < 0) || (vx < 0 && Dir > 0))
-                Dir = 0;
-        }
-        pInput->m_Direction = Dir;
-        m_RageMoveDir = Dir;
-
+        pInput->m_Hook = 1;
+        pInput->m_Direction = BestDir;
         m_RageHookTicks = BestHold;
-        m_RageMoveTicks = BestHold + RAGE_MOVE_EXTRA;
-        m_RageHysteresisTicks = RAGE_HYSTERESIS_TICKS;
-        m_RageSafeGraceTicks = RAGE_SAFE_GRACE_TICKS;
-        m_RageSoftReleaseTicks = RAGE_SOFT_RELEASE_TICKS;
-        m_LastInterventionTick = NowTick;
-    }
-    else
-    {
-        if(pInput->m_Hook)
-        {
-            CNetObj_PlayerInput Tmp = Base;
-            Tmp.m_Hook = 0;
-            int F = PredictFreezeKeep(Tmp);
-            if(F >= FreezeCurrent)
-                pInput->m_Hook = 0;
-        }
-        if(WantedDir != 0)
-        {
-            CNetObj_PlayerInput Tmp = Base;
-            Tmp.m_Direction = -WantedDir;
-            int F = PredictFreezeKeep(Tmp);
-            if(F > FreezeCurrent) pInput->m_Direction = -WantedDir;
-        }
+        m_RageMoveTicks = BestHold;
+        m_RageMoveDir = BestDir;
+        m_LastInterventionTick = Now;
+        return;
     }
 
-    int After = PredictFreezeKeep(*pInput);
-    if(!After && m_RageSoftReleaseTicks > 0)
-    {
-        m_RageHookTicks = 0;
-        m_RageMoveTicks = 0;
-        m_RageMoveDir = 0;
-        m_RageSoftReleaseTicks--;
-    }
+    // fallback: минимальное вмешательство
+    pInput->m_Hook = 0;
+    pInput->m_Direction = 0;
+    m_RageHookTicks = 0;
+    m_RageMoveTicks = 0;
+    m_RageMoveDir = 0;
 }
 
 void CFujixTas::UpdateFreezeInput(CNetObj_PlayerInput *pInput)
