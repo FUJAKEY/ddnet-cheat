@@ -284,7 +284,6 @@ bool CFujixTas::IsFreezeIndex(int Idx) const
 bool CFujixTas::NearFreezePos(vec2 Pos, float Margin) const
 {
     const float Half = CCharacterCore::PhysicalSize() / 2.f;
-    // sample center + edges + corners
     constexpr int N = 9;
     const vec2 Offs[N] = {
         vec2(0,0),
@@ -310,7 +309,6 @@ bool CFujixTas::PathNearFreeze(vec2 From, vec2 To, float Step, float Margin, boo
 {
     float Dist = distance(From, To);
     int StepsLine = maximum(1, (int)ceilf(Dist / Step));
-    // sample center path
     for(int i = 0; i <= StepsLine; i++)
     {
         float a = i / (float)StepsLine;
@@ -320,13 +318,14 @@ bool CFujixTas::PathNearFreeze(vec2 From, vec2 To, float Step, float Margin, boo
     }
     if(!CapsuleSides)
         return false;
-    // sample side-offset paths to catch skinny slits
     vec2 Dir = normalize(To - From);
+    if(Dir.x == 0.0f && Dir.y == 0.0f)
+        return false;
     vec2 Nrm = vec2(-Dir.y, Dir.x);
     const float side = RAGE_CAPSULE_SIDE_OFFSET;
     for(int s = -1; s <= 1; s += 2)
     {
-        vec2 Off = (float)s * side * Nrm;
+        vec2 Off = Nrm * (side * (float)s); // фикс: vec2 * float
         for(int i = 0; i <= StepsLine; i++)
         {
             float a = i / (float)StepsLine;
@@ -354,7 +353,6 @@ int CFujixTas::PredictFreezeGeneric(const CNetObj_PlayerInput &Base, int Steps, 
         Core.Tick(true);
         Core.Move();
         Core.Quantize();
-        // check path between Prev and Core.m_Pos for freeze
         if(PathNearFreeze(Prev, Core.m_Pos, RAGE_PATH_STEP, Margin, CapsuleSides))
             return i + 1;
     }
@@ -368,7 +366,6 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
 
     auto PredictFreeze = [&](const CNetObj_PlayerInput &Input, int HookMode)
     {
-        // a bit stronger margin and capsule check for legit too
         return PredictFreezeGeneric(Input, 40, RAGE_NEAR_MARGIN, true, HookMode);
     };
 
@@ -381,7 +378,6 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     int FreezeFullHook = PredictFreeze(Adjusted, 1);
     int FreezeShortHook = PredictFreeze(Adjusted, 2);
 
-    // prefer less intrusive changes
     if(FreezeFullHook && (!FreezeNoHook || FreezeFullHook < FreezeNoHook))
     {
         if(!(FreezeShortHook && (!FreezeNoHook || FreezeShortHook < FreezeNoHook)))
@@ -393,14 +389,13 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
         if(GameClient()->m_PredictedChar.m_Vel.y < 0)
             Adjusted.m_Jump = 1;
     }
-    // soft ground/air direction handling
+
     CCharacter *pLocalChar = GameClient()->m_PredictedWorld.GetCharacterById(GameClient()->m_Snap.m_LocalClientId);
     bool OnGround = pLocalChar && pLocalChar->IsGrounded();
 
     float VelX = GameClient()->m_PredictedChar.m_Vel.x;
     if(!OnGround)
     {
-        // only slight counter-steer and with speed check
         if(fabsf(VelX) > 0.2f)
         {
             if(VelX > 0.0f) Adjusted.m_Direction = -1;
@@ -409,7 +404,6 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
     }
     else
     {
-        // do not lock completely; allow small user drift
         if(fabsf(VelX) > 0.4f)
         {
             if(VelX > 0.0f) Adjusted.m_Direction = -1;
@@ -419,16 +413,8 @@ void CFujixTas::BlockFreezeInput(CNetObj_PlayerInput *pInput)
             Adjusted.m_Direction = 0;
     }
 
-    // Safe release: if predicted distances improved, release earlier
     int After = PredictFreeze(Adjusted, -1);
-    if(After && After > FreezeCurrent + 3)
-    {
-        // still danger but further, keep minor changes only
-    }
-    else if(!After)
-    {
-        // safe - do minimal intervention
-    }
+    (void)After; // оставлено для возможных будущих эвристик
 
     *pInput = Adjusted;
 }
@@ -440,7 +426,6 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
 
     int NowTick = Client()->PredGameTick(g_Config.m_ClDummy);
 
-    // handle ongoing enforced hold
     if(m_RageHookTicks > 0)
     {
         pInput->m_Hook = 1;
@@ -464,7 +449,6 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
 
     CNetObj_PlayerInput Base = *pInput;
 
-    // dynamic steps: if speed larger, predict further
     float Speed = length(GameClient()->m_PredictedChar.m_Vel);
     int Steps = RAGE_PREDICT_STEPS + (int)clamp((Speed - 5.0f) * 2.0f, 0.0f, 30.0f);
 
@@ -477,14 +461,12 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
 
     if(!FreezeCurrent)
     {
-        // safe area: decay all states softly
         if(m_RageHysteresisTicks > 0) m_RageHysteresisTicks--;
         if(m_RageSafeGraceTicks > 0) m_RageSafeGraceTicks--;
         if(m_RageSoftReleaseTicks > 0) m_RageSoftReleaseTicks--;
         m_LastFreezeDetectedAt = 0;
         m_LastSafeTick = NowTick;
 
-        // short micro-window to not grab control aggressively
         if(NowTick - m_LastInterventionTick > RAGE_INTERVENTION_SOFT_LIMIT/2)
         {
             m_RageMoveDir = 0;
@@ -495,7 +477,6 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
 
     m_LastFreezeDetectedAt = FreezeCurrent;
 
-    // target directions
     std::vector<vec2> vDirs;
     vDirs.reserve(RAGE_DIR_TOTAL + 6);
     for(int i = 0; i < RAGE_DIR_TOTAL; i++)
@@ -547,7 +528,6 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     int BestDir = 0;
     int BestHold = 0;
 
-    // Evaluate hooking options
     for(const vec2 &DirRaw : vDirs)
     {
         vec2 Dir = DirRaw;
@@ -589,11 +569,9 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
                     Hold = maximum(Hold, 1);
                     Freeze = PredictFreezeSeq(Dir, Move, Hold);
                 }
-                // skip if release zone still dangerous
                 if(Freeze && Freeze <= Hold) continue;
                 if(Freeze && Freeze <= Hold + RAGE_RELEASE_SAFE) continue;
 
-                // choose less intrusive if equal
                 bool Better = false;
                 if(!Freeze)
                 {
@@ -623,10 +601,8 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         }
     }
 
-    // Try non-hook alternatives: small steering only (to avoid "not letting move")
     if(BestFreeze <= FreezeCurrent)
     {
-        // just try tiny steering left/right without hook to delay freeze
         for(int Move : { WantedDir, 0, -WantedDir })
         {
             if(Move == 0 && WantedDir == 0) continue;
@@ -646,21 +622,17 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
 
     if(BestFreeze > FreezeCurrent)
     {
-        // adopt Best softly
         *pInput = Best;
-        // clamp direction change by current velocity to not be too strong
         float vx = GameClient()->m_PredictedChar.m_Vel.x;
         int Dir = BestDir;
         if(Dir != 0 && fabsf(vx) > RAGE_MAX_REVERSAL_SPEED)
         {
-            // if moving fast right and Best wants left, reduce to 0; similar reverse
             if((vx > 0 && Dir < 0) || (vx < 0 && Dir > 0))
                 Dir = 0;
         }
         pInput->m_Direction = Dir;
         m_RageMoveDir = Dir;
 
-        // hold hook+move but with soft limit
         m_RageHookTicks = BestHold;
         m_RageMoveTicks = BestHold + RAGE_MOVE_EXTRA;
         m_RageHysteresisTicks = RAGE_HYSTERESIS_TICKS;
@@ -670,16 +642,14 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
     }
     else
     {
-        // If not improved, but danger is close, do minimal: release hook if on and steer slightly
         if(pInput->m_Hook)
         {
             CNetObj_PlayerInput Tmp = Base;
             Tmp.m_Hook = 0;
             int F = PredictFreezeKeep(Tmp);
-            if(F >= FreezeCurrent) // not worse
+            if(F >= FreezeCurrent)
                 pInput->m_Hook = 0;
         }
-        // micro steer
         if(WantedDir != 0)
         {
             CNetObj_PlayerInput Tmp = Base;
@@ -689,7 +659,6 @@ void CFujixTas::BlockFreezeRageInput(CNetObj_PlayerInput *pInput)
         }
     }
 
-    // Early safe release if after all changes it’s safe
     int After = PredictFreezeKeep(*pInput);
     if(!After && m_RageSoftReleaseTicks > 0)
     {
