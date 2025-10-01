@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Snake Deluxe</string>
+    <string name="play">Играть</string>
+    <string name="skins">Скины</string>
+    <string name="settings">Настройки</string>
+    <string name="resume">Продолжить</string>
+    <string name="new_game">Новая игра</string>
+    <string name="high_score">Рекорд: %1$d</string>
+    <string name="vibration">Виброотклик</string>
+    <string name="sound">Звук</string>
+    <string name="speed">Скорость: %1$.1fx</string>
+    <string name="grid_size">Размер поля: %1$dx%2$d</string>
+    <string name="back">Назад</string>
+    <string name="apply">Применить</string>
+    <string name="skin_selected">Выбрана тема: %1$s</string>
+    <string name="pause">Пауза</string>
+    <string name="game_over">Игра окончена</string>
+    <string name="score">Счёт: %1$d</string>
+    <string name="restart">Заново</string>
+    <string name="home">Меню</string>
+</resources>

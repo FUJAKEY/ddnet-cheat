@@ -2,6 +2,7 @@
 # directories.
 data/
 !/data/
+!android-app/app/src/main/java/com/example/snakedeluxe/data/
 
 docs/
 

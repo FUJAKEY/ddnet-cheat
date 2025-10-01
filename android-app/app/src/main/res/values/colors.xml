@@ -1,0 +1,12 @@
+<resources>
+    <color name="md_theme_light_primary">#4CAF50</color>
+    <color name="md_theme_light_onPrimary">#FFFFFF</color>
+    <color name="md_theme_light_secondary">#00BCD4</color>
+    <color name="md_theme_light_background">#101820</color>
+    <color name="md_theme_light_surface">#182430</color>
+    <color name="md_theme_light_onSurface">#E8F1F2</color>
+    <color name="snake_classic">#4CAF50</color>
+    <color name="snake_neon">#7C4DFF</color>
+    <color name="snake_sunset">#FF7043</color>
+    <color name="snake_ice">#26C6DA</color>
+</resources>
