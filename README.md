@@ -427,3 +427,14 @@ cp -R other/vim/* ~/.vim/
 # neovim
 cp -R other/vim/* ~/.config/nvim/
 ```
+
+## Android Snake Deluxe
+
+В каталоге `android-app/` находится современная мобильная игра «Snake Deluxe» на Jetpack Compose. Сборка:
+
+```sh
+cd android-app
+gradle assembleRelease
+```
+
+APK появится в `app/build/outputs/apk/release/app-release.apk`. GitHub Actions автоматически собирает релизный APK в workflow `Build Android APK` и публикует артефакт `SnakeDeluxe-release-apk` для загрузки.
