@@ -559,6 +559,7 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                       m_FujixTas.RecordInput(&LocalInput, Tick);
                       m_FujixTas.MaybeFinishRecord();
                       m_FujixTas.UpdateFreezeInput(&LocalInput);
+                      m_FujixTas.UpdateAimbotInput(&LocalInput);
 
                      if(g_Config.m_ClFujixDeepfly && Client()->DummyConnected())
                      {
@@ -567,7 +568,7 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                              const CTuningParams *pTuning = GetTuning(g_Config.m_ClDummy);
 
                             bool Hooked = m_PredictedChar.m_HookState == HOOK_GRABBED &&
-                                          m_PredictedChar.m_HookedPlayer == DummyID;
+                                          m_PredictedChar.HookedPlayer() == DummyID;
 
                              if(Hooked ||
                                 (DummyPos.y > m_LocalCharacterPos.y &&

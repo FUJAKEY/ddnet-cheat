@@ -3570,7 +3570,7 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
        }
        else
        {
-               CUIRect EnableBox, AngleBox, DrawBox;
+               CUIRect EnableBox, AngleBox, DrawBox, AutoHookBox;
                MainView.HSplitTop(ms_ButtonHeight, &EnableBox, &MainView);
                static int s_AimChk = 0;
                if(DoButton_CheckBox(&s_AimChk, Localize("Enable aimbot"), g_Config.m_ClFujixAimbot, &EnableBox))
@@ -3587,6 +3587,12 @@ void CMenus::RenderSettingsFujix(CUIRect MainView)
                static int s_DrawChk = 0;
                if(DoButton_CheckBox(&s_DrawChk, Localize("Show lines"), g_Config.m_ClFujixAimLines, &DrawBox))
                        g_Config.m_ClFujixAimLines ^= 1;
+
+               MainView.HSplitTop(5.0f, nullptr, &MainView);
+               MainView.HSplitTop(ms_ButtonHeight, &AutoHookBox, &MainView);
+               static int s_AutoHookChk = 0;
+               if(DoButton_CheckBox(&s_AutoHookChk, Localize("Auto hook"), g_Config.m_ClFujixAutoHook, &AutoHookBox))
+                       g_Config.m_ClFujixAutoHook ^= 1;
        }
 }
 
