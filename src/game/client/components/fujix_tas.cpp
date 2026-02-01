@@ -1167,6 +1167,7 @@ bool CFujixTas::GetAimbotTarget(vec2 *pTarget) const
         if(AngleDiff > MaxAngle)
             continue;
 
+        // Skip targets behind walls - collision check between player and target
         if(Collision()->IntersectLine(LocalPos, TargetPos, nullptr, nullptr))
             continue;
 
