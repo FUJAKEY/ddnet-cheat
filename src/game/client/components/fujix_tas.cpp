@@ -4,6 +4,7 @@
 #include <engine/storage.h>
 #include <engine/console.h>
 #include <engine/client.h>
+#include <engine/textrender.h>
 #include <game/client/gameclient.h>
 #include <game/client/render.h>
 #include <game/client/animstate.h>
@@ -171,7 +172,8 @@ void CFujixTas::UpdatePlaybackInput()
     }
 
 
-    if(m_PlayIndex >= (int)m_vEntries.size() &&
+    if(!m_vEntries.empty() &&
+       m_PlayIndex >= (int)m_vEntries.size() &&
        m_PlayHookIndex >= (int)m_vHookEvents.size() &&
        m_PlayActionIndex >= (int)m_vActionEvents.size() &&
        PredTick >= m_PlayStartTick + m_vEntries.back().m_Tick)
@@ -194,10 +196,6 @@ void CFujixTas::StartRecord()
     if(!m_File)
     {
         Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "fujix", "failed to open file for recording");
-        if(m_File)
-            io_close(m_File);
-        m_File = nullptr;
-        m_HookFile = nullptr;
         return;
     }
     m_HookFile = Storage()->OpenFile(m_aHookFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
@@ -231,6 +229,7 @@ void CFujixTas::StartRecord()
     m_PlayHookIndex = 0;
     m_PlayActionIndex = 0;
     m_PhantomHookIndex = 0;
+    m_PhantomActionIndex = 0;
     m_PhantomHistory.clear();
     m_PendingInputs.clear();
 
@@ -884,6 +883,7 @@ void CFujixTas::OnRender()
 
     RenderFreezeIndicator();
     RenderAimLines();
+    RenderStatus();
 }
 
 void CFujixTas::RenderFuturePath(int TicksAhead)
@@ -911,10 +911,14 @@ void CFujixTas::RenderFuturePath(int TicksAhead)
     Graphics()->LinesBegin();
     for(size_t i = 1; i < Points.size(); i++)
     {
+        float Progress = (float)i / (float)Points.size();
+        float Alpha = 1.0f - Progress * 0.7f;
+        Graphics()->SetColor(0.5f + 0.5f * Progress, 1.0f - 0.5f * Progress, 0.5f, Alpha);
         IGraphics::CLineItem Line(Points[i - 1].x, Points[i - 1].y, Points[i].x, Points[i].y);
         Graphics()->LinesDraw(&Line, 1);
     }
     Graphics()->LinesEnd();
+    Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 void CFujixTas::RenderRecommendedRoute(int TicksAhead)
@@ -1002,31 +1006,49 @@ void CFujixTas::UpdateFreezeInput(CNetObj_PlayerInput *pInput)
         return;
     }
 
-    const int PredictTicks = 20;
+    const int PredictTicks = 30;
     float PosY = GameClient()->m_PredictedChar.m_Pos.y;
     float VelY = GameClient()->m_PredictedChar.m_Vel.y;
-    float FutureY = PosY + VelY * PredictTicks + pTuning->m_Gravity * PredictTicks * PredictTicks / 2.0f;
+    
+    float SimPos = PosY;
+    float SimVel = VelY;
+    int Hold = 0;
+    bool NeedHook = false;
 
-    if(FutureY > m_FreezeLevel + 1.0f)
+    for(int t = 0; t < PredictTicks; t++)
     {
-        int Hold = 1;
-        float SimPos = PosY;
-        float SimVel = VelY;
-        for(int t = 0; t < PredictTicks; t++)
+        SimVel += pTuning->m_Gravity;
+        SimPos += SimVel;
+
+        if(SimPos > m_FreezeLevel + 4.0f)
         {
-            SimVel += pTuning->m_Gravity - pTuning->m_HookDragAccel;
-            SimPos += SimVel;
-            if(SimPos <= m_FreezeLevel)
+            NeedHook = true;
+            float HookSimPos = PosY;
+            float HookSimVel = VelY;
+            for(int h = 0; h < PredictTicks; h++)
             {
-                Hold = t + 1;
-                break;
+                HookSimVel += pTuning->m_Gravity - pTuning->m_HookDragAccel;
+                HookSimVel *= pTuning->m_HookDragSpeed;
+                HookSimPos += HookSimVel;
+                if(HookSimPos <= m_FreezeLevel)
+                {
+                    Hold = h + 1;
+                    break;
+                }
             }
+            if(Hold == 0)
+                Hold = 5;
+            break;
         }
+    }
+
+    if(NeedHook)
+    {
         pInput->m_Hook = 1;
         pInput->m_TargetX = 0;
         pInput->m_TargetY = -256;
-        m_FreezeHookTicks = Hold;
-        m_FreezeHookCooldown = 2;
+        m_FreezeHookTicks = maximum(1, Hold);
+        m_FreezeHookCooldown = 3;
     }
     else
     {
@@ -1068,10 +1090,190 @@ void CFujixTas::RenderAimLines()
 
     Graphics()->TextureClear();
     Graphics()->LinesBegin();
+    Graphics()->SetColor(1.0f, 1.0f, 0.0f, 0.7f);
     IGraphics::CLineItem L1(Pos.x, Pos.y, Pos.x + Up.x * 500.0f, Pos.y + Up.y * 500.0f);
     IGraphics::CLineItem L2(Pos.x, Pos.y, Pos.x + Down.x * 500.0f, Pos.y + Down.y * 500.0f);
     Graphics()->LinesDraw(&L1, 1);
     Graphics()->LinesDraw(&L2, 1);
+
+    vec2 Target;
+    if(GetAimbotTarget(&Target))
+    {
+        Graphics()->SetColor(1.0f, 0.0f, 0.0f, 1.0f);
+        IGraphics::CLineItem TargetLine(Pos.x, Pos.y, Target.x, Target.y);
+        Graphics()->LinesDraw(&TargetLine, 1);
+    }
+
     Graphics()->LinesEnd();
+    Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+    if(GetAimbotTarget(&Target))
+    {
+        Graphics()->QuadsBegin();
+        Graphics()->SetColor(1.0f, 0.0f, 0.0f, 0.5f);
+        IGraphics::CQuadItem Quad(Target.x - 16.0f, Target.y - 16.0f, 32.0f, 32.0f);
+        Graphics()->QuadsDraw(&Quad, 1);
+        Graphics()->QuadsEnd();
+        Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+    }
+}
+
+bool CFujixTas::GetAimbotTarget(vec2 *pTarget) const
+{
+    if(!g_Config.m_ClFujixAimbot)
+        return false;
+
+    int LocalClientId = GameClient()->m_Snap.m_LocalClientId;
+    if(LocalClientId < 0)
+        return false;
+
+    vec2 LocalPos = GameClient()->m_LocalCharacterPos;
+    vec2 Mouse = GameClient()->m_Controls.m_aMousePos[g_Config.m_ClDummy];
+    vec2 AimDir = normalize(Mouse);
+    if(length(Mouse) == 0)
+        AimDir = vec2(1, 0);
+
+    float BaseAng = angle(AimDir);
+    float MaxAngle = g_Config.m_ClFujixAimAngle * pi / 180.0f;
+    float HookRange = GameClient()->GetTuning(0)->m_HookLength;
+
+    float BestDist = HookRange + 1.0f;
+    vec2 BestTarget = vec2(0, 0);
+    bool Found = false;
+
+    for(int i = 0; i < MAX_CLIENTS; i++)
+    {
+        if(i == LocalClientId)
+            continue;
+        if(!GameClient()->m_aClients[i].m_Active)
+            continue;
+        if(!GameClient()->m_Snap.m_apPlayerInfos[i])
+            continue;
+        if(GameClient()->m_aClients[i].m_Spec)
+            continue;
+
+        vec2 TargetPos = GameClient()->m_aClients[i].m_RenderPos;
+        vec2 ToTarget = TargetPos - LocalPos;
+        float Dist = length(ToTarget);
+
+        if(Dist > HookRange || Dist < 1.0f)
+            continue;
+
+        float TargetAng = angle(normalize(ToTarget));
+        float AngleDiff = absolute(TargetAng - BaseAng);
+        while(AngleDiff > pi)
+            AngleDiff = 2.0f * pi - AngleDiff;
+
+        if(AngleDiff > MaxAngle)
+            continue;
+
+        if(Collision()->IntersectLine(LocalPos, TargetPos, nullptr, nullptr))
+            continue;
+
+        if(Dist < BestDist)
+        {
+            BestDist = Dist;
+            BestTarget = TargetPos;
+            Found = true;
+        }
+    }
+
+    if(Found && pTarget)
+        *pTarget = BestTarget;
+
+    return Found;
+}
+
+void CFujixTas::UpdateAimbotInput(CNetObj_PlayerInput *pInput)
+{
+    if(!g_Config.m_ClFujixAimbot || !pInput)
+        return;
+
+    vec2 Target;
+    if(!GetAimbotTarget(&Target))
+        return;
+
+    vec2 LocalPos = GameClient()->m_LocalCharacterPos;
+    vec2 Dir = Target - LocalPos;
+    if(length(Dir) > 0.0f)
+    {
+        Dir = normalize(Dir);
+        pInput->m_TargetX = (int)(Dir.x * 256);
+        pInput->m_TargetY = (int)(Dir.y * 256);
+
+        if(g_Config.m_ClFujixAutoHook)
+            pInput->m_Hook = 1;
+    }
+}
+
+void CFujixTas::RenderStatus()
+{
+    if(!g_Config.m_ClFujixShowStatus)
+        return;
+
+    bool AnyActive = m_Recording || m_Playing || m_Testing || m_FreezeActive || g_Config.m_ClFujixAimbot || g_Config.m_ClFujixDeepfly;
+    if(!AnyActive)
+        return;
+
+    float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
+    Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
+
+    float FontSize = 10.0f;
+    float y = 50.0f;
+    float x = 5.0f;
+
+    char aBuf[128];
+    str_copy(aBuf, "FUJIX:");
+    TextRender()->Text(x, y, FontSize, aBuf);
+    y += FontSize + 2.0f;
+
+    if(m_Recording)
+    {
+        TextRender()->TextColor(1.0f, 0.3f, 0.3f, 1.0f);
+        str_format(aBuf, sizeof(aBuf), "  REC [%d]", (int)m_vEntries.size());
+        TextRender()->Text(x, y, FontSize, aBuf);
+        y += FontSize + 2.0f;
+    }
+    if(m_Playing)
+    {
+        TextRender()->TextColor(0.3f, 1.0f, 0.3f, 1.0f);
+        str_format(aBuf, sizeof(aBuf), "  PLAY [%d/%d]", m_PlayIndex, (int)m_vEntries.size());
+        TextRender()->Text(x, y, FontSize, aBuf);
+        y += FontSize + 2.0f;
+    }
+    if(m_Testing)
+    {
+        TextRender()->TextColor(0.3f, 0.3f, 1.0f, 1.0f);
+        str_copy(aBuf, "  TEST");
+        TextRender()->Text(x, y, FontSize, aBuf);
+        y += FontSize + 2.0f;
+    }
+    if(m_FreezeActive)
+    {
+        TextRender()->TextColor(0.5f, 0.8f, 1.0f, 1.0f);
+        str_format(aBuf, sizeof(aBuf), "  FREEZE [%.0f]", m_FreezeLevel);
+        TextRender()->Text(x, y, FontSize, aBuf);
+        y += FontSize + 2.0f;
+    }
+    if(g_Config.m_ClFujixAimbot)
+    {
+        TextRender()->TextColor(1.0f, 1.0f, 0.3f, 1.0f);
+        vec2 Target;
+        if(GetAimbotTarget(&Target))
+            str_copy(aBuf, "  AIM [LOCKED]");
+        else
+            str_copy(aBuf, "  AIM [SCAN]");
+        TextRender()->Text(x, y, FontSize, aBuf);
+        y += FontSize + 2.0f;
+    }
+    if(g_Config.m_ClFujixDeepfly)
+    {
+        TextRender()->TextColor(1.0f, 0.5f, 1.0f, 1.0f);
+        str_copy(aBuf, "  DEEPFLY");
+        TextRender()->Text(x, y, FontSize, aBuf);
+        y += FontSize + 2.0f;
+    }
+
+    TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
 }
 

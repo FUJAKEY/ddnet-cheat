@@ -155,6 +155,7 @@ public:
     bool IsPlaying() const { return m_Playing; }
     bool IsTesting() const { return m_Testing; }
     bool IsPhantomActive() const { return m_PhantomActive; }
+    bool IsFreezeActive() const { return m_FreezeActive; }
     vec2 PhantomPos() const { return m_PhantomCore.m_Pos; }
     bool FetchPlaybackInput(CNetObj_PlayerInput *pInput);
     void RecordInput(const CNetObj_PlayerInput *pInput, int Tick);
@@ -164,6 +165,9 @@ public:
     void UpdateFreezeInput(CNetObj_PlayerInput *pInput);
     void RenderFreezeIndicator();
     void RenderAimLines();
+    void RenderStatus();
+    bool GetAimbotTarget(vec2 *pTarget) const;
+    void UpdateAimbotInput(CNetObj_PlayerInput *pInput);
 };
 
 #endif // GAME_CLIENT_COMPONENTS_FUJIX_TAS_H

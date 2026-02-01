@@ -668,6 +668,8 @@ MACRO_CONFIG_INT(ClDummyAutoClick, cl_dummy_auto_click, 0, 0, 1, CFGFLAG_CLIENT,
 MACRO_CONFIG_INT(ClFujixAimbot, cl_fujix_aimbot, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Enable hook aimbot")
 MACRO_CONFIG_INT(ClFujixAimAngle, cl_fujix_aim_angle, 45, 1, 180, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Aimbot search angle in degrees")
 MACRO_CONFIG_INT(ClFujixAimLines, cl_fujix_aim_lines, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show aimbot angle lines")
+MACRO_CONFIG_INT(ClFujixAutoHook, cl_fujix_auto_hook, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Automatically hook target when aimbot finds one")
+MACRO_CONFIG_INT(ClFujixShowStatus, cl_fujix_show_status, 1, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Show FUJIX status indicator on screen")
 MACRO_CONFIG_INT(UiFujixPage, ui_fujix_page, 0, 0, 2, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Fujix settings sub page")
 
 MACRO_CONFIG_INT(ClBackgroundShowTilesLayers, cl_background_show_tiles_layers, 0, 0, 1, CFGFLAG_CLIENT | CFGFLAG_SAVE, "Whether draw tiles layers when using custom background (entities)")

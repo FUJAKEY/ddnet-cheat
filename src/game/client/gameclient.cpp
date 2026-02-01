@@ -559,6 +559,7 @@ int CGameClient::OnSnapInput(int *pData, bool Dummy, bool Force)
                       m_FujixTas.RecordInput(&LocalInput, Tick);
                       m_FujixTas.MaybeFinishRecord();
                       m_FujixTas.UpdateFreezeInput(&LocalInput);
+                      m_FujixTas.UpdateAimbotInput(&LocalInput);
 
                      if(g_Config.m_ClFujixDeepfly && Client()->DummyConnected())
                      {
